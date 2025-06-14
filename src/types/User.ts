@@ -46,6 +46,7 @@ export interface Node {
     isDisabled: boolean;
     ip: string;
     need_realname: boolean;
+    status: boolean;
 }
 export interface Group {
     name: string

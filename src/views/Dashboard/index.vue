@@ -173,7 +173,7 @@ const handleUserUpdate = () => {
 const fetchNotice = async (): Promise<void> => {
   userApi.get('/user/info/broadcast', accessHandle(), (data) => {
     if (data.code === 0) {
-      notices.value = data.data.broadcast
+      notices.value = data.data[0].broadcast
     } else {
       message.error(data.message || '获取公告失败')
     }

@@ -1,3 +1,5 @@
+import { DialogApi, MessageApi } from 'naive-ui'
+
 export * from './proxy'
 export * from './User'
 
@@ -7,7 +9,7 @@ export interface Window extends globalThis.Window {
         finish: () => void
         error: () => void
     }
-    $message?: any
-    $dialog?: any
+    $message?: MessageApi
+    $dialog?: DialogApi
     $notification?: any
 }

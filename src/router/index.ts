@@ -33,7 +33,7 @@ const router = createRouter({
         {
           path: 'home',
           name: 'dashboardIndex',
-          component: () => import('../views/Dashboard/index.vue'),
+          component: () => import('../views/Dashboard/Index.vue'),
           meta: {
             title: '首页',
           }

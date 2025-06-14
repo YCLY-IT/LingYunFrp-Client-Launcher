@@ -69,7 +69,8 @@ fn main() {
             start_proxy,
             stop_proxy,
             quit_window,
-            open_url
+            open_url,
+            api_url
         ])
         .setup(|app| {
             // 确保应用数据目录存在
@@ -179,8 +180,14 @@ fn check_frpc_exists(app: tauri::AppHandle) -> bool {
 
     false
 }
+
 const API_URL: &str = "http://localhost:8081/";
 const VERSION: &str = "1.0.0";
+
+#[tauri::command]
+async fn api_url() -> String {
+    API_URL.to_string()
+}
 
 #[tauri::command]
 async fn check_update(_app: tauri::AppHandle) -> Result<serde_json::Value, String> {

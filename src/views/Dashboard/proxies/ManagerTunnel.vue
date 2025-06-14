@@ -1,9 +1,9 @@
 <template>
   <div class="proxies">
-    <NCard title="隧道管理">
+    <NCard title="隧道管理" class="tunnel-manager-card">
       <div class="toolbar">
         <div class="search-box">
-          <NInput v-model:value="searchText" placeholder="搜索隧道..." clearable>
+          <NInput v-model:value="searchText" placeholder="搜索隧道..." clearable size="medium">
             <template #prefix>
               <NIcon>
                 <SearchOutline />
@@ -14,7 +14,7 @@
 
         <div class="toolbar-right">
           <NButtonGroup>
-            <NButton :type="viewMode === 'grid' ? 'primary' : 'default'" @click="viewMode = 'grid'">
+            <NButton :type="viewMode === 'grid' ? 'primary' : 'default'" @click="viewMode = 'grid'" size="medium">
               <template #icon>
                 <NIcon>
                   <GridOutline />
@@ -22,7 +22,7 @@
               </template>
               <span class="view-text">网格</span><span class="view-suffix">视图</span>
             </NButton>
-            <NButton :type="viewMode === 'list' ? 'primary' : 'default'" @click="viewMode = 'list'">
+            <NButton :type="viewMode === 'list' ? 'primary' : 'default'" @click="viewMode = 'list'" size="medium">
               <template #icon>
                 <NIcon>
                   <ListOutline />
@@ -32,7 +32,7 @@
             </NButton>
           </NButtonGroup>
 
-          <NButton secondary @click="handleRefresh">
+          <NButton secondary @click="handleRefresh" size="medium">
             <template #icon>
               <NIcon>
                 <RefreshOutline />
@@ -45,108 +45,127 @@
       <!-- 网格视图 -->
       <div v-if="viewMode === 'grid'" class="proxy-grid">
         <template v-if="filteredProxies.length">
-          <NCard v-for="proxy in filteredProxies" :key="proxy.proxyId" class="proxy-card">
-            <div class="proxy-header">
-              <h3 class="proxy-title">
-              隧道: {{ proxy.proxyName }}
-              </h3>
-              <div class="status-tags">
-                <NTag :type="proxy.isOnline ? 'success' : 'error'" size="small">
-                  {{ proxy.isOnline ? '在线' : '离线' }}
-                </NTag>
-                <NTag v-if="proxy.is_banned" type="error" size="small" style="margin-left: 4px">
-                  已封禁
-                </NTag>
-                <NTag v-if="proxy.isDisabled" type="warning" size="small" style="margin-left: 4px">
-                  已禁用
-                </NTag>
+          <NCard v-for="proxy in filteredProxies" :key="proxy.proxyId" class="tunnel-card" hoverable>
+            <template #header>
+              <div class="tunnel-header">
+                <NText class="tunnel-title" strong>
+                  隧道: {{ proxy.proxyName }}
+                </NText>
+                <NSpace size="small">
+                  <NTag :type="proxy.isOnline ? 'success' : 'error'" size="small" round>
+                    {{ proxy.isOnline ? '在线' : '离线' }}
+                  </NTag>
+                  <NTag v-if="!node.status" type="error" size="small" round>
+                    节点离线
+                  </NTag>
+                  <NTag v-if="proxy.is_banned" type="error" size="small" round>
+                    已封禁
+                  </NTag>
+                  <NTag v-if="proxy.isDisabled" type="warning" size="small" round>
+                    已禁用
+                  </NTag>
+                </NSpace>
               </div>
-            </div>
-            <div class="proxy-info">
-              <div class="info-item">
-                <span class="label">ID:</span>
-                <span class="value">
-                  <NTag type="info" size="small"># {{ proxy.proxyId }}</NTag>
-                </span>
-              </div>
-              <div class="info-item">
-                <span class="label">协议:</span>
-                <NTag :type="proxy.proxyType === 'http' || proxy.proxyType === 'https' ? 'warning' : 'success'" size="small">
-                  <span class="value">{{ proxy.proxyType.toUpperCase() }}</span>
-                </NTag>
-              </div>
-              <div class="info-item">
-                <span class="label">
-                  {{ proxy.proxyType === 'http' || proxy.proxyType === 'https' ? '绑定域名：' : '远程端口：' }}
-                </span>
-                <span class="value">
-                  <div v-if="proxy.proxyType === 'http' || proxy.proxyType === 'https'" class="remote-port">
-                    <div v-for="domain in JSON.parse(proxy.domain || '[]')" :key="domain" class="domain">
-                      <NTag type="info" size="small" style="cursor: pointer"
-                            @click="() => openUrl(proxy.proxyType, domain)">
+            </template>
+            
+            <NSpace vertical size="medium">
+              <NDescriptions :column="1" size="small" label-placement="left">
+                <NDescriptionsItem label="ID">
+                  <NTag type="info" size="small" round># {{ proxy.proxyId }}</NTag>
+                </NDescriptionsItem>
+                <NDescriptionsItem label="协议">
+                  <NTag :type="proxy.proxyType === 'http' || proxy.proxyType === 'https' ? 'warning' : 'success'" size="small" round>
+                    {{ proxy.proxyType.toUpperCase() }}
+                  </NTag>
+                </NDescriptionsItem>
+                <NDescriptionsItem :label="proxy.proxyType === 'http' || proxy.proxyType === 'https' ? '绑定域名' : '远程端口'">
+                  <div v-if="proxy.proxyType === 'http' || proxy.proxyType === 'https'">
+                    <NSpace size="small" wrap>
+                      <NTag 
+                        v-for="domain in JSON.parse(proxy.domain || '[]')" 
+                        :key="domain" 
+                        type="info" 
+                        size="small" 
+                        round
+                        style="cursor: pointer"
+                        @click="() => openUrl(proxy.proxyType, domain)"
+                      >
                         {{ domain }}
                       </NTag>
-                    </div>
+                    </NSpace>
                   </div>
-                  <template v-else>{{ proxy.remotePort }}</template>
-                </span>
-              </div>
-              <div class="info-item" style="display: flex; align-items: flex-start">
-                <span class="label">节点：</span>
-                <span class="value" style="flex: 1; word-break: break-all;">{{ getNodeLabel(proxy.nodeId) }}</span>
-              </div>
-            </div>
-            <div class="proxy-actions">
-              <NDropdown :options="dropdownOptions(proxy)" @select="key => handleSelect(key, proxy)" trigger="click">
-                <NButton secondary size="small">
-                  <template #icon>
-                    <NIcon>
-                      <BuildOutline />
-                    </NIcon>
-                  </template>
-                  更多
-                </NButton>
-              </NDropdown>
-              <NSwitch :loading :value="proxy.isOnline" @click="handleStarProxy(proxy)" style="margin-top: 2px;" />
-            </div>
+                  <NText v-else>{{ proxy.remotePort }}</NText>
+                </NDescriptionsItem>
+                <NDescriptionsItem label="节点">
+                  <NText depth="3">{{ getNodeLabel(proxy.nodeId) }}</NText>
+                </NDescriptionsItem>
+              </NDescriptions>
+            </NSpace>
+
+            <template #action>
+              <NSpace justify="space-between" align="center">
+                <NDropdown :options="dropdownOptions(proxy)" @select="key => handleSelect(key, proxy)" trigger="click">
+                  <NButton secondary size="small">
+                    <template #icon>
+                      <NIcon>
+                        <BuildOutline />
+                      </NIcon>
+                    </template>
+                    更多
+                  </NButton>
+                </NDropdown>
+                <NSwitch 
+                  :disabled="!node.status" 
+                  :loading 
+                  :value="proxy.isOnline" 
+                  @click="handleStarProxy(proxy)"
+                  size="medium"
+                />
+              </NSpace>
+            </template>
           </NCard>
         </template>
-        <NEmpty v-else description="暂无隧道" class="no-data">
-          <template #extra>
-            <NButton secondary @click="() => router.push('/dashboard/proxy/create')">
-              <template #icon>
-                <NIcon>
-                  <AddOutline />
-                </NIcon>
-              </template>
-              创建
-            </NButton>
-          </template>
-        </NEmpty>
+        <div v-else class="empty-state">
+          <NEmpty description="暂无隧道" size="large">
+            <template #extra>
+              <NButton type="primary" @click="() => router.push('/dashboard/proxy/create')">
+                <template #icon>
+                  <NIcon>
+                    <AddOutline />
+                  </NIcon>
+                </template>
+                创建隧道
+              </NButton>
+            </template>
+          </NEmpty>
+        </div>
       </div>
 
       <!-- 列表视图 -->
       <template v-else>
-        <NDataTable v-if="filteredProxies.length" :columns="columns" :data="filteredProxies" :style="{
-          '.n-data-table-td': {
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxWidth: '200px'
-          }
-        }" />
-        <NEmpty v-else description="暂无隧道" class="no-data">
-          <template #extra>
-            <NButton secondary @click="() => router.push('/proxy/create')">
-              <template #icon>
-                <NIcon>
-                  <AddOutline />
-                </NIcon>
-              </template>
-              创建
-            </NButton>
-          </template>
-        </NEmpty>
+        <NDataTable 
+          v-if="filteredProxies.length" 
+          :columns="columns" 
+          :data="filteredProxies"
+          :bordered="false"
+          :single-line="false"
+          size="medium"
+          class="tunnel-table"
+        />
+        <div v-else class="empty-state">
+          <NEmpty description="暂无隧道" size="large">
+            <template #extra>
+              <NButton type="primary" @click="() => router.push('/proxy/create')">
+                <template #icon>
+                  <NIcon>
+                    <AddOutline />
+                  </NIcon>
+                </template>
+                创建隧道
+              </NButton>
+            </template>
+          </NEmpty>
+        </div>
       </template>
     </NCard>
 
@@ -159,101 +178,81 @@
         'proxy-detail-container': selectedProxy.proxyType === 'http' || selectedProxy.proxyType === 'https'
       }">
         <div class="proxy-detail-left">
-          <div class="modal-info-item">
-            <span class="label">状态：</span>
-            <NTag :type="selectedProxy.isOnline ? 'success' : 'error'" size="small">
-              {{ selectedProxy.isOnline ? '在线' : '离线' }}
-            </NTag>
-            <NTag v-if="selectedProxy.is_banned" type="error" size="small" style="margin-left: 8px">
-              已封禁
-            </NTag>
-          </div>
-          <div class="modal-info-item">
-            <span class="label">隧道名称：</span>
-            <span class="value">{{ selectedProxy.proxyName }}</span>
-          </div>
-          <div class="modal-info-item">
-            <span class="label">协议类型：</span>
-            <span class="value">{{ selectedProxy.proxyType.toUpperCase() }}</span>
-          </div>
-          <div class="modal-info-item">
-            <span class="label">本地端口：</span>
-            <span class="value">{{ selectedProxy.localPort }}</span>
-          </div>
-          <div class="modal-info-item">
-            <span class="label">本地地址：</span>
-            <span class="value">{{ selectedProxy.localIp }}</span>
-          </div>
-          <div class="modal-info-item">
-            <span class="label">节点名称：</span>
-            <span class="value">{{ getNodeLabel(selectedProxy.nodeId).split(' - ')[1] }}</span>
-          </div>
-          <template v-if="selectedProxy.proxyType === 'http' || selectedProxy.proxyType === 'https'">
-            <div class="modal-info-item">
-              <span class="label">绑定域名：</span>
-              <span class="value">
-                <NTag size="small" v-for="domain in JSON.parse(selectedProxy.domain || '[]')" :key="domain" type="info"
-                      style="cursor: pointer; margin-right: 8px" @click="selectedProxy && openUrl(selectedProxy.proxyType, domain)">
+          <NDescriptions :column="1" size="medium" label-placement="left" bordered>
+            <NDescriptionsItem label="状态">
+              <NSpace size="small">
+                <NTag :type="selectedProxy.isOnline ? 'success' : 'error'" size="small" round>
+                  {{ selectedProxy.isOnline ? '在线' : '离线' }}
+                </NTag>
+                <NTag v-if="selectedProxy.is_banned" type="error" size="small" round>
+                  已封禁
+                </NTag>
+              </NSpace>
+            </NDescriptionsItem>
+            <NDescriptionsItem label="隧道名称">
+              <NText>{{ selectedProxy.proxyName }}</NText>
+            </NDescriptionsItem>
+            <NDescriptionsItem label="协议类型">
+              <NTag type="info" size="small" round>{{ selectedProxy.proxyType.toUpperCase() }}</NTag>
+            </NDescriptionsItem>
+            <NDescriptionsItem label="本地端口">
+              <NText code>{{ selectedProxy.localPort }}</NText>
+            </NDescriptionsItem>
+            <NDescriptionsItem label="本地地址">
+              <NText code>{{ selectedProxy.localIp }}</NText>
+            </NDescriptionsItem>
+            <NDescriptionsItem label="节点名称">
+              <NText>{{ getNodeLabel(selectedProxy.nodeId).split(' - ')[1] }}</NText>
+            </NDescriptionsItem>
+            <NDescriptionsItem v-if="selectedProxy.proxyType === 'http' || selectedProxy.proxyType === 'https'" label="绑定域名">
+              <NSpace size="small" wrap>
+                <NTag 
+                  size="small" 
+                  v-for="domain in JSON.parse(selectedProxy.domain || '[]')" 
+                  :key="domain" 
+                  type="info"
+                  round
+                  style="cursor: pointer" 
+                  @click="selectedProxy && openUrl(selectedProxy.proxyType, domain)"
+                >
                   {{ domain }}
                 </NTag>
-              </span>
-            </div>
-          </template>
-          <template v-else>
-            <div class="modal-info-item">
-              <span class="label">链接地址：</span>
-              <span class="value">
+              </NSpace>
+            </NDescriptionsItem>
+            <NDescriptionsItem v-else label="链接地址">
+              <NText code>
                 {{nodeOptions.find(node => node.value === selectedProxy?.nodeId)?.hostname}}:{{
                   selectedProxy.remotePort
                 }}
-              </span>
-            </div>
-          </template>
-<!--          <div class="modal-info-item">-->
-<!--            <span class="label">上次启动时间：</span>-->
-<!--            <span class="value">{{ selectedProxy.lastStartTime ? formatTime(selectedProxy.lastStartTime) : '从未启动'-->
-<!--              }}</span>-->
-<!--          </div>-->
-<!--          <div class="modal-info-item">-->
-<!--            <span class="label">上次关闭时间：</span>-->
-<!--            <span class="value">{{ selectedProxy.lastCloseTime ? formatTime(selectedProxy.lastCloseTime) : '从未关闭'-->
-<!--              }}</span>-->
-<!--          </div>-->
+              </NText>
+            </NDescriptionsItem>
+          </NDescriptions>
         </div>
         <template v-if="selectedProxy.proxyType === 'http' || selectedProxy.proxyType === 'https'">
           <div class="proxy-detail-right">
-            <div class="modal-info-item">
-              <span class="label">域名解析配置</span>
-              <div class="value" style="margin-top: 16px">
-                <NAlert type="info" style="margin-bottom: 16px">添加以下信息至您的域名解析配置后，服务才会生效。</NAlert>
-                <NTable size="small" :single-line="false"
-                        style="width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  <thead>
-                  <tr>
-                    <th>根域名</th>
-                    <th>主机记录</th>
-                    <th>记录类型</th>
-                    <th>记录值</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  <tr v-for="domain in JSON.parse(selectedProxy.domain || '[]')" :key="domain">
-                    <td style="word-break: break-all; overflow-wrap: break-word;">{{ splitDomain(domain).rootDomain }}
-                    </td>
-                    <td style="word-break: break-all; overflow-wrap: break-word;">{{ splitDomain(domain).host }}</td>
-                    <td style="word-break: break-all; overflow-wrap: break-word;">
-                      {{isIPAddress(nodeOptions.find(n => n.value === selectedProxy?.nodeId)?.hostname || '') ? 'A' :
-                        'CNAME' }}
-                    </td>
-                    <td style="word-break: break-all; overflow-wrap: break-word;">
-                      <NText type="primary">{{nodeOptions.find(n => n.value === selectedProxy?.nodeId || '')?.hostname }}
-                      </NText>
-                    </td>
-                  </tr>
-                  </tbody>
-                </NTable>
-              </div>
-            </div>
+            <NCard title="域名解析配置" size="small">
+              <NAlert type="info" style="margin-bottom: 16px">
+                添加以下信息至您的域名解析配置后，服务才会生效。
+              </NAlert>
+              <NDataTable 
+                size="small" 
+                :single-line="false"
+                :data="JSON.parse(selectedProxy.domain || '[]').map(domain => ({
+                  domain,
+                  rootDomain: splitDomain(domain).rootDomain,
+                  host: splitDomain(domain).host,
+                  recordType: isIPAddress(nodeOptions.find(n => n.value === selectedProxy?.nodeId)?.hostname || '') ? 'A' : 'CNAME',
+                  recordValue: nodeOptions.find(n => n.value === selectedProxy?.nodeId || '')?.hostname
+                }))"
+                :columns="[
+                  { title: '根域名', key: 'rootDomain' },
+                  { title: '主机记录', key: 'host' },
+                  { title: '记录类型', key: 'recordType' },
+                  { title: '记录值', key: 'recordValue', render: (row) => h(NText, { type: 'primary', code: true }, { default: () => row.recordValue }) }
+                ]"
+                :bordered="false"
+              />
+            </NCard>
           </div>
         </template>
       </div>
@@ -264,10 +263,12 @@
       <template #header>
         <div>删除确认</div>
       </template>
-      <p>确定要删除此隧道吗？此操作不可恢复。</p>
+      <NText>确定要删除此隧道吗？此操作不可恢复。</NText>
       <template #action>
-        <NButton size="small" @click="showDeleteModal = false">取消</NButton>
-        <NButton size="small" type="error" :loading="loading" @click="handleDeleteConfirm">删除</NButton>
+        <NSpace>
+          <NButton size="small" @click="showDeleteModal = false">取消</NButton>
+          <NButton size="small" type="error" :loading="loading" @click="handleDeleteConfirm">删除</NButton>
+        </NSpace>
       </template>
     </NModal>
 
@@ -286,10 +287,12 @@
         </NFormItem>
         <NFormItem v-if="editForm.proxyType !== 'http' && editForm.proxyType !== 'https'" label="远程端口"
                    path="remotePort">
-          <NInputNumber v-model:value="editForm.remotePort" :min="1" :max="65535" placeholder="请输入远程端口" />
-          <NButton size="medium" :loading="gettingFreePort" @click="handleGetFreePortForEdit">
-            获取空闲端口
-          </NButton>
+          <NSpace>
+            <NInputNumber v-model:value="editForm.remotePort" :min="1" :max="65535" placeholder="请输入远程端口" />
+            <NButton size="medium" :loading="gettingFreePort" @click="handleGetFreePortForEdit">
+              获取空闲端口
+            </NButton>
+          </NSpace>
         </NFormItem>
         <NFormItem v-if="editForm.proxyType === 'http' || editForm.proxyType === 'https'" label="绑定域名" path="domain">
           <NDynamicTags v-model:value="domainTags" :render-tag="renderDomainTag" @update:value="handleDomainsUpdate" />
@@ -317,7 +320,7 @@
           ]" placeholder="Proxy Protocol Version" />
         </NFormItem>
         <NFormItem label="其他选项">
-          <div style="display: flex; gap: 16px;">
+          <NSpace>
             <NSwitch v-model:value="editForm.use_encryption" :rail-style="switchButtonRailStyle">
               <template #checked>启用加密</template>
               <template #unchecked>禁用加密</template>
@@ -326,12 +329,14 @@
               <template #checked>启用压缩</template>
               <template #unchecked>禁用压缩</template>
             </NSwitch>
-          </div>
+          </NSpace>
         </NFormItem>
       </NForm>
       <template #action>
-        <NButton size="small" @click="showEditModal = false">取消</NButton>
-        <NButton size="small" type="primary" :loading="loading" @click="handleEditSubmit">确定</NButton>
+        <NSpace>
+          <NButton size="small" @click="showEditModal = false">取消</NButton>
+          <NButton size="small" type="primary" :loading="loading" @click="handleEditSubmit">确定</NButton>
+        </NSpace>
       </template>
     </NModal>
 
@@ -342,8 +347,10 @@
       </template>
       <div>{{ toggleModalContent }}</div>
       <template #action>
-        <NButton size="small" @click="showToggleModal = false">取消</NButton>
-        <NButton size="small" type="primary" :loading="loading" @click="handleToggleConfirm">确定</NButton>
+        <NSpace>
+          <NButton size="small" @click="showToggleModal = false">取消</NButton>
+          <NButton size="small" type="primary" :loading="loading" @click="handleToggleConfirm">确定</NButton>
+        </NSpace>
       </template>
     </NModal>
   </div>
@@ -355,10 +362,10 @@ import {
   NCard, NButton, NButtonGroup, NTag, NDataTable, NTable, NSpace, NIcon,
   NModal, NInput, NDropdown, NForm, NFormItem, NSelect, NInputNumber,
   useMessage, type FormInst, type FormRules, NDivider, NSwitch, NText,
-  NEmpty, NAlert, NDynamicTags
+  NEmpty, NAlert, NDynamicTags, NDescriptions, NDescriptionsItem
 } from 'naive-ui'
 import { GridOutline, ListOutline, BuildOutline, RefreshOutline, SearchOutline, InformationCircleOutline, CreateOutline, TrashOutline, PowerOutline, AddOutline, CopyOutline, DocumentOutline, EllipsisHorizontalCircleOutline } from '@vicons/ionicons5'
-import type { Proxy} from '../../../types'
+import type { Node, Proxy} from '../../../types'
 import { switchButtonRailStyle } from '../../../constants/theme'
 import { useRouter } from 'vue-router'
 import {userApi} from "../../../net";
@@ -390,6 +397,7 @@ const proxies = ref<Proxy[]>([])
 const viewMode = ref<'grid' | 'list'>('grid')
 const searchText = ref('')
 const nodeOptions = ref<{ label: string; value: number; hostname: string }[]>([])
+const node = ref<Node | null>(null)
 const showModal = ref(false)
 const selectedProxy = ref<Proxy | null>(null)
 const showEditModal = ref(false)
@@ -512,6 +520,7 @@ const fetchNodes = async () => {
           value: node.nodeId,
           hostname: node.hostname
         }))
+        node.value = data.data
       } else {
         message.error('获取节点列表失败')
       }
@@ -528,8 +537,12 @@ const getNodeLabel = (nodeId: number) => {
 }
 
 // 初始化数据
-fetchNodes()
-handleRefresh()
+const fetchNodesAndRefresh = async () => {
+  await fetchNodes()
+  await handleRefresh()
+}
+
+fetchNodesAndRefresh()
 
 function renderIcon(icon: any) {
   return () => h(NIcon, null, { default: () => h(icon) })
@@ -620,8 +633,8 @@ const handleToggleConfirm = async () => {
     }, (messageText) => {
       message.error(messageText || '操作失败')
     })
-  } catch (error: any) {
-    message.error(error?.response?.data?.message || '操作失败')
+  } catch (error) {
+    message.error(error)
   } finally {
     loading.value = false
     showToggleModal.value = false
@@ -791,7 +804,7 @@ const renderDomainTag = (tag: string) => {
   return h(
       NTag,
       {
-        round: false,
+        round: true,
         closable: true,
         style: 'cursor: pointer',
         onClose: () => {
@@ -849,35 +862,35 @@ const columns = [
     title: 'ID',
     key: 'proxyId',
     render(row) {
-      return h(NTag, { type: 'info', size: 'medium' }, { default: () => `# ${row.proxyId}` })
+      return h(NTag, { type: 'info', size: 'medium', round: true }, { default: () => `# ${row.proxyId}` })
     }
   },
   {
     title: '名称',
     key: 'proxyName',
     render(row) {
-      return h('div', { style: 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' }, row.proxyName)
+      return h(NText, { style: 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' }, { default: () => row.proxyName })
     }
   },
   {
     title: '类型',
     key: 'proxyType',
     render(row) {
-      return h('div', { style: 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' }, row.proxyType.toUpperCase())
+      return h(NTag, { size: 'small', round: true }, { default: () => row.proxyType.toUpperCase() })
     }
   },
   {
     title: '远程端口',
     key: 'remotePort',
     render(row) {
-      return h('div', { style: 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' }, row.remotePort)
+      return h(NText, { code: true }, { default: () => row.remotePort })
     }
   },
   {
     title: '节点',
     key: 'nodeId',
     render(row) {
-      return h('div', { style: 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' }, getNodeLabel(row.nodeId))
+      return h(NText, { depth: 3, style: 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' }, { default: () => getNodeLabel(row.nodeId) })
     }
   },
   {
@@ -888,15 +901,18 @@ const columns = [
         default: () => [
           h(NTag, {
             type: row.isOnline ? 'success' : 'error',
-            size: 'small'
+            size: 'small',
+            round: true
           }, { default: () => row.isOnline ? '在线' : '离线' }),
           row.isBanned && h(NTag, {
             type: 'error',
-            size: 'small'
+            size: 'small',
+            round: true
           }, { default: () => '已封禁' }),
           row.isDisabled && h(NTag, {
             type: 'warning',
-            size: 'small'
+            size: 'small',
+            round: true
           }, { default: () => '已禁用' })
         ].filter(Boolean)
       })
@@ -925,6 +941,10 @@ const columns = [
   }
 ]
 const handleStarProxy = async (proxy: Proxy) => {
+  if (!node.value?.status) {
+    message.error('节点离线，请先启用节点后再操作');
+    return
+  }
   if (proxy.isDisabled) {
     message.error('此隧道已被禁用，请先启用后再操作');
     return
@@ -943,7 +963,7 @@ const handleStarProxy = async (proxy: Proxy) => {
       }
       setTimeout(() => {
         handleRefresh();
-        if (!proxy.isOnline) {
+        if (proxy.isOnline) {
           message.success('隧道启动成功');
         } else {
           message.error('隧道启动失败，请检查配置或网络连接');
@@ -971,160 +991,123 @@ const handleStarProxy = async (proxy: Proxy) => {
 }
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
+.tunnel-manager-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
 
-@use '../../../assets/styles/variables' as *;
+.toolbar {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
 
-.proxies {
-  .toolbar {
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
+.search-box {
+  flex: 1;
+  min-width: 200px;
+}
 
-    .search-box {
-      flex: 1;
-    }
+.toolbar-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
+}
 
-    .toolbar-right {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-shrink: 0;
-    }
-  }
+.proxy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  min-height: 200px;
+}
 
-  .proxy-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(254px, 1fr));
-    gap: 16px;
-    min-height: 200px;
+.tunnel-card {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
 
-    &:empty,
-    > .no-data:only-child {
-      grid-column: 1 / -1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-  }
+.tunnel-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
 
-  .proxy-card {
-    position: relative;
-    padding-bottom: 48px;
+.tunnel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
 
-    .proxy-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
+.tunnel-title {
+  font-size: 16px;
+  font-weight: 600;
+  flex: 1;
+  word-break: break-word;
+}
 
-      h3 {
-        margin: 0;
-        font-size: 16px;
-      }
-    }
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
 
-    .proxy-info {
-      .info-item {
-        display: flex;
-        margin-bottom: 8px;
-        align-items: center;
-
-        .label {
-          color: $text-color-2;
-          width: 80px;
-        }
-
-        .value {
-          flex: 1;
-        }
-      }
-    }
-
-    .proxy-actions {
-      position: absolute;
-      bottom: 22px;
-      left: 0;
-      right: 8px;
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      padding: 0 16px;
-      background: $bg-color;
-    }
-  }
-
-  .action-btn {
-    margin-right: 8px;
-
-    &:last-child {
-      margin-right: 0;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .toolbar {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
-
-      .toolbar-right {
-        justify-content: space-between;
-      }
-    }
-
-    .proxy-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 387px) {
-    .view-suffix {
-      display: none;
-    }
-  }
+.tunnel-table {
+  border-radius: 8px;
 }
 
 .proxy-detail-container {
   display: flex;
   gap: 24px;
+}
 
-  @media (max-width: 768px) {
+.proxy-detail-left {
+  flex: 1.2;
+}
+
+.proxy-detail-right {
+  flex: 1.5;
+  min-width: 300px;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .toolbar-right {
+    justify-content: space-between;
+  }
+
+  .proxy-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .proxy-detail-container {
     flex-direction: column;
   }
 
-  .proxy-detail-left {
-    flex: 1.2;
-  }
-
   .proxy-detail-right {
-    flex: 1.5;
-    min-width: 300px;
+    min-width: unset;
+  }
 
-    @media (max-width: 768px) {
-      min-width: unset;
-    }
+  .view-suffix {
+    display: none;
   }
 }
 
-.modal-info-item {
-  margin-bottom: 12px;
-
-  .label {
-    color: $text-color-2;
-    margin-right: 8px;
-  }
-}
-
-.no-data {
-  margin: 48px 0;
-  width: 100%;
-  text-align: center;
-  
-  :deep(.n-empty) {
-    font-size: 0.95rem;
+@media (max-width: 480px) {
+  .tunnel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 </style>

@@ -2,20 +2,39 @@ import axios from 'axios';
 import { Window } from '../types'
 import { invoke } from '@tauri-apps/api/core';
 
+const apiUrl = await invoke<string>('api_url');
+
+const updateInfo = await invoke<{
+    code: number;
+    message: string | null;
+    data: {
+      current_version: string;
+      latest_info: {
+        data: any
+        version: string;
+        download_url: string;
+        release_notes: string;
+        force_update: boolean;
+      };
+      needs_update: boolean;
+    };
+  }>('check_update');
+
 const api = axios.create({
-    baseURL: 'http://localhost:8081/',
+    baseURL: apiUrl,
     headers: {
         //* NOTE: defalut content-type is set
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'ClientVersion': updateInfo.data.current_version,
+        'Client': 'LingYunFrpClient'
     }
 });
 
 const defaultFailure = (messageText: string) => {
     //! TODO: only console warning, don't show message here
-    window.$message?.warning(`${messageText}`);
+    window.$message?.warning(messageText);
     window.$loadingBar?.error();
 };
-
 
 const defaultError = (err: any) => {
     //! TODO: only console error, don't show message here

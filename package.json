@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "title": "LingYunFRP",
+  "title2": "凌云FRP",
   "url": "https://www.lyfrp.cn",
   "scripts": {
     "dev": "vite",
