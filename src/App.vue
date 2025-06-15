@@ -69,8 +69,11 @@ const checkForUpdates = async () => {
   try {
     updateCheckInProgress.value = true
     const clientVersion = await invoke<string>('get_client_version')
-    
-    userApi.get('/frp/updates/latest', accessHandle(), (data: any) => {
+    const systemInfo = await invoke<string>('get_system_info');
+    let system = systemInfo.split(' ')[0];
+    let arch = systemInfo.split(' ')[1];
+    console.log(`客户端版本: ${clientVersion}, 系统: ${system}, 架构: ${arch}`);
+    userApi.get(`/frp/updates/latest?software=LingYunFrpClient&system=${system}&arch=${arch}&version=${clientVersion}`, accessHandle(), (data: any) => {
       if (data.data.latest_info.version !== clientVersion && !hasShownUpdateNotification.value) {
         // 只在页面刷新时显示通知
         if (performance.navigation.type === 1) {

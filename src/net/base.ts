@@ -2,7 +2,6 @@ import { Window } from '../types'
 import { invoke } from '@tauri-apps/api/core';
 
 const clientVersion = await invoke<string>('get_client_version');
-
 const defaultFailure = (messageText: string) => {
     //! TODO: only console warning, don't show message here
     window.$message?.warning(messageText);
@@ -73,7 +72,7 @@ function post(url: string, data: any, headers: Record<string, string | number>, 
         ...headers,
         'ClientVersion': clientVersion,
         'Client': 'LingYunFrpClient',
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
     }
     // 通过 Tauri 后端转发请求
     invoke('forward_request', {

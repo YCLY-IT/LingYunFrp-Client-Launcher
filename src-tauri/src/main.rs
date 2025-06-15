@@ -72,7 +72,8 @@ fn main() {
             open_url,
             api_url,
             forward_request,
-            get_now_mode
+            get_now_mode,
+            get_system_info
         ])
         .setup(|app| {
             // 确保应用数据目录存在
@@ -505,4 +506,28 @@ async fn forward_request(
 #[tauri::command]
 fn get_now_mode() -> bool {
     DEBUG
+}
+
+// 获取当前系统和架构
+#[tauri::command]
+fn get_system_info() -> String {
+    let system = if cfg!(target_os = "windows") {
+        "windows"
+    } else if cfg!(target_os = "macos") {
+        "macos"
+    } else if cfg!(target_os = "linux") {
+        "linux"
+    } else {
+        "unknown"
+    };
+    let arch = if cfg!(target_arch = "x86") {
+        "386"
+    } else if cfg!(target_arch = "x86_64") {
+        "amd64"
+    } else if cfg!(target_arch = "arm") {
+        "arm"
+    } else {
+        "unknown"
+    };
+    format!("{} {}", system, arch)
 }
