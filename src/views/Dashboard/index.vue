@@ -188,6 +188,8 @@ const getHitokoto = async (): Promise<void> => {
   userApi.getHitokoto({}, (data) => {
     textHitokoto.value = data.hitokoto
     loading.value = false
+  }, (messageText) => {
+    message.error('获取一言失败:' + messageText)
   })
 }
 

@@ -57,7 +57,6 @@ fn main() {
             toggle_maximize,
             hide_to_tray,
             check_frpc_exists,
-            check_update,
             emit_event,
             get_app_data_dir,
             open_app_data_dir,
@@ -66,11 +65,14 @@ fn main() {
             toggle_auto_start,
             kill_all_processes,
             get_cpl_version,
+            get_client_version,
             start_proxy,
             stop_proxy,
             quit_window,
             open_url,
-            api_url
+            api_url,
+            forward_request,
+            get_now_mode
         ])
         .setup(|app| {
             // 确保应用数据目录存在
@@ -183,32 +185,13 @@ fn check_frpc_exists(app: tauri::AppHandle) -> bool {
 
 const API_URL: &str = "http://localhost:8081/";
 const VERSION: &str = "1.0.0";
+const DEBUG: bool = true;
 
 #[tauri::command]
 async fn api_url() -> String {
     API_URL.to_string()
 }
 
-#[tauri::command]
-async fn check_update(_app: tauri::AppHandle) -> Result<serde_json::Value, String> {
-    let current_version = VERSION;
-    let response = reqwest::get(API_URL.to_string() + "frp/updates/latest")
-        .await
-        .map_err(|e| e.to_string())?
-        .json::<serde_json::Value>()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(serde_json::json!({
-        "code": 0,
-        "message": null,
-        "data": {
-            "current_version": current_version,
-            "latest_info": response,
-            "needs_update": response["version"].as_str() != Some(current_version)
-        }
-    }))
-}
 
 #[command]
 async fn emit_event<R: Runtime>(
@@ -449,9 +432,77 @@ fn get_frpc_cli_version(app: tauri::AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
+async fn get_client_version() -> String {
+    VERSION.to_string()
+}
+
+#[tauri::command]
 fn open_url(url: String) {
     // 使用系统默认浏览器打开URL
     if let Err(e) = open::that(&url) {
         eprintln!("打开浏览器失败: {}", e);
     }
+}
+
+#[tauri::command]
+async fn forward_request(
+    url: String,
+    method: String,
+    data: serde_json::Value,
+    headers: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let client = reqwest::Client::new();
+    // 如果URL已经是完整的URL（以http://或https://开头），则直接使用
+    let api_url = if url.starts_with("http://") || url.starts_with("https://") {
+        url
+    } else {
+        API_URL.to_string() + url.trim_start_matches('/')
+    };
+    
+    let mut request_builder = match method.to_uppercase().as_str() {
+        "POST" => client.post(&api_url),
+        "GET" => client.get(&api_url),
+        _ => return Err("不支持的请求方法".to_string()),
+    };
+
+    // 添加请求头
+    if let Some(headers_map) = headers.as_object() {
+        for (key, value) in headers_map {
+            if let Some(value_str) = value.as_str() {
+                request_builder = request_builder.header(key, value_str);
+            }
+        }
+    }
+
+    // 发送请求
+    let response = match method.to_uppercase().as_str() {
+        "POST" => {
+            request_builder.form(&data).send().await
+        },
+        "GET" => request_builder.send().await,
+        _ => return Err("不支持的请求方法".to_string()),
+    }.map_err(|e| e.to_string())?;
+
+    // 获取响应文本
+    let response_text = response.text().await.map_err(|e| e.to_string())?;
+    
+    // 清理响应文本
+    let cleaned_text = response_text
+        .trim_start_matches('\u{FEFF}')
+        .trim() // 移除首尾空白字符
+        .lines() // 按行分割
+        .filter(|line| !line.trim().is_empty()) 
+        .collect::<Vec<&str>>() 
+        .join("");
+
+    // 尝试解析JSON
+    let response_json = serde_json::from_str(&cleaned_text)
+        .map_err(|e| format!("JSON解析错误: {} - 原始文本: {}", e, cleaned_text))?;
+
+    Ok(response_json)
+}
+
+#[tauri::command]
+fn get_now_mode() -> bool {
+    DEBUG
 }

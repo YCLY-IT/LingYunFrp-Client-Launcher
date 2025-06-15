@@ -194,7 +194,7 @@ const handleCopyToken = async () => {
 const fetchUserInfo = async () => {
     loading.value = true
 
-  userApi.get('/user/info/info', accessHandle(), (data) => {
+  userApi.get('/user/info', accessHandle(), (data) => {
     if (data.code === 0) {
       userInfo.value = data.data
       localStorage.setItem('group', userInfo.value.group)
