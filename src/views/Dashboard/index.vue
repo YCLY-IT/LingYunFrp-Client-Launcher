@@ -22,23 +22,8 @@
     </div>
 
     <!-- 统计卡片 -->
-    <div style="margin-top: 20px;">
-      <n-grid style="margin-top: 15px" cols="1 s:2 m:4" responsive="screen" :x-gap="15" :y-gap="20">
-        <n-gi v-for="(card, index) in cards" :key="index">
-          <n-card :title="card.title" size="small">
-            <n-flex justify="space-between">
-              <n-icon style="margin-top: 5px;" size="32">
-                <component :is="card.icon" />
-              </n-icon>
-              <n-statistic tabular-nums>
-                <template v-if="card.suffix" #suffix>
-                  {{ card.suffix }}
-                </template>
-              </n-statistic>
-            </n-flex>
-          </n-card>
-        </n-gi>
-      </n-grid>
+    <div class="statistic-container">
+      <Statistic :signRemainder="userInfoRef?.userInfo.signRemainder" ref="statisticRef" />
     </div>
 
     <!-- 内容面板 -->
@@ -73,7 +58,6 @@ import { userApi } from "../../net"
 import { accessHandle } from "../../net/base"
 import UserInfo from "../../components/UserInfo.vue"
 import { Traffic } from '../../types/User'
-import { ArrowDownCircleOutline, ArrowUpCircleOutline, BarChartOutline, CalendarOutline, GlobeOutline } from '@vicons/ionicons5'
 
 const router = useRouter()
 const message = useMessage()
@@ -106,42 +90,6 @@ const forTime = computed(() => {
   }
 })
 
-// 格式化流量
-const formatTraffic = (traffic: number) => {
-  if (isNaN(traffic)) return traffic
-  if (traffic >= 1024) {
-    return `${(traffic / 1024).toFixed(2)} GB`
-  }
-  return `${traffic.toFixed(2)} MB`
-}
-
-// 卡片数据
-const cards = computed(() => [
-  {
-    title: '总流量',
-    icon: markRaw(GlobeOutline),
-    precision: 2,
-    suffix: formatTraffic(traffic.value.allTraffic || 0),
-  },
-  {
-    title: '总使用',
-    icon: markRaw(ArrowDownCircleOutline),
-    precision: 2,
-    suffix: formatTraffic(traffic.value.allUsedTraffic || 0),
-  },
-  {
-    title: '今日使用',
-    icon: markRaw(BarChartOutline),
-    precision: 2,
-    suffix: formatTraffic(traffic.value.todayUsedTraffic || 0),
-  },
-  {
-    title: '签到次数',
-    icon: markRaw(CalendarOutline),
-    precision: 2,
-    suffix: userInfoRef.value?.userInfo.signRemainder,
-  }
-])
 
 // 配置 marked
 marked.setOptions({
@@ -192,7 +140,6 @@ const getHitokoto = async (): Promise<void> => {
     message.error('获取一言失败:' + messageText)
   })
 }
-
 // 获取用户流量
 const getUserTraffic = async (): Promise<void> => {
   userApi.get('/user/info/traffic', accessHandle(), (data) => {

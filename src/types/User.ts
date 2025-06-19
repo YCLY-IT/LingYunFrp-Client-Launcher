@@ -69,3 +69,9 @@ export interface DownloadSource {
     allTraffic: number
   }
 
+  export interface TrafficType {
+    todayUsedTraffic: number
+    allUsedTraffic: number
+    allTraffic: number
+  }
+

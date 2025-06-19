@@ -22,6 +22,7 @@ declare module 'vue' {
     NLayoutHeader: typeof import('naive-ui')['NLayoutHeader']
     NLayoutSider: typeof import('naive-ui')['NLayoutSider']
     NModal: typeof import('naive-ui')['NModal']
+    NNumberAnimation: typeof import('naive-ui')['NNumberAnimation']
     NSkeleton: typeof import('naive-ui')['NSkeleton']
     NSpace: typeof import('naive-ui')['NSpace']
     NStatistic: typeof import('naive-ui')['NStatistic']
@@ -32,6 +33,7 @@ declare module 'vue' {
     ResetPassword: typeof import('./src/components/ResetPassword.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Statistic: typeof import('./src/components/Statistic.vue')['default']
     TopMenu: typeof import('./src/components/TopMenu.vue')['default']
     UserInfo: typeof import('./src/components/UserInfo.vue')['default']
   }

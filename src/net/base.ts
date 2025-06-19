@@ -72,7 +72,6 @@ function post(url: string, data: any, headers: Record<string, string | number>, 
         ...headers,
         'ClientVersion': clientVersion,
         'Client': 'LingYunFrpClient',
-        'Content-Type': 'application/x-www-form-urlencoded',
     }
     // 通过 Tauri 后端转发请求
     invoke('forward_request', {
