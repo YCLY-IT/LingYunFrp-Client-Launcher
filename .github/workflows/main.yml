@@ -1,0 +1,70 @@
+name: Tauri Windows客户端构建
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: '构建类型'
+        required: true
+        default: 'release'
+        options:
+          - release
+          - debug
+      arch:
+        description: '架构'
+        required: true
+        default: 'x64'
+        options:
+          - x64
+          - x86
+          - arm64
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        
+      - name: 设置Node.js 22环境
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+          
+      - name: 安装依赖（解决Node.js 22兼容性）
+        run: |
+          npm config set msvs_version 2019
+          npm install --no-audit --omit=dev --force
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+          npm_config_force: true
+          
+      - name: 构建Vue前端（TypeScript）
+        run: |
+          npm run build
+        working-directory: src/vue-app  # 假设Vue项目在src/vue-app目录
+          
+      - name: 安装Tauri CLI
+        run: |
+          npm install -g @tauri-apps/cli
+          
+      - name: 构建Tauri Windows客户端
+        run: |
+          tauri build --target ${ { github.event.inputs.arch == 'x64' ? 'x86_64-pc-windows-msvc' : (github.event.inputs.arch == 'x86' ? 'i686-pc-windows-msvc' : 'aarch64-pc-windows-msvc') } } --release ${ { github.event.inputs.build_type == 'release' } }
+        env:
+          TAURI_PLATFORM: windows
+          # 配置打包信息（可选）
+          TAURI_APP_NAME: "MyTauriApp"
+          TAURI_APP_VERSION: "1.0.0"
+          
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-windows-${{ github.event.inputs.arch }}-${{ github.event.inputs.build_type }}
+          path: |
+            dist/windows/*.msi
+            dist/windows/*.exe
+            dist/windows/*.zip
+          retention-days: 14
