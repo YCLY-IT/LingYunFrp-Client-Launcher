@@ -1,91 +1,57 @@
-name: 构建 Windows 64 位可执行文件
+name: Build Windows x64 (Node.js 22)
 
 on:
-  workflow_dispatch:
-    inputs:
-      build_type:
-        type: choice
-        description: "选择构建类型"
-        options:
-          - 开发版（Debug）
-          - 发布版（Release）
-        default: 发布版（Release）
-      arch:
-        type: choice
-        description: "选择架构"
-        options:
-          - x64
-          - x86
-        default: x64
+  workflow_dispatch:  # 仅手动触发
+
+env:
+  TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+  TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
 jobs:
-  build:
-    runs-on: windows-latest
-    env:
-      Tauri_ARCH: ${{ github.event.inputs.arch == 'x64' && 'x64' || 'x86' }}
-      Tauri_PLATFORM: windows
-      NODE_OPTIONS: --max-old-space-size=4096
-      TAURI_BUILD_TYPE: ${{ github.event.inputs.build_type == '发布版（Release）' && 'release' || 'debug' }}
+  build-windows:
+    name: Build Windows x64 Executable
+    runs-on: windows-latest  # Windows 构建环境
 
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4  # 改为 v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: 设置 Node.js 22
-        uses: actions/setup-node@v4  # 改为 v4
+      # 设置 Node.js 22
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: "22"
           cache: 'npm'
-          cache-dependency-path: 'package-lock.json'
-          registry-url: https://registry.npmmirror.com
 
-      # 其余步骤保持不变...
-      - name: 安装前端依赖
-        run: npm install
-        working-directory: .
+      # 安装 Rust (Windows x64 工具链)
+      - name: Install Rust (x86_64-pc-windows-msvc)
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          target: x86_64-pc-windows-msvc  # Windows 64位目标
+          override: true
 
-      - name: 安装 Tauri 构建工具
-        run: |
-          cd src-tauri
-          cargo install cargo-bundle
-          cargo install tauri-cli
-        working-directory: .
+      # 安装 Tauri CLI
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli
 
-      - name: 构建前端应用
+      # 安装依赖
+      - name: Install dependencies
+        run: npm ci
+
+      # 构建前端
+      - name: Build frontend
         run: npm run build
-        working-directory: .
 
-      - name: 构建 Tauri 应用（Windows ${{ github.event.inputs.arch }}）
-        run: |
-          cd src-tauri
-          $target = "${{ github.event.inputs.arch == 'x64' && 'x86_64-pc-windows-msvc' || 'i686-pc-windows-msvc' }}"
-          if ("$env:TAURI_BUILD_TYPE" -eq "release") {
-            cargo tauri build --target $target --release
-          } else {
-            cargo tauri build --target $target
-          }
-        working-directory: .
-        shell: pwsh
+      # 构建 Tauri 应用 (Windows x64)
+      - name: Build Tauri app (Windows x64)
+        run: npm run tauri build -- --target x86_64-pc-windows-msvc
 
-      - name: 整理构建产物
-        run: |
-          mkdir -p dist/windows-${env:Tauri_ARCH}-${env:TAURI_BUILD_TYPE}
-          cp src-tauri/target/${env:TAURI_BUILD_TYPE}/bundle/exe/*.exe dist/windows-${env:Tauri_ARCH}-${env:TAURI_BUILD_TYPE}/
-        working-directory: .
-        shell: bash
-
-      - name: 上传构建产物
+      # 上传构建产物 (包含 .exe 和 .msi)
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lingyunfrp-windows-${{ github.event.inputs.arch }}-${{ github.event.inputs.build_type == '发布版（Release）' && 'release' || 'debug' }}
-          path: dist/windows-${{ github.event.inputs.arch == 'x64' && 'x64' || 'x86' }}-${{ github.event.inputs.build_type == '发布版（Release）' && 'release' || 'debug' }}/
-          retention-days: 14
-
-      - name: 输出构建信息
-        run: |
-          echo "构建完成！可执行文件路径：dist/windows-${env:Tauri_ARCH}-${env:TAURI_BUILD_TYPE}/"
-          dir dist/windows-${env:Tauri_ARCH}-${env:TAURI_BUILD_TYPE}/
-        working-directory: .
-        shell: bash
+          name: LingYunFRP-Windows-x64
+          path: |
+            src-tauri/target/x86_64-pc-windows-msvc/release/*.exe
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
