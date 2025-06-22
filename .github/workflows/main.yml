@@ -1,7 +1,6 @@
 name: 构建 Windows 64 位可执行文件
 
 on:
-  # 仅保留手动触发条件
   workflow_dispatch:
     inputs:
       build_type:
@@ -22,20 +21,17 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    # 根据输入参数动态设置环境变量
     env:
-      Tauri_ARCH: ${{ inputs.arch == 'x64' ? 'x64' : 'x86' }}
+      Tauri_ARCH: ${{ github.event.inputs.arch == 'x64' && 'x64' || 'x86' }}
       Tauri_PLATFORM: windows
-      # 增大内存限制，避免构建时内存不足
       NODE_OPTIONS: --max-old-space-size=4096
-      # 动态设置构建类型
-      TAURI_BUILD_TYPE: ${{ inputs.build_type == '发布版（Release）' ? 'release' : 'debug' }}
+      TAURI_BUILD_TYPE: ${{ github.event.inputs.build_type == '发布版（Release）' && 'release' || 'debug' }}
 
     steps:
       - name: 检出代码
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0  # 拉取完整历史，避免部分依赖问题
+          fetch-depth: 0
 
       - name: 设置 Node.js 22
         uses: actions/setup-node@v5
@@ -43,7 +39,7 @@ jobs:
           node-version: 22
           cache: 'npm'
           cache-dependency-path: 'package-lock.json'
-          registry-url: https://registry.npmmirror.com  # 使用国内镜像加速
+          registry-url: https://registry.npmmirror.com
 
       - name: 安装前端依赖
         run: npm install
@@ -60,34 +56,35 @@ jobs:
         run: npm run build
         working-directory: .
 
-      - name: 构建 Tauri 应用（Windows ${{ inputs.arch }}）
+      - name: 构建 Tauri 应用（Windows ${{ github.event.inputs.arch }}）
         run: |
           cd src-tauri
-          # 根据构建类型选择参数
-          if [ "${TAURI_BUILD_TYPE}" == "release" ]; then
-            cargo tauri build --target ${{ inputs.arch == 'x64' ? 'x86_64-pc-windows-msvc' : 'i686-pc-windows-msvc' }} --release
-          else
-            cargo tauri build --target ${{ inputs.arch == 'x64' ? 'x86_64-pc-windows-msvc' : 'i686-pc-windows-msvc' }}
-          fi
+          $target = "${{ github.event.inputs.arch == 'x64' && 'x86_64-pc-windows-msvc' || 'i686-pc-windows-msvc' }}"
+          if ("$env:TAURI_BUILD_TYPE" -eq "release") {
+            cargo tauri build --target $target --release
+          } else {
+            cargo tauri build --target $target
+          }
         working-directory: .
+        shell: pwsh
 
       - name: 整理构建产物
         run: |
-          mkdir -p dist/windows-${TAURI_ARCH}-${TAURI_BUILD_TYPE}
-          cp src-tauri/target/${TAURI_BUILD_TYPE}/bundle/exe/*.exe dist/windows-${TAURI_ARCH}-${TAURI_BUILD_TYPE}/
-          # 可选：复制依赖文件（如有需要）
-          # cp -r src-tauri/target/${TAURI_BUILD_TYPE}/bundle/bin dist/windows-${TAURI_ARCH}-${TAURI_BUILD_TYPE}/bin
+          mkdir -p dist/windows-${env:Tauri_ARCH}-${env:TAURI_BUILD_TYPE}
+          cp src-tauri/target/${env:TAURI_BUILD_TYPE}/bundle/exe/*.exe dist/windows-${env:Tauri_ARCH}-${env:TAURI_BUILD_TYPE}/
         working-directory: .
+        shell: bash
 
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
-          name: lingyunfrp-windows-${{ inputs.arch }}-${{ inputs.build_type == '发布版（Release）' ? 'release' : 'debug' }}
-          path: dist/windows-${TAURI_ARCH}-${TAURI_BUILD_TYPE}/
-          retention-days: 14  # 产物保留14天
+          name: lingyunfrp-windows-${{ github.event.inputs.arch }}-${{ github.event.inputs.build_type == '发布版（Release）' && 'release' || 'debug' }}
+          path: dist/windows-${{ github.event.inputs.arch == 'x64' && 'x64' || 'x86' }}-${{ github.event.inputs.build_type == '发布版（Release）' && 'release' || 'debug' }}/
+          retention-days: 14
 
       - name: 输出构建信息
         run: |
-          echo "构建完成！可执行文件路径：dist/windows-${TAURI_ARCH}-${TAURI_BUILD_TYPE}/"
-          dir dist/windows-${TAURI_ARCH}-${TAURI_BUILD_TYPE}/
+          echo "构建完成！可执行文件路径：dist/windows-${env:Tauri_ARCH}-${env:TAURI_BUILD_TYPE}/"
+          dir dist/windows-${env:Tauri_ARCH}-${env:TAURI_BUILD_TYPE}/
         working-directory: .
+        shell: bash
