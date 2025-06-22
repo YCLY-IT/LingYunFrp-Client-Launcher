@@ -1,28 +1,29 @@
-name: Build Windows x64 (Node.js 22) with Autofix
+name: Tauri Build with AutoFix
 
 on:
-  workflow_dispatch:  # 手动触发
-
+  workflow_dispatch:
+  
 env:
   TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
   TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
 jobs:
   build-windows:
-    name: Build with Autofix
+    name: Build Windows x64
     runs-on: windows-latest
 
     steps:
+      # 1. 检出代码
       - uses: actions/checkout@v4
 
-      # 1. 设置 Node.js 22
-      - name: Setup Node.js 22
+      # 2. 设置 Node.js 22
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: 'npm'
 
-      # 2. 安装 Rust (Windows 工具链)
+      # 3. 安装 Rust 工具链
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -30,28 +31,46 @@ jobs:
           target: x86_64-pc-windows-msvc
           override: true
 
-      # 3. 安装依赖（包含 ESLint）
-      - name: Install dependencies
-        run: |
-          npm ci
-          npm install -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser
-
-      # 4. 自动修复代码（核心步骤）
-      - name: Autofix unused variables
-        run: |
-          npx eslint src --ext .vue,.ts,.tsx --fix --quiet
-          git diff --exit-code || echo "代码已被自动修复"
-
-      # 5. 修复文件名大小写问题
-      - name: Fix filename casing
+      # 4. 核心修复步骤（方案二优化版）
+      - name: AutoFix Code Issues
         shell: pwsh
         run: |
+          # 安装必要的修复工具
+          npm install -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser
+
+          # 创建临时 ESLint 配置（如果项目没有）
+          if (!(Test-Path .eslintrc.js)) {
+            @'
+              module.exports = {
+                extends: ['plugin:@typescript-eslint/recommended'],
+                rules: {
+                  '@typescript-eslint/no-unused-vars': ['warn', { 
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_' 
+                  }]
+                }
+              }
+            '@ | Out-File -FilePath .eslintrc.js -Encoding utf8
+          }
+
+          # 执行自动修复（非阻塞模式）
+          try {
+            npx eslint src --ext .vue,.ts --fix --quiet
+          } catch {
+            Write-Output "自动修复完成（可能存在需要手动处理的问题）"
+          }
+
+          # 处理文件名大小写问题
           if (Test-Path "src/views/Dashboard/Index.vue") {
             Rename-Item "src/views/Dashboard/Index.vue" "index.vue"
           }
 
+      # 5. 安装项目依赖
+      - name: Install Dependencies
+        run: npm ci
+
       # 6. 构建前端
-      - name: Build frontend
+      - name: Build Frontend
         run: npm run build
 
       # 7. 安装 Tauri CLI
@@ -59,11 +78,11 @@ jobs:
         run: npm install -g @tauri-apps/cli
 
       # 8. 构建 Tauri 应用
-      - name: Build Tauri app
+      - name: Build Tauri App
         run: npm run tauri build -- --target x86_64-pc-windows-msvc
 
-      # 9. 上传产物
-      - name: Upload artifacts
+      # 9. 上传制品
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Windows-Build
