@@ -36,16 +36,16 @@ jobs:
         run: npm install -g @tauri-apps/cli
 
       # 修复步骤：处理文件名大小写和TS警告
-      - name: Fix build issues
+    
+      - name: Fix filename casing (PowerShell)
+        shell: pwsh
         run: |
-          # 统一文件名大小写（Index.vue -> index.vue）
-          if exist "src\views\Dashboard\Index.vue" (
-            ren "src\views\Dashboard\Index.vue" index.vue
-          )
-          
-          # 临时修改tsconfig.json放宽检查
-          (Get-Content tsconfig.json) -replace '"noUnusedLocals": true', '"noUnusedLocals": false' | Set-Content tsconfig.json
-          (Get-Content tsconfig.json) -replace '"noUnusedParameters": true', '"noUnusedParameters": false' | Set-Content tsconfig.json
+         if (Test-Path "src/views/Dashboard/Index.vue") {
+          Rename-Item -Path "src/views/Dashboard/Index.vue" -NewName "index.vue"
+         }
+        # 临时修改tsconfig.json放宽检查
+        (Get-Content tsconfig.json) -replace '"noUnusedLocals": true', '"noUnusedLocals": false' | Set-Content tsconfig.json
+        (Get-Content tsconfig.json) -replace '"noUnusedParameters": true', '"noUnusedParameters": false' | Set-Content tsconfig.json
 
       # 安装依赖
       - name: Install dependencies
