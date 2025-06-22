@@ -1,7 +1,7 @@
 name: Build Windows x64 (Node.js 22)
 
 on:
-  workflow_dispatch:  # 仅手动触发
+  workflow_dispatch:  # 手动触发
 
 env:
   TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -10,7 +10,7 @@ env:
 jobs:
   build-windows:
     name: Build Windows x64 Executable
-    runs-on: windows-latest  # Windows 构建环境
+    runs-on: windows-latest  # Windows 环境
 
     steps:
       - uses: actions/checkout@v4
@@ -22,33 +22,24 @@ jobs:
           node-version: "22"
           cache: 'npm'
 
-      # 安装 Rust (Windows x64 工具链)
-      - name: Install Rust (x86_64-pc-windows-msvc)
+      # 安装 Rust (Windows 工具链)
+      - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          profile: minimal
-          target: x86_64-pc-windows-msvc  # Windows 64位目标
+          target: x86_64-pc-windows-msvc
           override: true
 
-      # 安装 Tauri CLI
-      - name: Install Tauri CLI
-        run: npm install -g @tauri-apps/cli
-
-      # 修复步骤：处理文件名大小写和TS警告
-      - name: Fix filename casing and TS config
+      # 核心修复：统一文件名大小写
+      - name: Normalize file casing
         shell: pwsh
         run: |
-          # 修复文件名大小写
-          if (Test-Path "src/views/Dashboard/Index.vue") {
-            Rename-Item -Path "src/views/Dashboard/Index.vue" -NewName "index.vue"
+          # 将 index.vue 临时重命名为 Index.vue（匹配代码中的引用）
+          if (Test-Path "src/views/Dashboard/index.vue") {
+            Rename-Item -Path "src/views/Dashboard/index.vue" -NewName "Index.vue"
           }
-          
-          # 临时修改tsconfig.json放宽检查
-          $tsConfig = Get-Content tsconfig.json -Raw | ConvertFrom-Json
-          $tsConfig.compilerOptions.noUnusedLocals = $false
-          $tsConfig.compilerOptions.noUnusedParameters = $false
-          $tsConfig | ConvertTo-Json -Depth 10 | Set-Content tsconfig.json
+          # 确认修改结果（调试用）
+          Get-ChildItem "src/views/Dashboard/"
 
       # 安装依赖
       - name: Install dependencies
@@ -58,20 +49,15 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      # 构建 Tauri 应用 (Windows x64)
-      - name: Build Tauri app (Windows x64)
+      # 构建 Tauri 应用
+      - name: Build Tauri app
         run: npm run tauri build -- --target x86_64-pc-windows-msvc
 
-      # 恢复原始tsconfig配置（可选）
-      - name: Restore tsconfig
-        run: |
-          git checkout -- tsconfig.json
-
-      # 上传构建产物 (包含 .exe 和 .msi)
+      # 上传构建产物
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: LingYunFRP-Windows-x64
+          name: Windows-Build
           path: |
             src-tauri/target/x86_64-pc-windows-msvc/release/*.exe
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
