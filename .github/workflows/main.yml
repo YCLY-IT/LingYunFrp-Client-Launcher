@@ -1,4 +1,4 @@
-name: Build Windows x64 (Node.js 22)
+name: Build Windows x64 (Node.js 22) with Autofix
 
 on:
   workflow_dispatch:  # 手动触发
@@ -9,20 +9,20 @@ env:
 
 jobs:
   build-windows:
-    name: Build Windows x64 Executable
-    runs-on: windows-latest  # Windows 环境
+    name: Build with Autofix
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      # 设置 Node.js 22
+      # 1. 设置 Node.js 22
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: 'npm'
 
-      # 安装 Rust (Windows 工具链)
+      # 2. 安装 Rust (Windows 工具链)
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -30,30 +30,39 @@ jobs:
           target: x86_64-pc-windows-msvc
           override: true
 
-      # 核心修复：统一文件名大小写
-      - name: Normalize file casing
+      # 3. 安装依赖（包含 ESLint）
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm install -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser
+
+      # 4. 自动修复代码（核心步骤）
+      - name: Autofix unused variables
+        run: |
+          npx eslint src --ext .vue,.ts,.tsx --fix --quiet
+          git diff --exit-code || echo "代码已被自动修复"
+
+      # 5. 修复文件名大小写问题
+      - name: Fix filename casing
         shell: pwsh
         run: |
-          # 将 index.vue 临时重命名为 Index.vue（匹配代码中的引用）
-          if (Test-Path "src/views/Dashboard/index.vue") {
-            Rename-Item -Path "src/views/Dashboard/index.vue" -NewName "Index.vue"
+          if (Test-Path "src/views/Dashboard/Index.vue") {
+            Rename-Item "src/views/Dashboard/Index.vue" "index.vue"
           }
-          # 确认修改结果（调试用）
-          Get-ChildItem "src/views/Dashboard/"
 
-      # 安装依赖
-      - name: Install dependencies
-        run: npm ci
-
-      # 构建前端
+      # 6. 构建前端
       - name: Build frontend
         run: npm run build
 
-      # 构建 Tauri 应用
+      # 7. 安装 Tauri CLI
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli
+
+      # 8. 构建 Tauri 应用
       - name: Build Tauri app
         run: npm run tauri build -- --target x86_64-pc-windows-msvc
 
-      # 上传构建产物
+      # 9. 上传产物
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
