@@ -29,18 +29,19 @@ jobs:
 
     steps:
       - name: 检出代码
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4  # 改为 v4
         with:
           fetch-depth: 0
 
       - name: 设置 Node.js 22
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4  # 改为 v4
         with:
           node-version: 22
           cache: 'npm'
           cache-dependency-path: 'package-lock.json'
           registry-url: https://registry.npmmirror.com
 
+      # 其余步骤保持不变...
       - name: 安装前端依赖
         run: npm install
         working-directory: .
