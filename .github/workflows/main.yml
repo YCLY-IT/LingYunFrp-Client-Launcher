@@ -31,16 +31,16 @@ jobs:
           target: x86_64-pc-windows-msvc
           override: true
 
-      # 4. 核心修复步骤（已修复 Here-String 问题）
+      # 4. 核心修复步骤（修复语法错误版本）
       - name: AutoFix Code Issues
         shell: pwsh
         run: |
           # 安装必要的修复工具
           npm install -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser
 
-          # 更安全的 ESLint 配置生成方式
+          # 生成 ESLint 配置（简化版，避免语法问题）
           if (!(Test-Path .eslintrc.js)) {
-            $eslintConfig = @'
+            @"
 module.exports = {
   extends: ['plugin:@typescript-eslint/recommended'],
   rules: {
@@ -50,16 +50,15 @@ module.exports = {
     }]
   }
 }
-'@
-            $eslintConfig | Out-File -FilePath .eslintrc.js -Encoding utf8
+"@ | Out-File -FilePath .eslintrc.js -Encoding utf8
           }
 
-          # 执行自动修复（非阻塞模式）
-          try {
-            npx eslint src --ext .vue,.ts --fix --quiet
-            Write-Output "✅ 自动修复完成"
-          } catch {
+          # 执行自动修复
+          npx eslint src --ext .vue,.ts --fix --quiet
+          if ($LASTEXITCODE -ne 0) {
             Write-Output "⚠️ 自动修复完成（可能存在需要手动处理的问题）"
+          } else {
+            Write-Output "✅ 自动修复完成"
           }
 
           # 处理文件名大小写问题
