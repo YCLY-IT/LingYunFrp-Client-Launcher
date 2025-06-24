@@ -2,8 +2,6 @@ name: Tauri Cross-Platform Build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 env:
   TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -29,31 +27,31 @@ jobs:
     name: Build ${{ matrix.artifact_name }}
 
     steps:
-      # 1. 检出代码
+      # 1. Checkout code
       - uses: actions/checkout@v4
 
-      # 2. 显式安装 pnpm (关键修复)
+      # 2. Install pnpm explicitly
       - name: Install pnpm
         run: |
           npm install -g pnpm@8
           echo "PNPM_PATH=$(which pnpm)" >> $GITHUB_ENV
           echo "$(which pnpm)" >> $GITHUB_PATH
 
-      # 3. 设置 Node.js (不自动安装 pnpm)
+      # 3. Setup Node.js (without auto pnpm install)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
-      # 4. 验证 pnpm 安装
+      # 4. Verify installation
       - name: Verify pnpm
         run: |
           pnpm -v
           which pnpm
           echo "PATH: $PATH"
 
-      # 5. 安装 Rust
+      # 5. Install Rust
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -61,7 +59,7 @@ jobs:
           target: ${{ matrix.target }}
           override: true
 
-      # 6. 平台特定依赖
+      # 6. Platform-specific dependencies
       - name: Install system dependencies
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
@@ -71,7 +69,7 @@ jobs:
             brew install create-dmg
           fi
 
-      # 7. 缓存配置
+      # 7. Cache dependencies
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
@@ -81,4 +79,25 @@ jobs:
             target
             ~/.pnpm-store
             node_modules
-          key: ${{ runner.os }}-${{ hashFiles('pn
+          key: ${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      # 8. Install project dependencies
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 9. Build frontend
+      - name: Build frontend
+        run: pnpm run build
+
+      # 10. Build Tauri
+      - name: Build Tauri
+        run: pnpm tauri build --target ${{ matrix.target }}
+
+      # 11. Upload artifacts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}-Build
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/
+          retention-days: 7
