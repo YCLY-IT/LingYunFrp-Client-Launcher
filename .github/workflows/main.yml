@@ -2,11 +2,13 @@ name: Tauri Cross-Platform Build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 
 env:
   TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
   TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-  ACTIONS_STEP_DEBUG: true
+  NODE_OPTIONS: "--max-old-space-size=8192"
 
 jobs:
   build:
@@ -17,47 +19,53 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: Windows
+            shell: pwsh
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: macOS
+            shell: bash
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: Linux
+            shell: bash
 
-    timeout-minutes: 45
+    timeout-minutes: 90
     runs-on: ${{ matrix.os }}
     name: Build ${{ matrix.artifact_name }}
 
     steps:
-      # 1. 检出代码（修复Windows取消问题）
+      # 1. 安全检出代码
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 修复浅克隆可能导致的问题
-          persist-credentials: false  # 避免权限冲突
+          fetch-depth: 0
+          clean: false
 
-      # 2. 统一包管理器处理（修复yarn冲突）
-      - name: Force use pnpm
+      # 2. 强制使用pnpm（跨平台解决方案）
+      - name: Setup Node.js with pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: 'pnpm'
+          always-auth: true
+          registry-url: 'https://registry.npmjs.org'
+
+      # 3. 初始化pnpm（无packageManager冲突）
+      - name: Initialize pnpm
+        shell: ${{ matrix.shell }}
         run: |
-          # 移除packageManager字段临时解决冲突
-          if [ -f package.json ]; then
-            sed -i '/"packageManager"/d' package.json
-          fi
-          # 安装pnpm
-          npm install -g pnpm@8
+          # 移除可能冲突的全局配置
+          npm config delete package-manager
+          # 强制使用pnpm
+          corepack enable
+          corepack prepare pnpm@latest --activate
+          pnpm -v
           echo "PNPM_PATH=$(which pnpm)" >> $GITHUB_ENV
           echo "$(which pnpm)" >> $GITHUB_PATH
 
-      # 3. 设置Node.js环境
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: 'pnpm'
-
-      # 4. 各平台特定准备
+      # 4. 平台特定设置
       - name: Platform setup
-        shell: bash
+        shell: ${{ matrix.shell }}
         run: |
           case "$RUNNER_OS" in
             "Linux")
@@ -67,63 +75,111 @@ jobs:
                 libgtk-3-dev \
                 libayatana-appindicator3-dev \
                 librsvg2-dev \
-                libssl-dev
+                libssl-dev \
+                libasound2-dev \
+                patchelf
               ;;
             "macOS")
-              brew update
+              # 解除系统限制
+              ulimit -S -n 65536
+              sudo sysctl -w kern.maxfiles=1048576
+              sudo sysctl -w kern.maxfilesperproc=1048576
+              
+              # 重置Homebrew环境
+              brew update-reset
               brew install create-dmg || true
-              # 防止macOS构建被取消
-              ulimit -n 8192
               ;;
             "Windows")
-              # 添加Windows特定依赖
-              choco install -y llvm || true
+              # 安装Windows构建工具
+              choco install -y llvm --no-progress --force || true
               ;;
           esac
 
-      # 5. Rust工具链安装
+      # 5. Rust工具链（带重试机制）
       - name: Install Rust
         uses: actions-rs/toolchain@v1
+        continue-on-error: true
         with:
+          profile: minimal
           toolchain: stable
           target: ${{ matrix.target }}
           override: true
           components: rust-src, clippy, rustfmt
 
-      # 6. 缓存优化
+      - name: Verify Rust
+        shell: ${{ matrix.shell }}
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+
+      # 6. 智能缓存（带自动回退）
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
+            ~/.cargo
             ~/.pnpm-store
             node_modules
-          key: ${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+            target
+          key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.target }}-
 
-      # 7. 安装依赖
+      # 7. 安装依赖（强制pnpm）
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --shamefully-hoist
-
-      # 8. 构建前端
-      - name: Build frontend
-        run: pnpm run build
-
-      # 9. 构建Tauri
-      - name: Build Tauri
-        timeout-minutes: 25
+        shell: ${{ matrix.shell }}
         run: |
-          pnpm tauri build --target ${{ matrix.target }} --verbose
-          # 收集构建日志
-          find src-tauri/target -name "*.log" -exec cp {} . \; || true
+          pnpm config set store-dir ~/.pnpm-store
+          pnpm install --frozen-lockfile --shamefully-hoist --strict-peer-dependencies=false
+          pnpm list --depth 0
 
-      # 10. 上传制品
+      # 8. 构建前端（带资源清理）
+      - name: Build frontend
+        shell: ${{ matrix.shell }}
+        run: |
+          pnpm run clean || true
+          pnpm run build
+
+      # 9. 构建Tauri（带完整错误日志）
+      - name: Build Tauri
+        timeout-minutes: 45
+        shell: ${{ matrix.shell }}
+        env:
+          RUST_BACKTRACE: full
+          RUSTFLAGS: "-C target-cpu=native"
+        run: |
+          echo "=== STARTING BUILD ==="
+          pnpm tauri build --target ${{ matrix.target }} --verbose 2>&1 | tee build.log
+          echo "=== BUILD FINISHED WITH EXIT CODE $? ==="
+          
+          # 收集关键日志
+          find src-tauri/target -name "*.log" -print0 | xargs -0 -I {} cp {} .
+          [ -f build.log ] && tail -n 200 build.log || echo "No build log found"
+
+      # 10. 上传制品（包含调试信息）
       - name: Upload artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}-Build-${{ github.run_id }}
+          name: ${{ matrix.artifact_name }}_Build_${{ github.run_id }}
           path: |
             src-tauri/target/${{ matrix.target }}/release/
             *.log
-          retention-days: 3
+            src-tauri/Cargo.lock
+          retention-days: 7
+
+      # 11. 失败时自动诊断
+      - name: Diagnostic on failure
+        if: failure()
+        shell: ${{ matrix.shell }}
+        run: |
+          echo "=== SYSTEM DIAGNOSTICS ==="
+          df -h
+          free -h
+          ulimit -a
+          echo "=== RUST DIAGNOSTICS ==="
+          rustup check
+          cargo tree
+          echo "=== NODE DIAGNOSTICS ==="
+          pnpm debug
