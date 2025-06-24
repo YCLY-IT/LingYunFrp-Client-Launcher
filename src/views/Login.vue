@@ -42,12 +42,6 @@
   overflow: hidden;
   display: flex;
   position: relative;
-  -webkit-app-region: drag; /* 添加这一行启用拖动 */
-}
-
-/* 确保表单元素不被拖动区域覆盖 */
-.n-form, .n-button {
-  -webkit-app-region: no-drag;
 }
 </style>
 

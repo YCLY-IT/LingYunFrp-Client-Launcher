@@ -1,6 +1,6 @@
 <template>
   <!-- PC端导航栏 -->
-  <NLayoutHeader bordered class="navbar pc-navbar" style="user-select: none">
+  <NLayoutHeader bordered class="navbar pc-navbar drag-bar" style="user-select: none">
     <div class="navbar-content">
       <div class="logo">
         <RouterLink to="/" class="logo-link">
@@ -16,12 +16,12 @@
             circle
             size="small"
             @click="toggleTheme"
-            class="theme-toggle-btn"
+            class="theme-toggle-btn no-drag"
           >
             <NIcon size="20" :component="isDarkMode ? Sunny : Moon" />
           </NButton>
           <RouterLink to="/dashboard">
-            <NButton secondary type="primary">管理面板</NButton>
+            <NButton secondary type="primary" class="no-drag">管理面板</NButton>
           </RouterLink>
         </NSpace>
       </div>
@@ -127,5 +127,12 @@ function handleMenuSelect(key: string) {
   .n-icon {
     transition: all 0.3s ease;
   }
+}
+
+.drag-bar {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
 }
 </style>
