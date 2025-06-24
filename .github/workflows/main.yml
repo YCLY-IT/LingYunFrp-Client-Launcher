@@ -2,8 +2,6 @@ name: Tauri Cross-Platform Build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 env:
   TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
