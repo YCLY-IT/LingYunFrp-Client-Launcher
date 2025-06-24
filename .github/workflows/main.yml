@@ -1,0 +1,67 @@
+name: Tauri Build with npm
+
+on:
+  workflow_dispatch:
+
+env:
+  TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+  TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+jobs:
+  build-windows:
+    name: Build Windows x64 with npm
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: 'npm'  # 启用npm缓存
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+          override: true
+
+      - name: Cache Rust toolchain
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-rust-toolchain-${{ hashFiles('Cargo.toml', 'Cargo.lock') }}
+
+      - name: Install Dependencies
+        run: npm ci  # 使用npm安装依赖
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096  # 内存优化
+
+      - name: Build Frontend
+        run: npm run build
+
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli
+
+      - name: Check Tauri Version
+        run: tauri -v
+
+      - name: Build Tauri App
+        run: |
+          npm run tauri build -- --target x86_64-pc-windows-msvc --release || (
+            echo "构建失败，查看日志："
+            cat src-tauri/target/debug/build.log
+            exit 1
+          )
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Build
+          path: |
+            dist/win-unpacked/*.exe
+            src-tauri/target/x86_64-pc-windows-msvc/release/*.exe
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          retention-days: 7  # 工件保留7天
