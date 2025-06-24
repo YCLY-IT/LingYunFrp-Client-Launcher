@@ -1,4 +1,4 @@
-name: Tauri Build with pnpm
+name: Tauri Build with npm
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ env:
 
 jobs:
   build-windows:
-    name: Build Windows x64 with pnpm
+    name: Build Windows x64 with npm
     runs-on: windows-latest
 
     steps:
@@ -19,12 +19,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: latest  # 使用最新版pnpm
+          cache: 'npm'  # 启用npm缓存
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -40,22 +35,22 @@ jobs:
           key: ${{ runner.os }}-rust-toolchain-${{ hashFiles('Cargo.toml', 'Cargo.lock') }}
 
       - name: Install Dependencies
-        run: pnpm install
+        run: npm ci  # 使用npm安装依赖
         env:
           NODE_OPTIONS: --max-old-space-size=4096  # 内存优化
 
       - name: Build Frontend
-        run: pnpm run build
+        run: npm run build
 
       - name: Install Tauri CLI
-        run: pnpm install -g @tauri-apps/cli
+        run: npm install -g @tauri-apps/cli
 
       - name: Check Tauri Version
         run: tauri -v
 
       - name: Build Tauri App
         run: |
-          pnpm run tauri build -- --target x86_64-pc-windows-msvc --release || (
+          npm run tauri build -- --target x86_64-pc-windows-msvc --release || (
             echo "构建失败，查看日志："
             cat src-tauri/target/debug/build.log
             exit 1
