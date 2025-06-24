@@ -1,66 +1,61 @@
-name: Tauri Cross-Platform Build
+name: Tauri Cross-Platform Build (npm)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
+  
+env:
+  TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+  TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+  NODE_OPTIONS: "--max-old-space-size=8192"
 
 jobs:
   build:
     strategy:
       matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: Windows
-            shell_cmd: pwsh
+            shell: pwsh
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: macOS
-            shell_cmd: bash
+            shell: bash
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: Linux
-            shell_cmd: bash
+            shell: bash
 
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
-    env:
-      TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-      TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-      NODE_OPTIONS: "--max-old-space-size=8192"
+    timeout-minutes: 60
 
     steps:
       # 1. 检出代码
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. 设置Node.js和PNPM
+      # 2. 设置Node.js（自动包含npm）
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: 'pnpm'
+          cache: 'npm'
 
-      # 3. 初始化PNPM (使用固定shell)
-      - name: Setup PNPM
-        shell: bash
+      # 3. 验证环境
+      - name: Check versions
+        shell: ${{ matrix.shell }}
         run: |
-          npm install -g pnpm@8
-          pnpm -v
-          echo "PNPM_PATH=$(which pnpm)" >> $GITHUB_ENV
-          echo "$(which pnpm)" >> $GITHUB_PATH
+          node -v
+          npm -v
+          rustc --version || echo "Rust not installed yet"
 
-      # 4. 平台特定设置 (使用显式条件)
-      - name: Platform setup
+      # 4. 平台特定依赖
+      - name: Install system dependencies
+        shell: ${{ matrix.shell }}
         run: |
-          if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            ulimit -n 8192
-            brew update-reset
-            brew install create-dmg || true
-          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
             sudo apt-get update -y
             sudo apt-get install -y \
               libwebkit2gtk-4.1-dev \
@@ -69,10 +64,13 @@ jobs:
               librsvg2-dev \
               libssl-dev \
               libasound2-dev
-          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
-            choco install -y llvm --no-progress || true
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            ulimit -n 8192
+            brew update-reset
+            brew install create-dmg || true
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            choco install -y llvm --no-progress --force || true
           fi
-        shell: bash
 
       # 5. 安装Rust
       - name: Install Rust
@@ -83,7 +81,7 @@ jobs:
           override: true
           components: rust-src, clippy, rustfmt
 
-      # 6. 缓存依赖
+      # 6. 缓存优化
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
@@ -91,37 +89,47 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-            ~/.pnpm-store
             node_modules
-          key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('package-lock.json') }}
 
-      # 7. 安装依赖 (使用固定shell)
+      # 7. 安装npm依赖
       - name: Install dependencies
-        shell: bash
+        shell: ${{ matrix.shell }}
         run: |
-          pnpm config set store-dir ~/.pnpm-store
-          pnpm install --frozen-lockfile --shamefully-hoist
+          npm ci --no-audit --prefer-offline
+          npm list --depth=0
 
       # 8. 构建前端
       - name: Build frontend
-        shell: bash
-        run: pnpm run build
+        shell: ${{ matrix.shell }}
+        run: npm run build
 
-      # 9. 构建Tauri
+      # 9. 全局安装Tauri CLI
+      - name: Install Tauri CLI
+        shell: ${{ matrix.shell }}
+        run: npm install -g @tauri-apps/cli
+
+      # 10. 构建Tauri（带完整错误处理）
       - name: Build Tauri
         timeout-minutes: 30
+        shell: ${{ matrix.shell }}
         env:
           RUST_BACKTRACE: full
         run: |
-          pnpm tauri build --target ${{ matrix.target }} --verbose
+          echo "=== Starting build ==="
+          npm run tauri build -- --target ${{ matrix.target }} --verbose 2>&1 | tee build.log
+          echo "=== Build finished with exit code $? ==="
+          
+          # 收集日志
           find src-tauri/target -name "*.log" -exec cp {} . \; || true
-        shell: bash
+          [ -f build.log ] && tail -n 100 build.log || echo "No build log found"
 
-      # 10. 上传制品
+      # 11. 上传制品
       - name: Upload artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}-Build
+          name: ${{ matrix.artifact_name }}-Build-${{ github.run_number }}
           path: |
             src-tauri/target/${{ matrix.target }}/release/
             *.log
