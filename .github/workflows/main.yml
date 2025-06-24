@@ -28,36 +28,6 @@ jobs:
           target: x86_64-pc-windows-msvc
           override: true
 
-      - name: AutoFix Code Issues
-        shell: pwsh
-        run: |
-          # 安装指定版本的ESLint（兼容新旧配置格式）
-          npm install -D eslint@8.56.0 @typescript-eslint/eslint-plugin@5.6.0 @typescript-eslint/parser@5.6.0
-          
-          # 生成旧版配置（确保兼容性）
-          @'
-          module.exports = {
-            extends: ['plugin:@typescript-eslint/recommended'],
-            rules: {
-              '@typescript-eslint/no-unused-vars': ['warn', { 
-                argsIgnorePattern: '^_',
-                varsIgnorePattern: '^_' 
-              }]
-            }
-          }
-          '@ | Out-File -FilePath .eslintrc.js -Encoding utf8
-
-          # 执行修复
-          npx eslint src --ext .vue,.ts --fix --quiet
-          if ($LASTEXITCODE -ne 0) { 
-            Write-Output "⚠️ 自动修复完成（可能存在需要手动处理的问题）"
-            exit 0  # 不阻断后续流程
-          }
-
-          # 处理文件名大小写
-          if (Test-Path "src/views/Dashboard/Index.vue") {
-            Rename-Item "src/views/Dashboard/Index.vue" "index.vue"
-          }
 
       - name: Install Dependencies
         run: npm ci
