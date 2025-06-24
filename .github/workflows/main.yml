@@ -1,4 +1,4 @@
-name: Tauri Build with AutoFix
+name: Tauri Build with pnpm
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ env:
 
 jobs:
   build-windows:
-    name: Build Windows x64
+    name: Build Windows x64 with pnpm
     runs-on: windows-latest
 
     steps:
@@ -19,7 +19,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: 'npm'
+          cache: 'pnpm'  # 启用pnpm缓存
+
+      - name: Install pnpm
+        run: npm install -g pnpm@latest  # 确保使用最新pnpm
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -28,23 +31,42 @@ jobs:
           target: x86_64-pc-windows-msvc
           override: true
 
+      - name: Cache Rust toolchain
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-rust-toolchain-${{ hashFiles('Cargo.toml', 'Cargo.lock') }}
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Install Dependencies with pnpm
+        run: pnpm install  # 使用pnpm安装依赖
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Build Frontend
-        run: npm run build
+      - name: Build Frontend with pnpm
+        run: pnpm run build  # pnpm构建前端
 
-      - name: Install Tauri CLI
-        run: npm install -g @tauri-apps/cli
+      - name: Install Tauri CLI with pnpm
+        run: pnpm install -g @tauri-apps/cli  # pnpm安装Tauri CLI
 
-      - name: Build Tauri App
-        run: npm run tauri build -- --target x86_64-pc-windows-msvc
+      - name: Check Tauri Version
+        run: tauri -v
+
+      - name: Build Tauri App with pnpm
+        run: pnpm run tauri build -- --target x86_64-pc-windows-msvc --release || (cat src-tauri/target/debug/build.log && exit 1)
+        # 注意：若pnpm脚本名不同，需调整为实际脚本名（如`tauri:build`）
+
+      - name: Sign Windows Executable (可选)
+        if: ${{ secrets.WIN_CERTIFICATE != '' && secrets.WIN_CERT_PASSWORD != '' }}
+        run: |
+          certutil -decode ${{ secrets.WIN_CERTIFICATE }} cert.pfx
+          signtool sign /f cert.pfx /p ${{ secrets.WIN_CERT_PASSWORD }} /d "Tauri App" /a src-tauri/target/x86_64-pc-windows-msvc/release/*.exe
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Windows-Build
           path: |
+            dist/win-unpacked/*.exe
             src-tauri/target/x86_64-pc-windows-msvc/release/*.exe
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          retention-days: 7
