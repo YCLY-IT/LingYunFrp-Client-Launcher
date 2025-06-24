@@ -292,8 +292,8 @@ const rules = {
   },
   nickname: {
     newNickname: [
-      { required: true, message: '请输入新的昵称', trigger: 'blur' },
-      { min: 2, max: 20, message: '昵称长度应在2-20个字符之间', trigger: 'blur' }
+        { required: true, message: '请输入新的昵称', trigger: 'blur' },
+        { min: 2, max: 20, message: '昵称长度应在2-20个字符之间', trigger: 'blur' }
       ]
   },
   password: {
@@ -307,7 +307,7 @@ const rules = {
     confirmPassword: [
       { required: true, message: '请确认新密码', trigger: 'blur' },
       {
-        validator: (rule, value) => {
+        validator: (value) => {
           return value === forms.password.newPassword
         },
         message: '两次输入的密码不一致',
@@ -380,7 +380,7 @@ const handleChangeUsername = async () => {
   try {
     userApi.post('/user/update/username', { newUsername: forms.username.newUsername, emailCode: forms.username.emailCode }, accessHandle(), (data) => {
       UserInfo.username = forms.username.newUsername
-      message.success('用户名修改成功')
+      message.success(data.message)
       forms.username.newUsername = ''
       forms.username.emailCode = ''
       modals.changeUsername = false
@@ -435,7 +435,7 @@ const handleUpdateNickname = async () => {
   try {
     userApi.post(`/user/update/nickname/${forms.nickname.newNickname}`, { nickname: forms.nickname.newNickname }, accessHandle(), (data) => {
       localStorage.setItem('nickname', forms.nickname.newNickname)
-      message.success('昵称修改成功')
+      message.success(data.message)
       forms.nickname.newNickname = ''
       setTimeout(() => {
         window.location.reload()
@@ -538,7 +538,7 @@ const handleChangePassword = async () => {
       forms.password.newPassword = ''
       forms.password.confirmPassword = ''
       modals.changePassword = false
-      message.success('密码修改成功，请重新登录')
+      message.success(data.message)
       removeToken()
       setTimeout(() => {
         window.location.href = '/login'
@@ -598,7 +598,7 @@ const handleSendPhoneCode = async () => {
   loading.value = true
   try {
     userApi.sendSmsCode(forms.realname.phone, "realname", (data) => {
-        message.success('验证码已发送')
+        message.success(data.message)
         emailCodeSending.value = true
         emailCodeCountdown.value = 60
         const timer = setInterval(() => {

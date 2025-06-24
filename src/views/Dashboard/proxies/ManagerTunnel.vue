@@ -359,12 +359,12 @@
 <script setup lang="ts">
 import { ref, computed, h, watch } from 'vue'
 import {
-  NCard, NButton, NButtonGroup, NTag, NDataTable, NTable, NSpace, NIcon,
+  NCard, NButton, NButtonGroup, NTag, NDataTable, NSpace, NIcon,
   NModal, NInput, NDropdown, NForm, NFormItem, NSelect, NInputNumber,
   useMessage, type FormInst, type FormRules, NDivider, NSwitch, NText,
   NEmpty, NAlert, NDynamicTags, NDescriptions, NDescriptionsItem
 } from 'naive-ui'
-import { GridOutline, ListOutline, BuildOutline, RefreshOutline, SearchOutline, InformationCircleOutline, CreateOutline, TrashOutline, PowerOutline, AddOutline, CopyOutline, DocumentOutline, EllipsisHorizontalCircleOutline } from '@vicons/ionicons5'
+import { GridOutline, ListOutline, BuildOutline, RefreshOutline, SearchOutline, InformationCircleOutline, CreateOutline, TrashOutline, PowerOutline, AddOutline, EllipsisHorizontalCircleOutline } from '@vicons/ionicons5'
 import type { Node, Proxy} from '../../../types'
 import { switchButtonRailStyle } from '../../../constants/theme'
 import { useRouter } from 'vue-router'

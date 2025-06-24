@@ -56,14 +56,13 @@
 import packageData from '../../package.json'
 import { h, inject, Ref, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
-import { NLayoutHeader, NButton, NSpace, NSwitch, NIcon, NPopover, NMenu, MenuOption } from 'naive-ui'
+import { NLayoutHeader, NButton, NSpace, NIcon, NPopover, NMenu, MenuOption } from 'naive-ui'
 import { MenuOutline, Moon, Sunny } from '@vicons/ionicons5'
 import {
   HomeOutline,
   LogInOutline,
   PersonAddOutline
 } from '@vicons/ionicons5'
-import { switchButtonRailStyle } from '../constants/theme'
 
 const showMenu = ref(false)
 const router = useRouter()

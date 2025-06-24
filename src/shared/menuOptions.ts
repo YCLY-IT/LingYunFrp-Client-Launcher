@@ -1,5 +1,5 @@
 import { h, Component, ref } from 'vue'
-import { HomeOutline, AddCircleOutline, AppsOutline, IdCardOutline,  WalletOutline, SettingsOutline, ListOutline } from '@vicons/ionicons5'
+import { HomeOutline, AddCircleOutline, AppsOutline, IdCardOutline, SettingsOutline, ListOutline } from '@vicons/ionicons5'
 import { NIcon, type MenuOption } from 'naive-ui'
 import { SquareTerminal } from 'lucide-vue-next';
 

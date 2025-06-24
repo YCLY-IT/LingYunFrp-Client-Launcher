@@ -264,7 +264,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, h, computed, onMounted, watch } from 'vue'
 import { NCard, NForm, NFormItem, NInput, NInputNumber, NSelect, NButton, NIcon, useMessage, type FormRules, type FormInst, NDivider, NSwitch, NTag, NSpace, NText, NGrid, NGridItem, NDynamicTags, NModal, NEmpty } from 'naive-ui'
 import { CloudUploadOutline, SearchOutline } from '@vicons/ionicons5'
 import { switchButtonRailStyle } from '../../../constants/theme.ts'
@@ -276,7 +276,6 @@ const router = useRouter()
 const message = useMessage()
 const formRef = ref<FormInst | null>(null)
 const loading = ref(false)
-const userGroup = ref(localStorage.getItem('group'))
 
 // 新增搜索和区域筛选
 const searchQuery = ref('')

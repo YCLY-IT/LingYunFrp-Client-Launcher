@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import { NCard, NAlert, NButton, useMessage } from 'naive-ui'
-import { ref, onMounted, computed, markRaw } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useRouter } from 'vue-router'
