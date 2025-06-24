@@ -1,4 +1,4 @@
-name: Tauri Build with npm
+name: Tauri Build with pnpm
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ env:
 
 jobs:
   build-windows:
-    name: Build Windows x64 with npm
+    name: Build Windows x64 with pnpm
     runs-on: windows-latest
 
     steps:
@@ -19,20 +19,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: 'npm'  # 使用 npm 缓存
+          cache: 'pnpm'  # 使用 pnpm 缓存
 
-      - name: Clean Install Dependencies
-        run: |
-          # 删除可能的残留文件
-          rm -rf node_modules
-          rm -f pnpm-lock.yaml yarn.lock  # 清除非 npm 锁文件
-          # 使用 npm 严格安装
-          npm ci --no-audit --prefer-offline  # 优先使用缓存
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-
-      - name: Build Frontend
-        run: npm run build
+      - name: Install pnpm
+        run: npm install -g pnpm@8  # 全局安装 pnpm
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -41,7 +31,7 @@ jobs:
           target: x86_64-pc-windows-msvc
           override: true
 
-      - name: Cache Rust
+      - name: Cache Rust toolchain
         uses: actions/cache@v3
         with:
           path: |
@@ -49,13 +39,24 @@ jobs:
             ~/.cargo/registry
           key: ${{ runner.os }}-rust-${{ hashFiles('Cargo.toml', 'Cargo.lock') }}
 
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile  # 严格根据 lock 文件安装
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Build Frontend
+        run: pnpm run build
+
       - name: Install Tauri CLI
-        run: npm install -g @tauri-apps/cli
+        run: pnpm add -g @tauri-apps/cli  # 用 pnpm 安装 Tauri CLI
+
+      - name: Check Tauri Version
+        run: tauri -v
 
       - name: Build Tauri App
         run: |
-          npm run tauri build -- --target x86_64-pc-windows-msvc --release || (
-            echo "=== 构建失败日志 ==="
+          pnpm run tauri build -- --target x86_64-pc-windows-msvc --release || (
+            echo "构建失败，查看日志："
             cat src-tauri/target/debug/build.log
             exit 1
           )
