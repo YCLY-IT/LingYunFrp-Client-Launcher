@@ -1,4 +1,4 @@
-name: Tauri Build with pnpm
+name: Tauri Build
 
 on:
   workflow_dispatch:
@@ -9,62 +9,87 @@ env:
 
 jobs:
   build-windows:
-    name: Build Windows x64 with pnpm
+    name: Build Windows
     runs-on: windows-latest
 
     steps:
+      # 1. 检出代码
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      # 2. 设置 Node.js 并自动安装 pnpm（关键步骤）
+      - name: Setup Node.js with pnpm
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: 'pnpm'  # 使用 pnpm 缓存
+          node-version: "20"
+          cache: 'pnpm'
+          package-manager: 'pnpm@8'  # 自动安装指定版本
 
-      - name: Install pnpm
-        run: npm install -g pnpm@8  # 全局安装 pnpm
+      # 3. 验证环境
+      - name: Check versions
+        run: |
+          node -v
+          pnpm -v
 
+      # 4. 安装 Rust 工具链
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: x86_64-pc-windows-msvc
           override: true
+          components: rust-src, clippy, rustfmt
 
-      - name: Cache Rust toolchain
+      # 5. 缓存 Rust 依赖
+      - name: Cache cargo
         uses: actions/cache@v3
         with:
           path: |
-            ~/.cargo/bin
             ~/.cargo/registry
-          key: ${{ runner.os }}-rust-${{ hashFiles('Cargo.toml', 'Cargo.lock') }}
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile  # 严格根据 lock 文件安装
+      # 6. 缓存 pnpm 依赖
+      - name: Cache pnpm modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+            .svelte-kit
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # 7. 安装项目依赖
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Build Frontend
+      # 8. 构建前端
+      - name: Build frontend
         run: pnpm run build
 
+      # 9. 安装 Tauri CLI
       - name: Install Tauri CLI
-        run: pnpm add -g @tauri-apps/cli  # 用 pnpm 安装 Tauri CLI
+        run: pnpm add -g @tauri-apps/cli
 
-      - name: Check Tauri Version
-        run: tauri -v
-
-      - name: Build Tauri App
+      # 10. 构建 Tauri 应用
+      - name: Build Tauri app
         run: |
-          pnpm run tauri build -- --target x86_64-pc-windows-msvc --release || (
-            echo "构建失败，查看日志："
-            cat src-tauri/target/debug/build.log
+          pnpm tauri build --target x86_64-pc-windows-msvc --release
+          if ($LASTEXITCODE -ne 0) {
+            Write-Output "::error::Build failed"
+            Get-Content -Path "src-tauri/target/debug/build.log" -ErrorAction SilentlyContinue
             exit 1
-          )
+          }
 
-      - name: Upload Artifacts
+      # 11. 上传制品
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Windows-Build
+          name: Windows-Release
           path: |
             src-tauri/target/x86_64-pc-windows-msvc/release/*.exe
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
