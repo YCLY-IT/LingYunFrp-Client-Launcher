@@ -1,4 +1,4 @@
-name: Tauri Build with pnpm
+name: Tauri Build with npm
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ env:
 
 jobs:
   build-windows:
-    name: Build Windows x64 with pnpm
+    name: Build Windows x64 with npm
     runs-on: windows-latest
 
     steps:
@@ -19,10 +19,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: 'pnpm'  # 使用 pnpm 缓存
+          cache: 'npm'  # 使用 npm 缓存
 
-      - name: Install pnpm
-        run: npm install -g pnpm@8  # 显式安装 pnpm
+      - name: Clean Install Dependencies
+        run: |
+          # 删除可能的残留文件
+          rm -rf node_modules
+          rm -f pnpm-lock.yaml yarn.lock  # 清除非 npm 锁文件
+          # 使用 npm 严格安装
+          npm ci --no-audit --prefer-offline  # 优先使用缓存
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Build Frontend
+        run: npm run build
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -31,7 +41,7 @@ jobs:
           target: x86_64-pc-windows-msvc
           override: true
 
-      - name: Cache Rust toolchain
+      - name: Cache Rust
         uses: actions/cache@v3
         with:
           path: |
@@ -39,24 +49,13 @@ jobs:
             ~/.cargo/registry
           key: ${{ runner.os }}-rust-${{ hashFiles('Cargo.toml', 'Cargo.lock') }}
 
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile  # 使用 pnpm 安装依赖
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-
-      - name: Build Frontend
-        run: pnpm run build
-
       - name: Install Tauri CLI
-        run: pnpm add -g @tauri-apps/cli  # 用 pnpm 安装 Tauri CLI
-
-      - name: Check Tauri Version
-        run: tauri -v
+        run: npm install -g @tauri-apps/cli
 
       - name: Build Tauri App
         run: |
-          pnpm run tauri build -- --target x86_64-pc-windows-msvc --release || (
-            echo "构建失败，查看日志："
+          npm run tauri build -- --target x86_64-pc-windows-msvc --release || (
+            echo "=== 构建失败日志 ==="
             cat src-tauri/target/debug/build.log
             exit 1
           )
@@ -66,7 +65,6 @@ jobs:
         with:
           name: Windows-Build
           path: |
-            dist/win-unpacked/*.exe
             src-tauri/target/x86_64-pc-windows-msvc/release/*.exe
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
           retention-days: 7
