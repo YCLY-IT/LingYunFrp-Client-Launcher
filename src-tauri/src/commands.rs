@@ -15,9 +15,9 @@ pub fn close_window(window: tauri::Window) {
 #[tauri::command]
 pub fn quit_window(window: tauri::Window, app: tauri::AppHandle) {
     *app.state::<Mutex<bool>>().lock().unwrap() = true;
-    kill_all_processes().unwrap();
-    window.close().unwrap();
-    std::process::exit(0);
+    let _ = kill_all_processes();
+    let _ = window.close();
+    app.exit(0);
 }
 
 #[tauri::command]
@@ -95,7 +95,7 @@ pub async fn download_frpc(app: tauri::AppHandle) -> Result<(), String> {
     if frpc_path.exists() {
         return Err("frpc.exe已存在".to_string());
     }
-    let response = reqwest::get(config::api_url() + "frp/download")
+    let response = reqwest::get(config::api_url() + "/frp/download")
        .await
        .map_err(|e| e.to_string())?;
     let bytes = response.bytes().await.map_err(|e| e.to_string())?;
@@ -201,10 +201,12 @@ pub fn get_cpl_version() -> String {
 pub fn kill_all_processes() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
         let _output = std::process::Command::new("taskkill")
             .arg("/F")
             .arg("/IM")
             .arg("frpc.exe")
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
             .output()
             .map_err(|e| format!("终止进程失败: {}", e))?;
     }

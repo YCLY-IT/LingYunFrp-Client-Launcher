@@ -27,13 +27,16 @@
       </div>
       <div class="window-controls">
         <NSpace>
+          <n-button quaternary circle size="small" class="no-drag" @click="handleToRefresh">
+            <NIcon size="25"><RefreshOutline /></NIcon>
+          </n-button>
           <NButton quaternary circle size="small" class="no-drag" @click="handleToMinimize">
             <NIcon size="28"><RemoveOutline /></NIcon>
           </NButton>
           <NButton quaternary circle size="small" class="no-drag" @click="handleToMaximize">
             <NIcon size="25"><ScanOutline /></NIcon>
           </NButton>
-          <NButton quaternary circle size="small" class="no-drag" @click="handleToClose">
+          <NButton quaternary circle size="small" class="no-drag" @click="ToShow = true">
             <NIcon size="28"><CloseOutline /></NIcon>
           </NButton>
         </NSpace>
@@ -63,6 +66,18 @@
       </div>
     </div>
   </NLayoutHeader>
+
+  <!-- 弹窗：是否关闭到托盘 -->
+  <NModal v-model:show="ToShow" preset="dialog" style="width: 400px">
+    <template #header>
+      是否关闭到托盘？
+    </template>
+    <div>你可以选择直接关闭程序，或最小化到系统托盘。</div>
+    <template #action>
+      <NButton size="small" @click="handleToClose">确定关闭</NButton>
+      <NButton size="small" type="primary" @click="handleToCloseToPanel">最小化到托盘</NButton>
+    </template>
+  </NModal>
 </template>
 
 <script setup lang="ts">
@@ -70,7 +85,7 @@ import packageData from '../../package.json'
 import { h, inject, Ref, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { NLayoutHeader, NButton, NSpace, NIcon, NPopover, NMenu, MenuOption } from 'naive-ui'
-import { MenuOutline, Moon, Sunny, RemoveOutline, ScanOutline, CloseOutline } from '@vicons/ionicons5'
+import { MenuOutline, Moon, Sunny, RemoveOutline, ScanOutline, CloseOutline, RefreshOutline} from '@vicons/ionicons5'
 import {
   HomeOutline,
   LogInOutline,
@@ -78,6 +93,7 @@ import {
 } from '@vicons/ionicons5'
 import { invoke } from '@tauri-apps/api/core'
 
+const ToShow = ref(false)
 const showMenu = ref(false)
 const router = useRouter()
 const { isDarkMode, toggleTheme } = inject('theme', {
@@ -128,14 +144,30 @@ function handleMenuSelect(key: string) {
   }
 }
 
+const handleToRefresh = () => {
+  window.location.reload()
+}
+
+
+const handleToClose = async () => {
+  await invoke('quit_window');
+}
+
 const handleToMinimize = async () => {
   await invoke('minimize_window');
 }
+
 const handleToMaximize = async () => {
   await invoke('toggle_maximize');
 }
-const handleToClose = async () => {
-  await invoke('quit_window');
+
+const handleToCloseToPanel = async () => {
+  ToShow.value = false
+  new Notification('FRP客户端', {
+    body: 'FRP客户端已最小化到托盘',
+    silent: true,
+  })
+  await invoke('hide_to_tray');
 }
 </script>
 

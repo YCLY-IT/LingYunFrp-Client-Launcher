@@ -8,7 +8,8 @@ import Components from 'unplugin-vue-components/vite'
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
-export default defineConfig(async () => ({
+export default defineConfig({
+  base: './',
   plugins: [
     vue(),
     AutoImport({
@@ -53,4 +54,4 @@ export default defineConfig(async () => ({
   build: {
     target: 'esnext',
   },
-}));
+});

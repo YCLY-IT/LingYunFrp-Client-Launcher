@@ -38,6 +38,15 @@ jobs:
         with:
           name: macos-dmg
           path: src-tauri/target/release/bundle/dmg/*.dmg
+      - name: 打包绿色版 zip
+        run: |
+          cd src-tauri/target/release
+          7z a LingYunFrp-Tauri-Client-macos-portable.zip LingYunFrp-Tauri-Client.app
+      - name: 上传绿色版 zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-portable-zip
+          path: src-tauri/target/release/LingYunFrp-Tauri-Client-macos-portable.zip
 
   build-linux:
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
@@ -78,6 +87,15 @@ jobs:
           path: |
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/appimage/*.AppImage
+      - name: 打包绿色版 zip
+        run: |
+          cd src-tauri/target/release
+          7z a LingYunFrp-Tauri-Client-linux-portable.zip LingYunFrp-Tauri-Client
+      - name: 上传绿色版 zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-portable-zip
+          path: src-tauri/target/release/LingYunFrp-Tauri-Client-linux-portable.zip
 
   build-windows:
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
@@ -104,27 +122,12 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
-
-  build-portable:
-    if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'pnpm'
-      - name: Install dependencies
-        run: pnpm install
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Build Tauri Portable
-        run: pnpm run tauri build --bundles portable
-      - name: Upload Portable Artifacts
+      - name: 打包绿色版 zip
+        run: |
+          cd src-tauri/target/release
+          7z a LingYunFrp-Tauri-Client-windows-portable.zip LingYunFrp-Tauri-Client.exe
+      - name: 上传绿色版 zip
         uses: actions/upload-artifact@v4
         with:
-          name: windows-portable
-          path: src-tauri/target/release/bundle/portable/*.exe
+          name: windows-portable-zip
+          path: src-tauri/target/release/LingYunFrp-Tauri-Client-windows-portable.zip

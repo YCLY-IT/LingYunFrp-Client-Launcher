@@ -2,7 +2,8 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import 'naive-ui/es/message/styles'
+import naive from 'naive-ui'
+
 import { invoke } from '@tauri-apps/api/core';
 
 const isDebug = await invoke<boolean>('get_now_mode')
@@ -31,6 +32,7 @@ if (!isDebug){
 const app = createApp(App)
 
 app.use(createPinia())
+app.use(naive)
 app.use(router)
 app.mount('#app')
 

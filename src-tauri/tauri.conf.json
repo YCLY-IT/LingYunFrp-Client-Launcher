@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'"
+      "csp": null
     }
   },
   "bundle": {
@@ -41,10 +41,6 @@
       "wix": {
         "language": "zh-CN"
       }
-    },
-    "resources": [
-      "tauri.conf.json",
-      ".env"
-    ]
+    }
   }
 }
