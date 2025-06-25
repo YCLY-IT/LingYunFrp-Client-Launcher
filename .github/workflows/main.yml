@@ -122,7 +122,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Build Tauri Portable
-        run: pnpm run tauri build -- --bundles portable
+        run: pnpm run tauri build --bundles portable
       - name: Upload Portable Artifacts
         uses: actions/upload-artifact@v4
         with:
