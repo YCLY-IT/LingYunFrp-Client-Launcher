@@ -19,16 +19,25 @@ if (fs.existsSync(tauriConfPath)) {
   }
 }
 
+// 3. 同步到 src-tauri/Cargo.toml
+const cargoTomlPath = path.resolve(__dirname, '../src-tauri/Cargo.toml');
+if (fs.existsSync(cargoTomlPath)) {
+  let cargoContent = fs.readFileSync(cargoTomlPath, 'utf8');
+  // 使用正则表达式更新版本号
+  cargoContent = cargoContent.replace(/version = "[\d.]+"/, `version = "${pkg.version}"`);
+  fs.writeFileSync(cargoTomlPath, cargoContent);
+}
+
 console.log('版本号已自动递增为', pkg.version);
 
-// 3. 自动提交版本号变动
+// 4. 自动提交版本号变动
 try {
   console.log('正在自动提交版本号变动...');
-  execSync('git add package.json src-tauri/tauri.conf.json', { stdio: 'inherit' });
-  execSync(`git commit -m "chore: bump version to ${pkg.version}"`, { stdio: 'inherit' });
+  execSync('git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml', { stdio: 'inherit' });
+  execSync(`git commit --no-verify -m "chore: bump version to ${pkg.version}"`, { stdio: 'inherit' });
   console.log('版本号变动已自动提交！');
 } catch (error) {
   console.log('自动提交失败，请手动提交版本号变动：');
-  console.log('git add package.json src-tauri/tauri.conf.json');
-  console.log(`git commit -m "chore: bump version to ${pkg.version}"`);
+  console.log('git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml');
+  console.log(`git commit --no-verify -m "chore: bump version to ${pkg.version}"`);
 } 

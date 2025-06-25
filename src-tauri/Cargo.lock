@@ -2084,7 +2084,7 @@ dependencies = [
 
 [[package]]
 name = "lingyunfrp-tauri-client"
-version = "0.1.0"
+version = "0.1.54"
 dependencies = [
  "dotenv",
  "dotenvy",
