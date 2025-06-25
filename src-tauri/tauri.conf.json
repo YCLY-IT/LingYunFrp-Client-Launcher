@@ -37,12 +37,6 @@
     ],
     "copyright": "",
     "category": "Network",
-    "macOS": {
-      "minimumSystemVersion": "10.13"
-    },
-    "deb": {
-      "depends": ["libgtk-3-0", "libwebkit2gtk-4.0-37"]
-    },
     "windows": {
       "wix": {
         "language": "zh-CN"
