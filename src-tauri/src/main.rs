@@ -10,6 +10,8 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri_plugin_notification::NotificationExt;
 use std::io::BufRead;
+mod config;
+use dotenvy;
 
 #[tauri::command]
 fn close_window(window: tauri::Window) {
@@ -46,6 +48,7 @@ fn hide_to_tray(window: tauri::Window) {
 }
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
+    dotenvy::dotenv().ok();
     tauri::Builder::default()
     .manage(Mutex::new(HashMap::<u32, std::process::Child>::new()))
     .manage(Mutex::new(false)) // 添加退出状态标志
@@ -184,13 +187,9 @@ fn check_frpc_exists(app: tauri::AppHandle) -> bool {
     false
 }
 
-const API_URL: &str = "http://localhost:8081/";
-const VERSION: &str = "1.0.0";
-const DEBUG: bool = true;
-
 #[tauri::command]
 async fn api_url() -> String {
-    API_URL.to_string()
+    config::api_url().to_string()
 }
 
 
@@ -228,7 +227,7 @@ async fn download_frpc(app: tauri::AppHandle) -> Result<(), String> {
     if frpc_path.exists() {
         return Err("frpc.exe已存在".to_string());
     }
-    let response = reqwest::get(API_URL.to_string() + "frp/download")
+    let response = reqwest::get(config::api_url() + "frp/download")
        .await
        .map_err(|e| e.to_string())?;
     let bytes = response.bytes().await.map_err(|e| e.to_string())?;
@@ -275,7 +274,7 @@ async fn toggle_auto_start(enable: bool) -> Result<(), String> {
 
 #[tauri::command]
 fn get_cpl_version() -> String {
-    VERSION.to_string()
+    config::version().to_string()
 }
 
 #[tauri::command]
@@ -434,7 +433,7 @@ fn get_frpc_cli_version(app: tauri::AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 async fn get_client_version() -> String {
-    VERSION.to_string()
+    config::version().to_string()
 }
 
 #[tauri::command]
@@ -457,7 +456,7 @@ async fn forward_request(
     let api_url = if url.starts_with("http://") || url.starts_with("https://") {
         url
     } else {
-        API_URL.to_string() + url.trim_start_matches('/')
+        config::api_url().to_string() + url.trim_start_matches('/')
     };
     
     let mut request_builder = match method.to_uppercase().as_str() {
@@ -505,7 +504,7 @@ async fn forward_request(
 
 #[tauri::command]
 fn get_now_mode() -> bool {
-    DEBUG
+    config::debug()
 }
 
 // 获取当前系统和架构
