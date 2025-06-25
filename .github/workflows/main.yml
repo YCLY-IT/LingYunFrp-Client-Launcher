@@ -104,3 +104,27 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
+
+  build-portable:
+    if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build Tauri Portable
+        run: pnpm run tauri build -- --bundles portable
+      - name: Upload Portable Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: src-tauri/target/release/bundle/portable/*.exe

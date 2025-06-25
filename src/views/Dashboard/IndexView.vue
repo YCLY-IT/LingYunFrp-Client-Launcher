@@ -9,11 +9,9 @@
     <div class="content-info">
       <n-card :loading="loading" class="user-card">
         <n-space>
-          <div class="user-card-avatar">
-            <img style="margin-top: 1px; height: 64px; border-radius: 64px; transform: scale(1.2);" :src="userInfoRef?.userInfo.avatar" alt="用户头像" />
-          </div>
+          <div class="user-card-avatar" :style="{ backgroundImage: `url(${avatar})`, backgroundSize: 'cover', backgroundPosition: 'center', width: '64px', height: '64px', borderRadius: '64px', marginTop: '1px', transform: 'scale(1.2)' }"></div>
           <div style="margin-left: 16px; text-align: left; margin-top: 5px;">
-            <h3 style="margin: 0px;">{{ forTime }}，{{ nickname }}</h3>
+            <h3 style="margin: 0px;">{{ forTime }}，{{ nickname }}，{{ currentDate }} 😊</h3>
             <n-skeleton style="margin: 8px 0px 0px; width: 500px;" v-if="loading" />
             <p style="margin: 5px 0px 0px;">{{ textHitokoto }}</p>
           </div>
@@ -31,7 +29,7 @@
       <div class="left-column">
         <!-- 用户信息卡片 -->
         <NCard title="用户信息" class="info-card">
-          <NAlert v-if="IsRealname === false" type="warning" title="未实名认证" style="margin-bottom: 16px">
+          <NAlert v-if="!IsRealname" type="warning" title="未实名认证" style="margin-bottom: 16px">
             您的账户尚未完成实名认证, 请尽快完成实名认证。
             <br>
             <NButton text type="primary" @click="goToRealname">立即前往</NButton>
@@ -68,7 +66,7 @@ const nickname = localStorage.getItem('nickname') || ''
 const userInfoRef = ref<{ userInfo: { isRealname: boolean; avatar: string; signRemainder: number; } } | null>(null)
 
 // 是否实名认证
-const IsRealname = computed(() => userInfoRef.value?.userInfo.isRealname || false)
+const IsRealname = computed(() => userInfoRef.value?.userInfo.isRealname || true)
 
 // 一言和流量数据
 const textHitokoto = ref('')
@@ -90,6 +88,8 @@ const forTime = computed(() => {
   }
 })
 
+// 用户头像
+const avatar = userInfoRef.value?.userInfo.avatar || localStorage.getItem('avatar');
 
 // 配置 marked
 marked.setOptions({
@@ -148,6 +148,11 @@ const getUserTraffic = async (): Promise<void> => {
     message.error('获取用户流量失败:' + messageText)
   })
 }
+
+const currentDate = computed(() => {
+  const date = new Date()
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+})
 
 // 页面挂载后执行
 onMounted(() => {

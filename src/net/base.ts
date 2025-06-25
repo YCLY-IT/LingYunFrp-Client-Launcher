@@ -151,7 +151,7 @@ function post(url: string, data: any, headers: Record<string, string | number>, 
         method: 'POST',
         data: data,
         headers: postHeaders
-    }).then(( data : any) => {
+    }).then((data: any) => {
         if (data.code === 0) {
             success(data);
             window.$loadingBar?.finish();
@@ -173,7 +173,9 @@ function post(url: string, data: any, headers: Record<string, string | number>, 
             failure(data.message);
             window.$loadingBar?.error();
         }
-    }).catch(err => error(err));
+    }).catch(err => {
+        error(err);
+    });
 }
 
 //! TODO: use promise instead of callback
@@ -216,7 +218,9 @@ function get(url: string, headers: Record<string, string>, success: Function, fa
                 failure(data.message);
             }
         }
-    }).catch(err => error(err));
+    }).catch(err => {
+        error(err);
+    });
 }
 
 function unauthorized() {

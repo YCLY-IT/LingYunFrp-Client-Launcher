@@ -1,26 +1,19 @@
-use std::env;
-use std::fs;
-use serde::Deserialize;
 use serde_json;
 
 pub fn api_url() -> String {
-    env::var("API_URL").expect("API_URL 未配置")
-}
-
-#[derive(Deserialize)]
-struct TauriConf {
-    version: String,
+    let conf_str = include_str!("../config.json");
+    let conf: serde_json::Value = serde_json::from_str(conf_str).expect("config.json 解析失败");
+    conf["api_url"].as_str().expect("api_url 字段不存在").to_string()
 }
 
 pub fn version() -> String {
-    let conf_path = "tauri.conf.json";
-    let conf_str = fs::read_to_string(conf_path).expect("无法读取 tauri.conf.json");
-    let conf: TauriConf = serde_json::from_str(&conf_str).expect("tauri.conf.json 解析失败");
-    conf.version
+    let conf_str = include_str!("../config.json");
+    let conf: serde_json::Value = serde_json::from_str(conf_str).expect("config.json 解析失败");
+    conf["version"].as_str().expect("version 字段不存在").to_string()
 }
 
 pub fn debug() -> bool {
-    env::var("DEBUG")
-        .map(|v| v == "true" || v == "1")
-        .unwrap_or(false)
+    let conf_str = include_str!("../config.json");
+    let conf: serde_json::Value = serde_json::from_str(conf_str).expect("config.json 解析失败");
+    conf["debug"].as_bool().unwrap_or(false)
 } 

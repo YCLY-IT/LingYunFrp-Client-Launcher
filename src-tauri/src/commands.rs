@@ -128,9 +128,66 @@ pub async fn toggle_auto_start(enable: bool) -> Result<(), String> {
             Err(e) => return Err(format!("打开注册表失败: {}", e)),
         }
     }
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "macos")]
     {
-        return Err("当前仅支持Windows系统的开机自启动".to_string());
+        use std::fs;
+        use std::env;
+        use std::path::PathBuf;
+        let home_dir = env::var("HOME").map_err(|_| "无法获取HOME目录".to_string())?;
+        let plist_dir = PathBuf::from(home_dir).join("Library/LaunchAgents");
+        let plist_path = plist_dir.join("com.lingyunfrp.autostart.plist");
+        let exe_path = env::current_exe().map_err(|e| format!("获取当前程序路径失败: {}", e))?;
+        if enable {
+            fs::create_dir_all(&plist_dir).map_err(|e| format!("创建LaunchAgents目录失败: {}", e))?;
+            let plist_content = format!(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+                <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n\
+                <plist version=\"1.0\">\n\
+                <dict>\n\
+                    <key>Label</key>\n\
+                    <string>com.lingyunfrp.autostart</string>\n\
+                    <key>ProgramArguments</key>\n\
+                    <array>\n\
+                        <string>{}</string>\n\
+                    </array>\n\
+                    <key>RunAtLoad</key>\n\
+                    <true/>\n\
+                </dict>\n\
+                </plist>\n",
+                exe_path.to_string_lossy()
+            );
+            fs::write(&plist_path, plist_content).map_err(|e| format!("写入plist失败: {}", e))?;
+        } else {
+            if plist_path.exists() {
+                fs::remove_file(&plist_path).map_err(|e| format!("删除plist失败: {}", e))?;
+            }
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::fs;
+        use std::env;
+        use std::path::PathBuf;
+        let home_dir = env::var("HOME").map_err(|_| "无法获取HOME目录".to_string())?;
+        let autostart_dir = PathBuf::from(home_dir).join(".config/autostart");
+        let desktop_path = autostart_dir.join("lingyunfrp.desktop");
+        let exe_path = env::current_exe().map_err(|e| format!("获取当前程序路径失败: {}", e))?;
+        if enable {
+            fs::create_dir_all(&autostart_dir).map_err(|e| format!("创建autostart目录失败: {}", e))?;
+            let desktop_content = format!(
+                "[Desktop Entry]\nType=Application\nName=LingYunFrp\nExec=\"{}\"\nX-GNOME-Autostart-enabled=true\n",
+                exe_path.to_string_lossy()
+            );
+            fs::write(&desktop_path, desktop_content).map_err(|e| format!("写入desktop文件失败: {}", e))?;
+        } else {
+            if desktop_path.exists() {
+                fs::remove_file(&desktop_path).map_err(|e| format!("删除desktop文件失败: {}", e))?;
+            }
+        }
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    {
+        return Err("当前仅支持Windows、macOS、Linux系统的开机自启动".to_string());
     }
     Ok(())
 }
@@ -369,3 +426,8 @@ pub fn get_system_info() -> String {
     };
     format!("{} {}", system, arch)
 } 
+
+#[tauri::command]
+pub fn get_api_url() -> String {
+    config::api_url().to_string()
+}

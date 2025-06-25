@@ -5,6 +5,7 @@ use tauri::tray::{TrayIcon, TrayIconBuilder};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri_plugin_notification::NotificationExt;
+use tauri_plugin_single_instance::init as single_instance_init;
 mod config;
 mod commands;
 use commands::{
@@ -29,18 +30,23 @@ use commands::{
     api_url,
     forward_request,
     get_now_mode,
-    get_system_info
+    get_system_info,
+    get_api_url
 };
-use dotenvy;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
-    dotenvy::dotenv().ok();
     tauri::Builder::default()
     .manage(Mutex::new(HashMap::<u32, std::process::Child>::new()))
     .manage(Mutex::new(false)) // 添加退出状态标志
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_opener::init())
+    .plugin(single_instance_init(|app, _argv, _cwd| {
+        // 第二实例启动时，激活主窗口
+        let window = app.get_webview_window("main").unwrap();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }))
         .invoke_handler(tauri::generate_handler![
             close_window,
             minimize_window,
@@ -63,7 +69,8 @@ fn main() {
             api_url,
             forward_request,
             get_now_mode,
-            get_system_info
+            get_system_info,
+            get_api_url
         ])
         .setup(|app| {
             // 确保应用数据目录存在

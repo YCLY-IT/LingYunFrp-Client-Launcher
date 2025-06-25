@@ -25,6 +25,19 @@
           </RouterLink>
         </NSpace>
       </div>
+      <div class="window-controls">
+        <NSpace>
+          <NButton quaternary circle size="small" class="no-drag" @click="handleToMinimize">
+            <NIcon size="28"><RemoveOutline /></NIcon>
+          </NButton>
+          <NButton quaternary circle size="small" class="no-drag" @click="handleToMaximize">
+            <NIcon size="25"><ScanOutline /></NIcon>
+          </NButton>
+          <NButton quaternary circle size="small" class="no-drag" @click="handleToClose">
+            <NIcon size="28"><CloseOutline /></NIcon>
+          </NButton>
+        </NSpace>
+      </div>
     </div>
   </NLayoutHeader>
 
@@ -57,12 +70,13 @@ import packageData from '../../package.json'
 import { h, inject, Ref, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { NLayoutHeader, NButton, NSpace, NIcon, NPopover, NMenu, MenuOption } from 'naive-ui'
-import { MenuOutline, Moon, Sunny } from '@vicons/ionicons5'
+import { MenuOutline, Moon, Sunny, RemoveOutline, ScanOutline, CloseOutline } from '@vicons/ionicons5'
 import {
   HomeOutline,
   LogInOutline,
   PersonAddOutline
 } from '@vicons/ionicons5'
+import { invoke } from '@tauri-apps/api/core'
 
 const showMenu = ref(false)
 const router = useRouter()
@@ -113,6 +127,16 @@ function handleMenuSelect(key: string) {
       break
   }
 }
+
+const handleToMinimize = async () => {
+  await invoke('minimize_window');
+}
+const handleToMaximize = async () => {
+  await invoke('toggle_maximize');
+}
+const handleToClose = async () => {
+  await invoke('quit_window');
+}
 </script>
 
 <style lang="scss" scoped>
@@ -134,5 +158,16 @@ function handleMenuSelect(key: string) {
 }
 .no-drag {
   -webkit-app-region: no-drag;
+}
+
+.navbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.window-controls {
+  display: flex;
+  transform: translateY(2px) scale(1.15);
 }
 </style>

@@ -82,7 +82,17 @@
         
         <div class="user-profile">
           <div class="user-avatar">
-            <img :src="UserInfo.avatar" style="border-radius: 64px;" alt="User Avatar" />
+            <div
+            :style="{
+              backgroundImage: `url(${UserInfo.avatar})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              width: '80px',
+              height: '80px',
+              borderRadius: '64px'
+            }"
+            alt="User Avatar"
+          />
           </div>
           <div class="user-info">
             <h3 class="user-greeting">Hi, {{ UserInfo.nickname }} </h3> <span style="display: flex; font-size: 17px;">今天过的还好吗</span>
