@@ -33,11 +33,11 @@ console.log('版本号已自动递增为', pkg.version);
 // 4. 自动提交版本号变动
 try {
   console.log('正在自动提交版本号变动...');
-  execSync('git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml', { stdio: 'inherit' });
+  execSync('git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock', { stdio: 'inherit' });
   execSync(`git commit --no-verify -m "chore: bump version to ${pkg.version}"`, { stdio: 'inherit' });
   console.log('版本号变动已自动提交！');
 } catch (error) {
   console.log('自动提交失败，请手动提交版本号变动：');
-  console.log('git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml');
+  console.log('git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock');
   console.log(`git commit --no-verify -m "chore: bump version to ${pkg.version}"`);
 } 
