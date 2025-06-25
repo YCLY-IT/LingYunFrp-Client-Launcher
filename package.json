@@ -1,7 +1,7 @@
 {
   "name": "lingyunfrp-tauri-client",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.2",
   "type": "module",
   "title": "LingYunFRP",
   "title2": "凌云FRP",
@@ -11,7 +11,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "version:patch": "node scripts/bump-version.js"
+    "version-bump": "node scripts/bump-version.cjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.5.0",
@@ -40,9 +40,9 @@
     "@tauri-apps/cli": "^2.5.0",
     "@vitejs/plugin-vue": "^5.2.4",
     "esbuild": "^0.25.5",
+    "husky": "^9.1.7",
     "typescript": "5.8.3",
     "vite": "^6.3.5",
-    "vue-tsc": "^2.2.10",
-    "husky": "^9.0.0"
+    "vue-tsc": "^2.2.10"
   }
 }
