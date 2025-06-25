@@ -9,6 +9,12 @@ cd "$PROJECT_ROOT"
 CURRENT_VERSION=$(node -p "require('./package.json').version")
 echo "当前版本号: $CURRENT_VERSION"
 
+# 检查是否有版本号相关的文件变更
+if git diff --cached --name-only | grep -E "(package\.json|src-tauri/tauri\.conf\.json|src-tauri/Cargo\.toml)" > /dev/null; then
+  echo "检测到版本号文件变更，跳过自动版本号递增"
+  exit 0
+fi
+
 # 解析版本号并递增 patch 版本
 IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
 NEW_PATCH=$((patch + 1))
