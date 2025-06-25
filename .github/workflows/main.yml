@@ -55,6 +55,8 @@ jobs:
         run: pnpm install
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+      - name: Install glib dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev pkg-config
       - name: Build Tauri
         run: pnpm run tauri build
       - name: Upload Artifacts

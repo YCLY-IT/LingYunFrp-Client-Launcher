@@ -142,12 +142,30 @@ pub fn get_cpl_version() -> String {
 
 #[tauri::command]
 pub fn kill_all_processes() -> Result<(), String> {
-    let _output = std::process::Command::new("taskkill")
-        .arg("/F")
-        .arg("/IM")
-        .arg("frpc.exe")
-        .output()
-        .map_err(|e| format!("终止进程失败: {}", e))?;
+    #[cfg(target_os = "windows")]
+    {
+        let _output = std::process::Command::new("taskkill")
+            .arg("/F")
+            .arg("/IM")
+            .arg("frpc.exe")
+            .output()
+            .map_err(|e| format!("终止进程失败: {}", e))?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _output = std::process::Command::new("killall")
+            .arg("frpc")
+            .output()
+            .map_err(|e| format!("终止进程失败: {}", e))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _output = std::process::Command::new("pkill")
+            .arg("-f")
+            .arg("frpc")
+            .output()
+            .map_err(|e| format!("终止进程失败: {}", e))?;
+    }
     Ok(())
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "lingyunfrp-tauri-client"
-version = "0.1.3"
+version = "0.1.4"
 description = "凌云FRP图形化客户端，更方便使用"
 authors = ["LYFRP"]
 edition = "2021"
