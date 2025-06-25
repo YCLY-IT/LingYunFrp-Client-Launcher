@@ -33,6 +33,11 @@ console.log('版本号已自动递增为', pkg.version);
 // 4. 自动提交版本号变动
 try {
   console.log('正在自动提交版本号变动...');
+  
+  // 设置 Git 配置避免 LF/CRLF 警告
+  execSync('git config core.autocrlf false', { stdio: 'ignore' });
+  
+  // 添加所有相关文件
   execSync('git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock', { stdio: 'inherit' });
   execSync(`git commit --no-verify -m "chore: bump version to ${pkg.version}"`, { stdio: 'inherit' });
   console.log('版本号变动已自动提交！');
