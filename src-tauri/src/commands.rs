@@ -95,11 +95,46 @@ pub async fn download_frpc(app: tauri::AppHandle) -> Result<(), String> {
     if frpc_path.exists() {
         return Err("frpc.exe已存在".to_string());
     }
-    let response = reqwest::get(config::api_url() + "/frp/download")
-       .await
-       .map_err(|e| e.to_string())?;
-    let bytes = response.bytes().await.map_err(|e| e.to_string())?;
-    std::fs::write(frpc_path, bytes).map_err(|e| e.to_string())?;
+    let info = get_system_info();
+    let mut parts = info.split_whitespace();
+    let system = parts.next().unwrap_or("unknown");
+    let arch = parts.next().unwrap_or("unknown");
+    
+    let version = config::version();
+
+    // 拼接下载链接
+    let frpc_url = format!(
+        "{}{}{}{}{}{}{}",
+        config::api_url(),
+        "/frp/updates/latest?software=LingYunFrpClient&system=",
+        system,
+        "&arch=",
+        arch,
+        "&version=",
+        version
+    );
+
+    // 下载文件
+    let response = reqwest::get(&frpc_url)
+        .await
+        .map_err(|e| format!("下载失败: {}", e))?;
+    if !response.status().is_success() {
+        return Err(format!("下载失败，状态码: {}", response.status()));
+    }
+    let json: serde_json::Value = response.json().await.map_err(|e| format!("解析JSON失败: {}", e))?;
+    let download_url = json["latest_info"]["download_url"]
+        .as_str()
+        .ok_or("未找到下载链接")?;
+
+    // 再次请求下载文件
+    let file_response = reqwest::get(download_url)
+        .await
+        .map_err(|e| format!("下载文件失败: {}", e))?;
+    let bytes = file_response.bytes().await.map_err(|e| format!("读取内容失败: {}", e))?;
+
+    // 写入文件
+    std::fs::write(&frpc_path, &bytes).map_err(|e| format!("写入文件失败: {}", e))?;
+
     Ok(())
 }
 
