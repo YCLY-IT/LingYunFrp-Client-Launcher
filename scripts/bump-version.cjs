@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 // 1. 递增 package.json 版本号
 const pkgPath = path.resolve(__dirname, '../package.json');
@@ -29,20 +28,6 @@ if (fs.existsSync(cargoTomlPath)) {
 }
 
 console.log('版本号已自动递增为', pkg.version);
-
-// 4. 自动提交版本号变动
-try {
-  console.log('正在自动提交版本号变动...');
-  
-  // 设置 Git 配置避免 LF/CRLF 警告
-  execSync('git config core.autocrlf false', { stdio: 'ignore' });
-  
-  // 添加所有相关文件
-  execSync('git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock', { stdio: 'inherit' });
-  execSync(`git commit --no-verify -m "chore: bump version to ${pkg.version}"`, { stdio: 'inherit' });
-  console.log('版本号变动已自动提交！');
-} catch (error) {
-  console.log('自动提交失败，请手动提交版本号变动：');
-  console.log('git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock');
-  console.log(`git commit --no-verify -m "chore: bump version to ${pkg.version}"`);
-} 
+console.log('请手动提交版本号变动：');
+console.log('git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock');
+console.log(`git commit -m "chore: bump version to ${pkg.version}"`); 

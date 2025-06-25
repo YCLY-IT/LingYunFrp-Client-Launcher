@@ -1,5 +1,8 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-pnpm run version-bump
-git add package.json
+# 自动递增版本号
+node scripts/bump-version.cjs
+
+# 将版本号变动添加到当前提交中
+git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock

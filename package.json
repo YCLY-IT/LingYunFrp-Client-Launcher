@@ -1,7 +1,7 @@
 {
   "name": "lingyunfrp-tauri-client",
   "private": true,
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "title": "LingYunFRP",
   "title2": "凌云FRP",
