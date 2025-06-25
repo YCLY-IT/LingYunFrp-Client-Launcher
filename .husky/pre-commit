@@ -35,9 +35,18 @@ if (tauriConf.version !== undefined) {
 "
 fi
 
-# 更新 src-tauri/Cargo.toml
+# 更新 src-tauri/Cargo.toml - 只替换 [package] 部分的版本号
 if [ -f "src-tauri/Cargo.toml" ]; then
-  sed -i "s/version = \"[0-9.]*\"/version = \"$NEW_VERSION\"/" src-tauri/Cargo.toml
+  # 使用 awk 只替换 [package] 部分的版本号
+  awk -v new_version="$NEW_VERSION" '
+    /^\[package\]/ { in_package = 1 }
+    /^\[/ && !/^\[package\]/ { in_package = 0 }
+    in_package && /^version = / { 
+      print "version = \"" new_version "\""
+      next
+    }
+    { print }
+  ' src-tauri/Cargo.toml > src-tauri/Cargo.toml.tmp && mv src-tauri/Cargo.toml.tmp src-tauri/Cargo.toml
 fi
 
 # 更新 Cargo.lock
