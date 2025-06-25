@@ -15,17 +15,17 @@ name = "lingyunfrp_tauri_client_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.3.0", features = [] }
 
 [dependencies]
 winreg = "0.55.0"
-open = "3.0"
-reqwest = { version = "0.11", features = ["json"] }
+open = "5.3.2"
+reqwest = { version = "0.12.20", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
-tauri = { version = "2", features = ["tray-icon", "image-png"] }
-tauri-plugin-opener = "2"
+tauri = { version = "2.6.0", features = ["tray-icon", "image-png"] }
+tauri-plugin-opener = "2.3.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tauri-plugin-notification = "2"
+tauri-plugin-notification = "2.2.3"
 dotenv = "0.15"
 dotenvy = "0.15"
