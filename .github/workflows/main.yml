@@ -54,8 +54,8 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ 
-            matrix.platform == 'macos-latest' && 'macos-dmg' ||
-            matrix.platform == 'ubuntu-latest' && 'linux-deb' ||
-            matrix.platform == 'windows-latest' && 'windows-msi'
+            (matrix.platform == 'macos-latest' && 'macos-dmg') ||
+            (matrix.platform == 'ubuntu-latest' && 'linux-deb') ||
+            (matrix.platform == 'windows-latest' && 'windows-msi')
           }}
           path: src-tauri/target/release/*.{dmg,deb,msi}
