@@ -1,0 +1,61 @@
+name: Build Installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Select platform to build'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - macos
+          - linux
+          - windows
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(
+          inputs.platform == 'all' && '["macos-latest","ubuntu-latest","windows-latest"]' ||
+          inputs.platform == 'macos' && '["macos-latest"]' ||
+          inputs.platform == 'linux' && '["ubuntu-latest"]' ||
+          inputs.platform == 'windows' && '["windows-latest"]'
+        ) }}
+    
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm'
+          
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Build Tauri
+        run: pnpm tauri build
+      
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ 
+            (matrix.platform == 'macos-latest' && 'macos-dmg') ||
+            (matrix.platform == 'ubuntu-latest' && 'linux-deb') ||
+            (matrix.platform == 'windows-latest' && 'windows-msi')
+          }}
+          path: src-tauri/target/release/*.{dmg,deb,msi}
