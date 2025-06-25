@@ -2,11 +2,11 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "lingyunfrp-tauri-client",
   "version": "0.1.0",
-  "identifier": "凌云FRP",
+  "identifier": "com.lingyunfrp.client",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'"
     }
   },
   "bundle": {
@@ -35,10 +35,23 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [],
+    "copyright": "",
+    "category": "Network",
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    },
+    "deb": {
+      "depends": ["libgtk-3-0", "libwebkit2gtk-4.0-37"]
+    },
     "windows": {
       "wix": {
-        "language": "zh-CN"
-      }
+        "language": "zh-CN",
+        "template": null
+      },
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
     }
   }
 }
