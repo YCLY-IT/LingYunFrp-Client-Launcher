@@ -43,8 +43,8 @@
       }
     },
     "resources": [
-      "src-tauri/tauri.conf.json",
-      "src-tauri/.env"
+      "tauri.conf.json",
+      ".env"
     ]
   }
 }
