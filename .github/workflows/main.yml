@@ -41,8 +41,7 @@ jobs:
       - name: 打包绿色版 zip
         run: |
           cd src-tauri/target/release/bundle/macos
-          ls -al
-          7z a LingYunFrp-Tauri-Client-macos-portable.zip LingYunFrp-Tauri-Client.app
+          7z a LingYunFrp-Tauri-Client-macos-portable.zip 凌云FRP.app
       - name: 上传绿色版 zip
         uses: actions/upload-artifact@v4
         with:
@@ -91,7 +90,7 @@ jobs:
       - name: 打包绿色版 zip
         run: |
           cd src-tauri/target/release
-          7z a LingYunFrp-Tauri-Client-linux-portable.zip LingYunFrp-Tauri-Client
+          7z a LingYunFrp-Tauri-Client-linux-portable.zip *
       - name: 上传绿色版 zip
         uses: actions/upload-artifact@v4
         with:
