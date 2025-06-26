@@ -1,7 +1,7 @@
 {
   "name": "lingyunfrp-tauri-client",
   "private": true,
-  "version": "1.1.1",
+  "version": "1.1.0",
   "type": "module",
   "title": "LingYunFRP",
   "title2": "凌云FRP",
@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "update-version": "node ./update-version.cjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.5.0",

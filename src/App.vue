@@ -58,6 +58,20 @@ const hasShownUpdateNotification = ref(false)
 const MAX_RETRY_COUNT = 50 // 最大重试次数
 const RETRY_INTERVAL = 200 // 重试间隔（毫秒）
 
+// 版本号比较函数，返回1表示a>b，0表示相等，-1表示a<b
+function compareVersion(a: string, b: string): number {
+  const aParts = a.split('.').map(Number)
+  const bParts = b.split('.').map(Number)
+  const len = Math.max(aParts.length, bParts.length)
+  for (let i = 0; i < len; i++) {
+    const aNum = aParts[i] || 0
+    const bNum = bParts[i] || 0
+    if (aNum > bNum) return 1
+    if (aNum < bNum) return -1
+  }
+  return 0
+}
+
 const checkForUpdates = async () => {
   // 如果正在检查更新，直接返回
   if (updateCheckInProgress.value) return
@@ -74,7 +88,10 @@ const checkForUpdates = async () => {
     let arch = systemInfo.split(' ')[1];
     console.log(`客户端版本: ${clientVersion}, 系统: ${system}, 架构: ${arch}`);
     userApi.get(`/frp/updates/latest?software=LingYunFrpClient&system=${system}&arch=${arch}&version=${clientVersion}`, accessHandle(), (data: any) => {
-      if (data.data.latest_info.version !== clientVersion && !hasShownUpdateNotification.value) {
+      if (
+        compareVersion(data.data.latest_info.version, clientVersion) === 1 &&
+        !hasShownUpdateNotification.value
+      ) {
         // 只在页面刷新时显示通知
         if (performance.navigation.type === 1) {
           let retryCount = 0
