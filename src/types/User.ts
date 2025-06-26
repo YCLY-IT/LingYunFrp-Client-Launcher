@@ -45,7 +45,7 @@ export interface Node {
     allowType: string;
     isDisabled: boolean;
     ip: string;
-    need_realname: boolean;
+    needRealname: boolean;
     status: boolean;
 }
 export interface Group {

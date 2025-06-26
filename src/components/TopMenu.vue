@@ -109,6 +109,7 @@ const nickname = ref('')
 const avatarUrl = ref('')
 
 // 从 localStorage 获取头像链接
+avatarUrl.value = localStorage.getItem('avatar') || ''
 
 // 注入主题相关函数
 const { isDarkMode, toggleTheme } = inject('theme') as {

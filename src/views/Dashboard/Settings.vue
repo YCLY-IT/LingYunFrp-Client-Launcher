@@ -23,6 +23,8 @@ import {
 } from 'naive-ui'
 import { onBeforeRouteLeave } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
+import { userApi } from '../../net'
+import { accessHandle } from '../../net/base'
 
 
 const message = useMessage();
@@ -37,6 +39,7 @@ const autoRestoreTunnels = ref(true);
 const deepLinkEnabled = ref(false);
 const activeNames = ref<string[]>(['2']);
 
+
 const getCurrentVersion = async () => {
   try {
     const version = await invoke('get_cpl_version') as string;
@@ -47,37 +50,49 @@ const getCurrentVersion = async () => {
   }
 };
 
+// 版本号比较函数，返回1表示a>b，0表示相等，-1表示a<b
+function compareVersion(a: string, b: string): number {
+  const aParts = a.split('.').map(Number)
+  const bParts = b.split('.').map(Number)
+  const len = Math.max(aParts.length, bParts.length)
+  for (let i = 0; i < len; i++) {
+    const aNum = aParts[i] || 0
+    const bNum = bParts[i] || 0
+    if (aNum > bNum) return 1
+    if (aNum < bNum) return -1
+  }
+  return 0
+}
+
 const checkUpdate = async () => {
   checking.value = true;
   try {
-    const updateInfo = await invoke<{
-      code: number;
-      message: string | null;
-      data: {
-        current_version: string;
-        latest_info: {
-          data: any
-          version: string;
-          download_url: string;
-          release_notes: string;
-          force_update: boolean;
-        };
-        needs_update: boolean;
-      };
-    }>('check_update');
-
-    if (updateInfo.data.current_version !== updateInfo.data.latest_info.data.latest_info.version) {
-      (window as any).$notification?.success({
-        title: `新版本 ${updateInfo.data.latest_info.data.latest_info.version} 可用`,
-        content: updateInfo.data.latest_info.data.latest_info.release_notes,
-        duration: 0,
-        closable: true,
-      });
-    }else {
-      message.success('当前已是最新版本');
-    }
+    const clientVersion = await invoke<string>('get_client_version')
+    const systemInfo = await invoke<string>('get_system_info');
+    let system = systemInfo.split(' ')[0];
+    let arch = systemInfo.split(' ')[1];
+    userApi.get(`/frp/updates/latest?software=LingYunFrpClient&system=${system}&arch=${arch}&version=${clientVersion}`, accessHandle(), (data: any) => {
+      const latestVersion = data.data.latest_info.version;
+      // 检查 currentVersion 是否为合法版本号
+      if (!/^\d+\.\d+\.\d+/.test(currentVersion.value)) {
+        message.warning('当前版本号异常，无法比较');
+        return;
+      }
+      if (compareVersion(latestVersion, currentVersion.value) === 1) {
+        (window as any).$notification?.success({
+          title: '更新提示',
+          description: data.data.latest_info.release_notes,
+          duration: 3000,
+        });
+      } else {
+        message.success('当前已是最新版本');
+      }
+    }, () => {
+      message.warning("当前没有新版本");
+    }, (messageText) => {
+      message.error(messageText);
+    });
   } catch (e) {
-    console.error('检查更新错误:', e);
     message.error('检查更新失败，请稍后重试');
   } finally {
     checking.value = false;
@@ -239,6 +254,16 @@ onMounted(async () => {
     message.error(`获取应用数据目录失败: ${e}`);
   }
 });
+
+const restoreUpdateNotification = () => {
+  localStorage.removeItem('suppressUpdateNotification');
+  message.success('已恢复更新提示');
+};
+
+const disableUpdateNotification = () => {
+  localStorage.setItem('suppressUpdateNotification', 'true');
+  message.success('已禁用更新提示');
+};
 </script>
 
 <template>
@@ -259,6 +284,12 @@ onMounted(async () => {
                         </n-button>
                         <n-button @click="openAppDataDir">
                             打开软件数据目录
+                        </n-button>
+                        <n-button tertiary type="warning" @click="disableUpdateNotification">
+                          禁用更新提示
+                        </n-button>
+                        <n-button tertiary type="info" @click="restoreUpdateNotification">
+                          恢复更新提示
                         </n-button>
                         </n-space>
                     </n-space>

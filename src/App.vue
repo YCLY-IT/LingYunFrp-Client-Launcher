@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, provide, onMounted, watch } from 'vue'
+import { ref, computed, provide, onMounted, h } from 'vue'
 import {
   NConfigProvider,
   NMessageProvider,
@@ -30,7 +30,6 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { userApi } from './net'
 import { accessHandle } from './net/base'
-import { useRoute } from 'vue-router'
 
 // 从localStorage读取主题状态，默认跟随系统
 const isDarkMode = ref(localStorage.getItem('theme') === 'dark' || 
@@ -45,9 +44,6 @@ prefersDark.addEventListener('change', (e) => {
   isDarkMode.value = e.matches
 })
 const cleanupFunctions = ref<(() => void)[]>([]);
-
-const route = useRoute()
-const isPageRefresh = ref(true) // 添加标记，默认为true表示是页面刷新
 
 // 更新检查相关
 const updateCheckInProgress = ref(false)
@@ -73,6 +69,10 @@ function compareVersion(a: string, b: string): number {
 }
 
 const checkForUpdates = async () => {
+  if (localStorage.getItem('suppressUpdateNotification') === 'true') {
+    return;
+  }
+  
   // 如果正在检查更新，直接返回
   if (updateCheckInProgress.value) return
   
@@ -102,7 +102,34 @@ const checkForUpdates = async () => {
               (window as any).$notification.info({
                 title: `新版本 ${data.data.latest_info.version} 可用`,
                 content: data.data.latest_info.release_notes,
-                duration: 0, 
+                duration: 0,
+                action: () => h(
+                  'button',
+                  {
+                    style: `
+                      margin-left: 16px;
+                      color: #409eff;
+                      background: none;
+                      border: none;
+                      cursor: pointer;
+                      font-size: 14px;
+                      padding: 0;
+                      text-decoration: underline transparent;
+                      transition: text-decoration-color 0.2s;
+                    `,
+                    onmouseenter: (e: MouseEvent) => {
+                      (e.target as HTMLElement).style.textDecorationColor = '#409eff';
+                    },
+                    onmouseleave: (e: MouseEvent) => {
+                      (e.target as HTMLElement).style.textDecorationColor = 'transparent';
+                    },
+                    onclick: () => {
+                      localStorage.setItem('suppressUpdateNotification', 'true');
+                      (window as any).$notification.destroyAll();
+                    }
+                  },
+                  '以后不再提示'
+                )
               })
               hasShownUpdateNotification.value = true
             } else if (retryCount < MAX_RETRY_COUNT) {
@@ -144,10 +171,6 @@ const checkForUpdates = async () => {
 }
 
 // 监听路由变化
-watch(() => route.path, () => {
-  isPageRefresh.value = false // 路由变化时，将标记设为false
-  checkForUpdates()
-})
 
 // 主题切换函数
 const toggleTheme = () => {

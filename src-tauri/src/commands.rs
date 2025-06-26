@@ -118,10 +118,17 @@ pub async fn download_frpc(app: tauri::AppHandle) -> Result<(), String> {
     let response = reqwest::get(&frpc_url)
         .await
         .map_err(|e| format!("下载失败: {}", e))?;
-    if !response.status().is_success() {
-        return Err(format!("下载失败，状态码: {}", response.status()));
+    let status = response.status();
+    let resp_text = response.text().await.map_err(|e| format!("读取响应失败: {}", e))?;
+    if !status.is_success() {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&resp_text) {
+            if let Some(msg) = json.get("message").and_then(|m| m.as_str()) {
+                return Err(msg.to_string());
+            }
+        }
+        return Err(format!("下载失败，状态码: {}", status));
     }
-    let json: serde_json::Value = response.json().await.map_err(|e| format!("解析JSON失败: {}", e))?;
+    let json: serde_json::Value = serde_json::from_str(&resp_text).map_err(|e| format!("解析JSON失败: {}", e))?;
     let download_url = json["latest_info"]["download_url"]
         .as_str()
         .ok_or("未找到下载链接")?;
@@ -277,7 +284,15 @@ pub async fn start_proxy(
     let mut command = std::process::Command::new(&frpc_path);
     command
         .arg("-t").arg(token)
-        .arg("-p").arg(proxy_id.to_string())
+        .arg("-p").arg(proxy_id.to_string());
+
+    // 这里判断开发环境，追加 -u <api_url>
+    if cfg!(debug_assertions) {
+        let api_url = config::api_url();
+        command.arg("-u").arg(api_url);
+    }
+
+    command
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
     let mut child = command.spawn().map_err(|e| format!("启动隧道失败: {}", e))?;
@@ -423,8 +438,8 @@ pub async fn forward_request(
         "GET" => request_builder.send().await,
         _ => return Err("不支持的请求方法".to_string()),
     }.map_err(|e| e.to_string())?;
-    let response_text = response.text().await.map_err(|e| e.to_string())?;
-    let cleaned_text = response_text
+    let resp_text = response.text().await.map_err(|e| e.to_string())?;
+    let cleaned_text = resp_text
         .trim_start_matches('\u{FEFF}')
         .trim()
         .lines()

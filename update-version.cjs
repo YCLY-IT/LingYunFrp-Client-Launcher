@@ -29,11 +29,21 @@ if (fs.existsSync(tauriConfPath)) {
 const configJsonPath = path.resolve(__dirname, 'src-tauri/config.json');
 if (fs.existsSync(configJsonPath)) {
   const configJson = JSON.parse(fs.readFileSync(configJsonPath, 'utf8'));
-  if (configJson.version) {
-    const old = configJson.version;
-    configJson.version = newVersion;
+  let updated = false;
+  if (configJson.dev && configJson.dev.version) {
+    const old = configJson.dev.version;
+    configJson.dev.version = newVersion;
+    console.log(`config.json(dev): ${old} -> ${newVersion}`);
+    updated = true;
+  }
+  if (configJson.prod && configJson.prod.version) {
+    const old = configJson.prod.version;
+    configJson.prod.version = newVersion;
+    console.log(`config.json(prod): ${old} -> ${newVersion}`);
+    updated = true;
+  }
+  if (updated) {
     fs.writeFileSync(configJsonPath, JSON.stringify(configJson, null, 2) + '\n');
-    console.log(`config.json: ${old} -> ${newVersion}`);
   }
 }
 
@@ -63,4 +73,5 @@ if (fs.existsSync(path.join(srcTauriPath, 'Cargo.toml'))) {
 // 6.自动只把以上文件git add
 execSync('git add package.json src-tauri/tauri.conf.json src-tauri/config.json src-tauri/Cargo.toml src-tauri/Cargo.lock', { stdio: 'inherit' });
 
-console.log('版本号已全部同步更新！, 并且自动提交到git啦uwu'); 
+console.log('版本号已全部同步更新！, 并且自动提交到git啦uwu');
+console.log('注意：config.json 变更后需重新构建 tauri 项目，二进制才会生效！'); 
