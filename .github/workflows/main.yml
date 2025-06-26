@@ -40,13 +40,14 @@ jobs:
           path: src-tauri/target/release/bundle/dmg/*.dmg
       - name: 打包绿色版 zip
         run: |
-          cd src-tauri/target/release
+          cd src-tauri/target/release/bundle/macos
+          ls -al
           7z a LingYunFrp-Tauri-Client-macos-portable.zip LingYunFrp-Tauri-Client.app
       - name: 上传绿色版 zip
         uses: actions/upload-artifact@v4
         with:
           name: macos-portable-zip
-          path: src-tauri/target/release/LingYunFrp-Tauri-Client-macos-portable.zip
+          path: src-tauri/target/release/bundle/macos/LingYunFrp-Tauri-Client-macos-portable.zip
 
   build-linux:
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
