@@ -25,7 +25,7 @@
         
         <div style="margin-top: 10px;">
           <NText>区域筛选：</NText>
-          <NSpace style="margin-top: 5px;">
+          <div class="region-tags-row" style="margin-top: 5px;">
             <NTag 
               :type="selectedRegion === 'all' ? 'primary' : 'default'" 
               checkable 
@@ -58,79 +58,81 @@
             >
               海外地区
             </NTag>
-          </NSpace>
+          </div>
         </div>
       </NSpace>
     </NCard>
     
     <!-- 节点选择卡片 - 修改为每行三个节点 -->
     <NCard title="选择节点" class="node-card">
-      <NSpace vertical>
-        <!-- 修改这里的cols属性从1改为3 -->
-        <NGrid x-gap="16" y-gap="16" cols="3" responsive="screen" style="padding-top: 14px;">
-          <NGridItem v-for="node in filteredNodes" :key="node.value">
-            <NCard hoverable @click="handleNodeSelect(node)"
-                   :class="{ 'selected-node': selectedNodeId === node.value }" class="node-item">
-              <div class="node-header">
-                <div class="node-title">
-                  <NTag type="info" size="small"># {{ node.id }}</NTag>
-                  <NText style="white-space: nowrap; margin-right: 8px;">{{ node.name }}</NText>
-                </div>
-                <div class="node-tags">
-                  <!-- 显示在线/离线状态标签 -->
-                  <NTag :type="node.isOnline ? 'success' : 'error'" size="small">
-                    {{ node.isOnline ? '在线' : '离线' }}
-                  </NTag>
-                  
-                  <!-- 显示区域标签 -->
-                  <NTag :type="getRegionTagType(node.location)" size="small">
-                    {{ getRegionName(node.location) }}
-                  </NTag>
-                  
-                  <!-- 显示协议标签 -->
-                  <NTag v-if="supportsUdp(node)" type="success" size="small">UDP</NTag>
-                  <NTag v-if="supportsHttp(node)" type="success" size="small">
-                    {{ supportsHttps(node) ? 'HTTP(S)' : 'HTTP' }}
-                  </NTag>
-                  <NTag v-else="supportsHttps(node)" type="success" size="small">
-                    HTTPS
-                  </NTag>
-                </div>
-              </div>
-              
-              <NText depth="3" style="font-size: 13px; margin: 8px 0;">{{ node.description }}</NText>
-              
-              <NSpace vertical size="small" style="margin-top: 8px;">
-                <div class="info-item">
-                  <NSpace wrap>
-                    <NTag v-for="group in node.allowGroups" :key="group.name" size="small" type="info">
-                      {{ group.friendlyName }}
+      <NSpin :show="nodeLoading" tip="节点加载中...">
+        <NSpace vertical>
+          <!-- 修改这里的cols属性从1改为3 -->
+          <NGrid x-gap="16" y-gap="16" cols="3" responsive="screen" style="padding-top: 14px;">
+            <NGridItem v-for="node in filteredNodes" :key="node.value">
+              <NCard hoverable @click="handleNodeSelect(node)"
+                     :class="{ 'selected-node': selectedNodeId === node.value }" class="node-item">
+                <div class="node-header">
+                  <div class="node-title">
+                    <NTag type="info" size="small"># {{ node.id }}</NTag>
+                    <NText style="white-space: nowrap; margin-right: 8px;">{{ node.name }}</NText>
+                  </div>
+                  <div class="node-tags">
+                    <!-- 显示在线/离线状态标签 -->
+                    <NTag :type="node.isOnline ? 'success' : 'error'" size="small">
+                      {{ node.isOnline ? '在线' : '离线' }}
                     </NTag>
-                  </NSpace>
+                    
+                    <!-- 显示区域标签 -->
+                    <NTag :type="getRegionTagType(node.location)" size="small">
+                      {{ getRegionName(node.location) }}
+                    </NTag>
+                    
+                    <!-- 显示协议标签 -->
+                    <NTag v-if="supportsUdp(node)" type="success" size="small">UDP</NTag>
+                    <NTag v-if="supportsHttp(node)" type="success" size="small">
+                      {{ supportsHttps(node) ? 'HTTP(S)' : 'HTTP' }}
+                    </NTag>
+                    <NTag v-else="supportsHttps(node)" type="success" size="small">
+                      HTTPS
+                    </NTag>
+                  </div>
                 </div>
-                <div class="info-item">
-                  <NSpace wrap>
-                    <NTag type="warning" size="small">
-                      {{ node.portRange.min }} - {{ node.portRange.max }}
-                    </NTag>
-                    <NTag type="info" size="small">
-                      {{ node.bandWidth }} Mbps
-                    </NTag>
-                    <NTag v-if="node.needRealname" type="info" size="small">
-                      实名
-                    </NTag>
-                  </NSpace>
-                </div>
-              </NSpace>
-            </NCard>
-          </NGridItem>
-        </NGrid>
-        
-        <!-- 无结果提示 -->
-        <div v-if="filteredNodes.length === 0" class="no-results">
-          <NEmpty description="没有找到符合条件的节点" />
-        </div>
-      </NSpace>
+                
+                <NText depth="3" style="font-size: 13px; margin: 8px 0;">{{ node.description }}</NText>
+                
+                <NSpace vertical size="small" style="margin-top: 8px;">
+                  <div class="info-item">
+                    <NSpace wrap>
+                      <NTag v-for="group in node.allowGroups" :key="group.name" size="small" type="info">
+                        {{ group.friendlyName }}
+                      </NTag>
+                    </NSpace>
+                  </div>
+                  <div class="info-item">
+                    <NSpace wrap>
+                      <NTag type="warning" size="small">
+                        {{ node.portRange.min }} - {{ node.portRange.max }}
+                      </NTag>
+                      <NTag type="info" size="small">
+                        {{ node.bandWidth }} Mbps
+                      </NTag>
+                      <NTag v-if="node.needRealname" type="info" size="small">
+                        实名
+                      </NTag>
+                    </NSpace>
+                  </div>
+                </NSpace>
+              </NCard>
+            </NGridItem>
+          </NGrid>
+          
+          <!-- 无结果提示 -->
+          <div v-if="filteredNodes.length === 0" class="no-results">
+            <NEmpty description="没有找到符合条件的节点" />
+          </div>
+        </NSpace>
+      </NSpin>
     </NCard>
 
     <!-- 隧道配置弹窗 -->
@@ -265,7 +267,7 @@
 
 <script setup lang="ts">
 import { ref, h, computed, onMounted, watch } from 'vue'
-import { NCard, NForm, NFormItem, NInput, NInputNumber, NSelect, NButton, NIcon, useMessage, type FormRules, type FormInst, NDivider, NSwitch, NTag, NSpace, NText, NGrid, NGridItem, NDynamicTags, NModal, NEmpty } from 'naive-ui'
+import { NCard, NForm, NFormItem, NInput, NInputNumber, NSelect, NButton, NIcon, useMessage, type FormRules, type FormInst, NDivider, NSwitch, NTag, NSpace, NText, NGrid, NGridItem, NDynamicTags, NModal, NEmpty, NSpin } from 'naive-ui'
 import { CloudUploadOutline, SearchOutline } from '@vicons/ionicons5'
 import { switchButtonRailStyle } from '../../../constants/theme.ts'
 import { useRouter } from 'vue-router'
@@ -276,6 +278,7 @@ const router = useRouter()
 const message = useMessage()
 const formRef = ref<FormInst | null>(null)
 const loading = ref(false)
+const nodeLoading = ref(false)
 
 // 新增搜索和区域筛选
 const searchQuery = ref('')
@@ -456,60 +459,73 @@ const rules: FormRules = {
 const groupNameMap = ref<Record<string, string>>({})
 
 const fetchUserGroups = async () => {
-  userApi.get("/user/info/groups", accessHandle(), (data) => {
+  return new Promise((resolve) => {
+    userApi.get("/user/info/groups", accessHandle(), (data) => {
       if (data.code === 0) {
-          groupNameMap.value = data.data.groups.reduce((acc: Record<string, string>, group: any) => {
-              acc[group.name] = group.friendlyName
-              return acc
-          }, {} as Record<string, string>)
+        // 处理两种不同的响应格式
+        const groups = typeof data.data.groups === 'string' 
+          ? JSON.parse(data.data.groups) 
+          : data.data.groups;
+
+        groupNameMap.value = groups.reduce((acc: Record<string, string>, group: any) => {
+          acc[group.name] = group.friendlyName;
+          return acc;
+        }, {} as Record<string, string>);
+        resolve(true);
       } else {
-          message.error(data.message || '获取用户组列表失败')
+        message.error(data.message || '获取用户组列表失败');
+        resolve(false);
       }
-  }, (messageText) => {
-      message.error(messageText || '获取用户组列表失败')
+    }, (messageText) => {
+      message.error(messageText || '获取用户组列表失败');
+      resolve(false);
+    })
   })
 }
 
 const fetchNodes = async () => {
-    userApi.get("/proxy/node/list", accessHandle(), (data) => {
-      if (data.code === 0) {
-        nodeOptions.value = data.data.map((node: any) => {
-          const [minPort, maxPort] = node.allowPort.split('-').map(Number)
-          const allowedProtocols = node.allowType.split(';').map((type: string) => type.trim())
-          const allowGroups = node.allowGroup.split(';').map((group: string) => {
-            const trimmedGroup = group.trim()
-            return {
-              name: trimmedGroup,
-              friendlyName: groupNameMap.value[trimmedGroup] || trimmedGroup
-            }
-          })
+  nodeLoading.value = true
+  userApi.get("/proxy/node/list", accessHandle(), (data) => {
+    if (data.code === 0) {
+      nodeOptions.value = data.data.map((node: any) => {
+        const [minPort, maxPort] = node.allowPort.split('-').map(Number)
+        const allowedProtocols = node.allowType.split(';').map((type: string) => type.trim())
+        
+        // 确保allowGroup分割正确
+        const allowGroups = node.allowGroup.split(';')
+          .map((group: string) => group.trim())
+          .filter((group: string) => group) // 过滤空值
+          .map((group: string) => ({
+            name: group,
+            friendlyName: groupNameMap.value[group] || group
+          }));
 
-          return {
-            label: `#${node.id} - ${node.name}`,
-            value: node.id,
-            id: node.id,
-            name: node.name,
-            hostname: node.hostname,
-            description: node.description,
-            isOnline: node.status,
-            isDisabled: node.isDisabled,
-            allowedProtocols,
-            allowGroups,
-            needRealname: node.needRealname,
-            bandWidth: node.bandWidth,
-            location: node.location,
-            portRange: {
-              min: minPort,
-              max: maxPort
-            }
+        return {
+          label: `#${node.id} - ${node.name}`,
+          value: node.id,
+          id: node.id,
+          name: node.name,
+          hostname: node.hostname,
+          description: node.description,
+          isOnline: node.status,
+          isDisabled: node.isDisabled,
+          allowedProtocols,
+          allowGroups,
+          needRealname: node.needRealname,
+          bandWidth: node.bandWidth,
+          location: node.location,
+          portRange: {
+            min: minPort,
+            max: maxPort
           }
+        }
       })
-      } else {
-        message.error(data.message || '获取节点列表失败')
-      }
-    }, (error) => {
-        message.error(error || '获取节点列表失败')
-    })
+    }
+    nodeLoading.value = false
+    // ... existing error handling ...
+  }, () => {
+    nodeLoading.value = false
+  })
 }
 
 const selectedNode = ref<{
@@ -656,11 +672,10 @@ const goToRealname = () => {
   router.push('/dashboard/profile')
 }
 
+// 修改初始化顺序
 const init = async () => {
-  await fetchUserGroups()
-  setTimeout(() => {
-    fetchNodes()
-  }, 10)
+  await fetchUserGroups()  // 确保先获取用户组信息
+  fetchNodes()            // 移除 setTimeout 直接调用
 }
 
 onMounted(() => {
@@ -696,7 +711,6 @@ watch(showRealnameModal, (newVal) => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 20px;
   gap: 20px;
 
   .filter-card, .node-card {
@@ -820,6 +834,17 @@ watch(showRealnameModal, (newVal) => {
 @media (max-width: 768px) {
   .content-grid .node-card :deep(.n-grid) {
     grid-template-columns: repeat(1, 1fr) !important;
+  }
+}
+
+/* 区域筛选标签最初始样式 */
+.region-tags-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: nowrap;
+  
+  .n-tag {
+    border-radius: 16px !important;
   }
 }
 </style>
