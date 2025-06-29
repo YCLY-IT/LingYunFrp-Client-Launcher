@@ -1,15 +1,15 @@
 <template>
-  <HomeMenu v-if="!isDashboard && isReady" />
+  <HomeMenu v-if="!isDashboard" />
   <RouterView v-slot="{ Component }">
     <transition name="fade" mode="out-in" appear>
-      <component :is="Component" v-if="isReady" />
+      <component :is="Component" />
     </transition>
   </RouterView>
   <NGlobalStyle />
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, RouterView, useRouter } from 'vue-router'
 import { NGlobalStyle, useLoadingBar, useMessage, useDialog, useNotification } from 'naive-ui'
 import { Window } from '../types'
@@ -23,7 +23,6 @@ const notification = useNotification()
 
 const route = useRoute()
 const router = useRouter()  // 新增路由实例
-const isReady = ref(false)  // 移除isMounted
 
 // 修改后的计算属性
 const isDashboard = computed(() => {
@@ -42,7 +41,5 @@ onMounted(async () => {
   window.$message = message
   window.$dialog = dialog
   window.$notification = notification
-  
-  isReady.value = true  // 设置准备状态
 })
 </script> 

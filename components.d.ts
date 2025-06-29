@@ -11,6 +11,7 @@ declare module 'vue' {
     AppContent: typeof import('./src/components/AppContent.vue')['default']
     HomeMenu: typeof import('./src/components/HomeMenu.vue')['default']
     LeftMenu: typeof import('./src/components/LeftMenu.vue')['default']
+    LoadingScreen: typeof import('./src/components/LoadingScreen.vue')['default']
     NCard: typeof import('naive-ui')['NCard']
     NFlex: typeof import('naive-ui')['NFlex']
     NGi: typeof import('naive-ui')['NGi']

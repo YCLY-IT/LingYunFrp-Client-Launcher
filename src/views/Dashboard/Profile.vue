@@ -1,109 +1,116 @@
 <template>
-  <div class="page-container">
-    <div class="left-column">
-
-      <!-- 账户设置区域 -->
-      <n-card>
-        <div class="card-header">
-          <h2 class="card-title">账户设置</h2>
-          <div class="tabs">
-            <span class="tab active" style="margin-right: 10px;">Settings</span>
-          </div>
-        </div>
-
-        <div class="settings-grid">
-
-          <!-- 修改用户名 -->
-          <div class="setting-item" @click="showModal('changeUsername')">
-            <div class="setting-icon">
-                <UserIcon style="width: 50px; height: 50px; margin-top: 25px;" />
-            </div>
-            <div class="setting-content">
-              <h3 class="setting-title">修改用户名</h3>
-              <p class="setting-desc">点击这里可以修改您的用户名</p>
-            </div>
-          </div>
-
-          <!-- 更换昵称 -->
-          <div class="setting-item" @click="showModal('changeNickname')">
-            <div class="setting-icon">
-                <UserIcon style="width: 50px; height: 50px; margin-top: 25px;" />
-            </div>
-            <div class="setting-content">
-              <h3 class="setting-title">更换昵称</h3>
-              <p class="setting-desc">点击这里可以修改您的昵称</p>
-            </div>
-          </div>
-
-          <!-- 更改头像 -->
-          <div class="setting-item" @click="showModal('changeAvatar')">
-            <div class="setting-icon">
-              <ImageUpIcon style="width: 50px; height: 50px; margin-top: 25px;" />
-            </div>
-            <div class="setting-content">
-              <h3 class="setting-title">更改头像</h3>
-              <p class="setting-desc">点击这里上传图片，可以更换您的头像</p>
-            </div>
-          </div>
-
-          <!-- 修改密码 -->
-          <div class="setting-item" @click="showModal('changePassword')">
-            <div class="setting-icon">
-              <LockIcon style="width: 50px; height: 50px; margin-top: 25px;" />
-            </div>
-            <div class="setting-content">
-              <h3 class="setting-title">修改密码</h3>
-              <p class="setting-desc">点击这里可以修改您的登录密码</p>
-            </div>
-          </div>
-          
-          <!-- 实人认证 -->
-          <div v-if="!UserInfo.isRealname" class="setting-item" @click="showModal('changeRealname')">
-            <div class="setting-icon">
-              <BadgeCheckIcon style="width: 50px; height: 50px; margin-top: 25px;" />
-            </div>
-            <div class="setting-content">
-              <h3 class="setting-title">实人认证</h3>
-              <p class="setting-desc">点击这里可以实人认证哦</p>
-            </div>
-          </div>
-        </div>
-      </n-card>
+  <div class="profile-container">
+    <!-- 欢迎横幅 -->
+    <div class="welcome-banner">
+      个人资料设置
     </div>
 
-    <div class="right-column">
+    <div class="content-grid">
+      <!-- 左侧设置区域 -->
+      <div class="left-column">
+        <n-card title="账户设置" class="settings-card">
+          <div class="settings-grid">
+            <!-- 修改用户名 -->
+            <div class="setting-item" @click="showModal('changeUsername')">
+              <div class="setting-icon">
+                <UserIcon />
+              </div>
+              <div class="setting-content">
+                <h3 class="setting-title">修改用户名</h3>
+                <p class="setting-desc">点击这里可以修改您的用户名</p>
+              </div>
+              <div class="setting-arrow">
+                <n-icon><ChevronRightIcon /></n-icon>
+              </div>
+            </div>
 
-      <!-- 账户详情区域 -->
-      <n-card class="card account-details">
-        <div class="card-header">
-          <h2 class="card-title">账户详情</h2>
-          <!-- <button class="close-button">×</button> -->
-        </div>
-        
-        <div class="user-profile">
-          <div class="user-avatar">
-            <div
-            :style="{
-              backgroundImage: `url(${UserInfo.avatar})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              width: '80px',
-              height: '80px',
-              borderRadius: '64px'
-            }"
-            alt="User Avatar"
-          />
-          </div>
-          <div class="user-info">
-            <h3 class="user-greeting">Hi, {{ UserInfo.nickname }} </h3> <span style="display: flex; font-size: 17px;">今天过的还好吗</span>
-            <p class="user-email">{{ UserInfo.email }}</p>
-          </div>
-        </div>
+            <!-- 更换昵称 -->
+            <div class="setting-item" @click="showModal('changeNickname')">
+              <div class="setting-icon">
+                <UserIcon />
+              </div>
+              <div class="setting-content">
+                <h3 class="setting-title">更换昵称</h3>
+                <p class="setting-desc">点击这里可以修改您的昵称</p>
+              </div>
+              <div class="setting-arrow">
+                <n-icon><ChevronRightIcon /></n-icon>
+              </div>
+            </div>
 
-        <div class="account-info-grid">
-          <userInfo ref="userInfoRef" />
+            <!-- 更改头像 -->
+            <div class="setting-item" @click="showModal('changeAvatar')">
+              <div class="setting-icon">
+                <ImageUpIcon />
+              </div>
+              <div class="setting-content">
+                <h3 class="setting-title">更改头像</h3>
+                <p class="setting-desc">点击这里上传图片，可以更换您的头像</p>
+              </div>
+              <div class="setting-arrow">
+                <n-icon><ChevronRightIcon /></n-icon>
+              </div>
+            </div>
+
+            <!-- 修改密码 -->
+            <div class="setting-item" @click="showModal('changePassword')">
+              <div class="setting-icon">
+                <LockIcon />
+              </div>
+              <div class="setting-content">
+                <h3 class="setting-title">修改密码</h3>
+                <p class="setting-desc">点击这里可以修改您的登录密码</p>
+              </div>
+              <div class="setting-arrow">
+                <n-icon><ChevronRightIcon /></n-icon>
+              </div>
+            </div>
+            
+            <!-- 实人认证 -->
+            <div v-if="!UserInfo.isRealname" class="setting-item setting-item-warning" @click="showModal('changeRealname')">
+              <div class="setting-icon">
+                <BadgeCheckIcon />
+              </div>
+              <div class="setting-content">
+                <h3 class="setting-title">实人认证</h3>
+                <p class="setting-desc">点击这里可以实人认证哦</p>
+              </div>
+              <div class="setting-arrow">
+                <n-icon><ChevronRightIcon /></n-icon>
+              </div>
+            </div>
           </div>
-      </n-card>
+        </n-card>
+      </div>
+
+      <!-- 右侧账户详情区域 -->
+      <div class="right-column">
+        <n-card title="账户详情" class="account-card">
+          <div class="user-profile">
+            <div class="user-avatar">
+              <div
+                :style="{
+                  backgroundImage: `url(${UserInfo.avatar})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '64px'
+                }"
+                alt="User Avatar"
+              />
+            </div>
+            <div class="user-info">
+              <h3 class="user-greeting">Hi, {{ UserInfo.nickname }} </h3> <span style="display: flex; font-size: 17px;">今天过的还好吗</span>
+              <p class="user-email">{{ UserInfo.email }}</p>
+            </div>
+          </div>
+
+          <div class="account-info-grid">
+            <userInfo ref="userInfoRef" />
+          </div>
+        </n-card>
+      </div>
     </div>
 
     <!-- 模态窗口 -->
@@ -163,7 +170,7 @@
         </n-form-item>
         <n-form-item label="预览">
           <div class="avatar-preview">
-            <img style="border-radius: 64px;" :src="forms.avatar.avatarUrl" alt="Avatar Preview" />
+            <img style="border-radius: 50%; border: 2px solid var(--n-border-color);" :src="forms.avatar.avatarUrl" alt="Avatar Preview" />
           </div>
         </n-form-item>
         <div class="modal-actions">
@@ -229,13 +236,17 @@ import {
   NForm, 
   NFormItem, 
   NInput, 
+  NIcon,
+  NCard,
+  NUpload,
   useMessage 
 } from 'naive-ui'
-import { UserIcon, ImageUpIcon, LockIcon, BadgeCheckIcon } from 'lucide-vue-next'
+import { UserIcon, ImageUpIcon, LockIcon, BadgeCheckIcon, ChevronRightIcon } from 'lucide-vue-next'
 import userInfo from "../../components/UserInfo.vue";
 import { UploadFileInfo } from 'naive-ui'
 import { userApi } from '../../net'
 import { accessHandle, removeToken } from '../../net/base'
+
 const userInfoRef = ref<InstanceType<typeof userInfo>>();
 // 消息提示
 const message = useMessage()
@@ -630,185 +641,155 @@ const handleSendPhoneCode = async () => {
 </script>
 
 <style lang="scss" scoped>
-.page-container {
-  display: flex;
-  gap: 16px;
-  padding: 16px;
-  max-width: 1200px;
-  margin: 0 auto;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
-}
+@use '../../assets/styles/variables' as *;
 
-.left-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.right-column {
-  width: 450px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-}
-
-.card {
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 16px;
-  
-  &-title {
-    font-size: 18px;
+.profile-container {
+  .welcome-banner {
+    user-select: none;
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background-color: $bg-color-hover;
+    border-radius: 8px;
     font-weight: 500;
-    margin: 0 0 16px 0;
+    color: $text-color;
   }
-  
-  &-header {
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) {
+    .content-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .left-column {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .settings-card,
+  .account-card {
+    width: 100%;
+    box-shadow: $box-shadow;
+    transition: $transition-all;
+    
+    &:hover {
+      box-shadow: $box-shadow-hover;
+    }
+
+    :deep(.n-card-header) {
+      padding: 16px 16px 8px 16px;
+      border-bottom: 1px solid $border-color;
+    }
+
+    :deep(.n-card__content) {
+      padding: 16px;
+    }
+  }
+
+  .settings-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .setting-item {
+    display: flex;
     align-items: center;
-    margin-bottom: 16px;
-  }
-}
-
-.tabs {
-  display: flex;
-  gap: 16px;
-  
-  .tab {
+    gap: 16px;
+    padding: 16px;
+    border-radius: 8px;
     cursor: pointer;
-    padding-bottom: 4px;
+    transition: $transition-all;
+    border: 1px solid transparent;
     
-    &.active {
-      border-bottom: 2px solid;
-      font-weight: 500;
+    &:hover {
+      background-color: $bg-color-hover;
+      border-color: $border-color;
+      transform: translateY(-1px);
+    }
+
+    &.setting-item-warning {
+      border-left: 4px solid #faad14;
+      background-color: rgba(250, 173, 20, 0.05);
+      
+      &:hover {
+        background-color: rgba(250, 173, 20, 0.1);
+      }
     }
   }
-}
 
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  
-  @media (max-width: 992px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.setting-item {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-}
-
-.setting-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  i {
-    width: 24px;
-    height: 24px;
-    display: block;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: contain;
-  }
-}
-
-.setting-content {
-  flex: 1;
-}
-
-.setting-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin: 0 0 4px 0;
-}
-
-.setting-desc {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-}
-
-.redemption-code {
-  .code-input-group {
-    margin-top: 16px;
-  }
-  
-  .input-label {
-    margin-bottom: 8px;
-    font-size: 14px;
-    
-    .required {
-      color: #ff4d4f;
-    }
-  }
-  
-  .input-with-button {
+  .setting-icon {
+    width: 48px;
+    height: 48px;
     display: flex;
-    gap: 8px;
-  }
-  
-  .code-input {
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid #d9d9d9;
-    border-radius: 4px;
-    font-size: 14px;
+    align-items: center;
+    justify-content: center;
+    background-color: $primary-suppl;
+    border-radius: 12px;
+    color: $primary-color;
+    flex-shrink: 0;
     
-    &:focus {
-      outline: none;
-      border-color: #1890ff;
+    svg {
+      width: 24px;
+      height: 24px;
     }
   }
-  
-  .verify-button {
-    padding: 0 16px;
-    border: none;
-    border-radius: 4px;
-    background-color: #b392f0;
-    cursor: pointer;
-    
-  }
-}
 
-.account-details {
-  .close-button {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
+  .setting-content {
+    flex: 1;
+    min-width: 0;
   }
-  
+
+  .setting-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0 0 4px 0;
+    color: $text-color;
+  }
+
+  .setting-desc {
+    font-size: 14px;
+    color: $text-color-2;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .setting-arrow {
+    color: $text-color-3;
+    transition: $transition-all;
+    
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .setting-item:hover .setting-arrow {
+    color: $primary-color;
+    transform: translateX(2px);
+  }
+
   .user-profile {
     display: flex;
     align-items: center;
     gap: 16px;
     margin-bottom: 24px;
   }
-  
+
   .user-avatar {
     width: 80px;
     height: 80px;
@@ -821,7 +802,11 @@ const handleSendPhoneCode = async () => {
       object-fit: cover;
     }
   }
-  
+
+  .user-info {
+    flex: 1;
+  }
+
   .user-greeting {
     font-size: 18px;
     font-weight: 500;
@@ -832,13 +817,13 @@ const handleSendPhoneCode = async () => {
       opacity: 0.7;
     }
   }
-  
+
   .user-email {
     font-size: 14px;
     color: #666;
     margin: 0;
   }
-  
+
   .account-info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -846,43 +831,105 @@ const handleSendPhoneCode = async () => {
     border-radius: 8px;
     padding: 16px;
   }
-  
+
   .info-item {
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
-  
+
   .info-label {
     font-size: 14px;
     color: #666;
   }
-  
+
   .info-value {
     font-size: 16px;
     font-weight: 500;
   }
-}
 
-// 模态窗口样式
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-}
+  // 模态窗口样式
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid $border-color;
+  }
 
-.avatar-preview {
-  width: 100px;
-  height: 100px;
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 0 auto;
-  
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .avatar-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto;
+    box-shadow: $box-shadow-light;
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  // 响应式设计
+  @media (max-width: 768px) {
+    .welcome-banner {
+      font-size: 1.2em;
+      padding: 10px 12px;
+    }
+
+    .user-profile {
+      flex-direction: column;
+      text-align: center;
+      gap: 16px;
+    }
+
+    .setting-item {
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .setting-icon {
+      width: 40px;
+      height: 40px;
+      
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    .setting-title {
+      font-size: 15px;
+    }
+
+    .setting-desc {
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .content-grid {
+      gap: 16px;
+    }
+
+    .setting-item {
+      padding: 10px;
+    }
+
+    .user-profile {
+      padding: 16px;
+    }
+
+    .user-greeting {
+      font-size: 18px;
+    }
+
+    .user-subtitle {
+      font-size: 14px;
+    }
   }
 }
 </style>

@@ -78,6 +78,14 @@ const router = createRouter({
               title: '设置',
           }
         },
+        {
+          path: 'network',
+          name: 'network',
+          component: () => import('../views/Dashboard/Network.vue'),
+          meta: {
+            title: '连接虚拟网络',
+          }
+        },
       ]
     },
     {

@@ -170,8 +170,6 @@ const checkForUpdates = async () => {
   }
 }
 
-// 监听路由变化
-
 // 主题切换函数
 const toggleTheme = () => {
   isDarkMode.value = !isDarkMode.value

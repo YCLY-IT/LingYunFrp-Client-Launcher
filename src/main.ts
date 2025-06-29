@@ -34,5 +34,18 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(naive)
 app.use(router)
-app.mount('#app')
+
+// 等待路由准备就绪后再挂载应用
+router.isReady().then(() => {
+  app.mount('#app')
+  
+  // 立即隐藏初始加载界面
+  const initialLoading = document.getElementById('initial-loading');
+  if (initialLoading) {
+    initialLoading.classList.add('hidden');
+    setTimeout(() => {
+      initialLoading.remove();
+    }, 300);
+  }
+})
 

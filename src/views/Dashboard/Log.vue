@@ -488,19 +488,8 @@ onMounted(async () => {
     // 定期检查清理日志
     const pruneInterval = setInterval(pruneLogsIfNeeded, 60000); // 每分钟检查一次
 
-    onUnmounted(() => {
-      // 清理所有监听器
-      cleanupFunctions.value.forEach(cleanup => {
-        try {
-          cleanup();
-        } catch (error) {
-          console.error('清理监听器时出错:', error);
-        }
-      });
-      cleanupFunctions.value = [];
-      activeListeners.value.clear();
-      
-      // 清理定时器
+    // 将清理函数添加到cleanupFunctions中，而不是在这里调用onUnmounted
+    cleanupFunctions.value.push(() => {
       clearInterval(pruneInterval);
     });
 
@@ -509,6 +498,20 @@ onMounted(async () => {
     appendSystemLog(`设置日志监听器失败: ${error}`);
     message.error('设置日志监听器失败');
   }
+});
+
+// 将onUnmounted移到正确的位置
+onUnmounted(() => {
+  // 清理所有监听器
+  cleanupFunctions.value.forEach(cleanup => {
+    try {
+      cleanup();
+    } catch (error) {
+      console.error('清理监听器时出错:', error);
+    }
+  });
+  cleanupFunctions.value = [];
+  activeListeners.value.clear();
 });
 
 // 修改设置隧道监听器的逻辑

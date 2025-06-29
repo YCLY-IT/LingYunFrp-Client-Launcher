@@ -60,6 +60,17 @@
             </NTag>
           </div>
         </div>
+        <!-- 新增：用户组筛选 -->
+        <div style="margin-top: 10px;">
+          <NText>用户组筛选：</NText>
+          <NSelect
+            style="margin-top: 5px; width: 220px;"
+            v-model:value="selectedGroup"
+            :options="[{ label: '全部', value: 'all' }, ...groupList]"
+            clearable
+            placeholder="请选择用户组"
+          />
+        </div>
       </NSpace>
     </NCard>
     
@@ -104,7 +115,12 @@
                 <NSpace vertical size="small" style="margin-top: 8px;">
                   <div class="info-item">
                     <NSpace wrap>
-                      <NTag v-for="group in node.allowGroups" :key="group.name" size="small" type="info">
+                      <NTag
+                        v-for="group in node.allowGroups.filter(g => !['admin','proxies','traffic'].includes(g.name.trim().toLowerCase()))"
+                        :key="group.name"
+                        size="small"
+                        type="info"
+                      >
                         {{ group.friendlyName }}
                       </NTag>
                     </NSpace>
@@ -283,7 +299,7 @@ const nodeLoading = ref(false)
 // 新增搜索和区域筛选
 const searchQuery = ref('')
 const selectedRegion = ref('all') // 'all', 'cn', 'cn-out', 'out'
-
+const selectedGroup = ref('all')
 // 新增弹窗状态
 const showConfigModal = ref(false)
 const showCreateConfirmModal = ref(false)
@@ -367,7 +383,13 @@ const filteredNodes = computed(() => {
     if (selectedRegion.value !== 'all' && node.location !== selectedRegion.value) {
       return false
     }
-    
+    // 用户组多选筛选
+    if (!selectedGroup.value.includes('all')) {
+      const groupNames = node.allowGroups.map(g => g.name)
+      if (!groupNames.some(name => selectedGroup.value.includes(name))) {
+        return false
+      }
+    }
     // 搜索筛选
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase()
@@ -394,7 +416,7 @@ const supportsHttp = (node: any) => {
 const supportsHttps = (node: any) => {
   return node.allowedProtocols.includes('https')
 }
-
+const groupList = ref<{ label: string, value: string }[]>([])
 const rules: FormRules = {
   nodeId: {
     required: true,
@@ -471,6 +493,13 @@ const fetchUserGroups = async () => {
           acc[group.name] = group.friendlyName;
           return acc;
         }, {} as Record<string, string>);
+          // 生成下拉用的 groupList
+          groupList.value = groups
+          .filter((group: any) => !['proxies', 'traffic', 'admin'].includes(group.name.trim().toLowerCase()))
+          .map((group: any) => ({
+            label: group.friendlyName,
+            value: group.name
+          }))
         resolve(true);
       } else {
         message.error(data.message || '获取用户组列表失败');
@@ -843,6 +872,15 @@ watch(showRealnameModal, (newVal) => {
   gap: 16px;
   flex-wrap: nowrap;
   
+  .n-tag {
+    border-radius: 16px !important;
+  }
+}
+/* 新增用户组筛选标签样式 */
+.group-tags-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: nowrap;
   .n-tag {
     border-radius: 16px !important;
   }
