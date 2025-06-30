@@ -175,9 +175,8 @@ const handleThemeChange = () => {
 }
 
 function userLogout() {
-  userApi.get('/user/logout', accessHandle(), () => {
-    removeToken();
-  })
+  userApi.get('/user/logout', accessHandle(), () => {})
+  removeToken();
   router.push({ name: 'login' });
 }
 
@@ -192,9 +191,7 @@ const handleUserMenuSelect = (key: string) => {
         onPositiveClick: () => {
           userLogout()
           message.success('已退出登录')
-          router.push('/login').then(() => {
-            window.location.reload()
-          })
+          router.push('/login')
         }
       })
       break

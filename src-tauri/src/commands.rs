@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::io::BufRead;
 use crate::config;
+use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
 
 #[tauri::command]
 pub fn close_window(window: tauri::Window) {
@@ -419,11 +421,16 @@ pub async fn forward_request(
     } else {
         config::api_url().to_string() + url.trim_start_matches('/')
     };
+
+    // 检查是否为文件上传
+    let is_file_upload = data.get("file").is_some();
+
     let mut request_builder = match method.to_uppercase().as_str() {
         "POST" => client.post(&api_url),
         "GET" => client.get(&api_url),
         _ => return Err("不支持的请求方法".to_string()),
     };
+
     if let Some(headers_map) = headers.as_object() {
         for (key, value) in headers_map {
             if let Some(value_str) = value.as_str() {
@@ -431,13 +438,31 @@ pub async fn forward_request(
             }
         }
     }
-    let response = match method.to_uppercase().as_str() {
-        "POST" => {
-            request_builder.form(&data).send().await
-        },
-        "GET" => request_builder.send().await,
-        _ => return Err("不支持的请求方法".to_string()),
+
+    let response = if method.to_uppercase() == "POST" && is_file_upload {
+        // 处理 multipart/form-data 文件上传
+        let mut form = reqwest::multipart::Form::new();
+        if let Some(file_base64) = data.get("file").and_then(|v| v.as_str()) {
+            // 解码 base64
+            let file_bytes = match STANDARD.decode(file_base64) {
+                Ok(bytes) => bytes,
+                Err(e) => return Err(format!("文件base64解码失败: {}", e)),
+            };
+            form = form.part(
+                "avatar",
+                reqwest::multipart::Part::bytes(file_bytes)
+                    .file_name("avatar.jpg")
+                    .mime_str("image/jpeg").unwrap(),
+            );
+        }
+        // 你可以根据需要添加更多字段
+        request_builder.multipart(form).send().await
+    } else if method.to_uppercase() == "POST" {
+        request_builder.form(&data).send().await
+    } else {
+        request_builder.send().await
     }.map_err(|e| e.to_string())?;
+
     let resp_text = response.text().await.map_err(|e| e.to_string())?;
     let cleaned_text = resp_text
         .trim_start_matches('\u{FEFF}')

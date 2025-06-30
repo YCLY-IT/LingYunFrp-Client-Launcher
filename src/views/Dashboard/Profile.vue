@@ -86,28 +86,30 @@
       <!-- 右侧账户详情区域 -->
       <div class="right-column">
         <n-card title="账户详情" class="account-card">
-          <div class="user-profile">
-            <div class="user-avatar">
-              <div
-                :style="{
-                  backgroundImage: `url(${UserInfo.avatar})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  width: '80px',
-                  height: '80px',
-                  borderRadius: '64px'
-                }"
-                alt="User Avatar"
-              />
+          <div class="user-profile-all" style="margin-left: 10px">
+            <div class="user-profile">
+              <div class="user-avatar">
+                <div
+                  :style="{
+                    backgroundImage: `url(${UserInfo.avatar})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '64px'
+                  }"
+                  alt="User Avatar"
+                />
+              </div>
+              <div class="user-info">
+                <h3 class="user-greeting">Hi, {{ UserInfo.nickname }} </h3> <span style="display: flex; font-size: 17px;">今天过的还好吗</span>
+                <p class="user-email">{{ UserInfo.email }}</p>
+              </div>
             </div>
-            <div class="user-info">
-              <h3 class="user-greeting">Hi, {{ UserInfo.nickname }} </h3> <span style="display: flex; font-size: 17px;">今天过的还好吗</span>
-              <p class="user-email">{{ UserInfo.email }}</p>
-            </div>
-          </div>
 
-          <div class="account-info-grid">
-            <userInfo ref="userInfoRef" />
+            <div class="account-info-grid">
+              <userInfo ref="userInfoRef" />
+            </div>
           </div>
         </n-card>
       </div>
@@ -135,7 +137,7 @@
           </div>
         </n-form-item>
         <div class="modal-actions">
-          <n-button @click="modals.changeUsername = false">取消</n-button>
+          <n-button style="margin-right: 16px;" @click="modals.changeUsername = false">取消</n-button>
           <n-button :loading="loading" type="primary" @click="handleChangeUsername">确认修改</n-button>
         </div>
       </n-form>
@@ -149,8 +151,8 @@
         </n-form-item>
         <br>
           <div class="modal-actions">
+            <n-button style="margin-right: 16px;" @click="modals.changeNickname = false">取消</n-button>
             <n-button :loading="loading" type="primary" @click="handleUpdateNickname">确定</n-button>
-            <n-button @click="modals.changeNickname = false">取消</n-button>
           </div>
       </n-form>
      </n-modal>
@@ -168,13 +170,25 @@
           >
           </n-upload>
         </n-form-item>
-        <n-form-item label="预览">
+        <n-form-item label="预览" style="text-align: center;">
           <div class="avatar-preview">
-            <img style="border-radius: 50%; border: 2px solid var(--n-border-color);" :src="forms.avatar.avatarUrl" alt="Avatar Preview" />
+            <div 
+              :style="{
+                backgroundImage: `url(${forms.avatar.avatarUrl})`,
+                borderRadius: '50%',
+                width: '120px',
+                height: '120px',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                margin: '20px auto',
+                border: '2px solid var(--n-border-color)'
+              }"
+              alt="Avatar Preview"
+            />
           </div>
         </n-form-item>
         <div class="modal-actions">
-          <n-button @click="modals.changeAvatar = false">取消</n-button>
+          <n-button style="margin-right: 16px;" @click="modals.changeAvatar = false">取消</n-button>
           <n-button :loading="loading" type="primary" @click="handleChangeAvatar">确认修改</n-button>
         </div>
       </n-form>
@@ -193,7 +207,7 @@
           <n-input v-model:value="forms.password.confirmPassword" type="password" placeholder="请再次输入新密码" />
         </n-form-item>
         <div class="modal-actions">
-          <n-button @click="modals.changePassword = false">取消</n-button>
+          <n-button style="margin-right: 16px;" @click="modals.changePassword = false">取消</n-button>
           <n-button :loading="loading" type="primary" @click="handleChangePassword">确认修改</n-button>
         </div>
       </n-form>
@@ -220,11 +234,45 @@
           </div>
         </n-form-item>
         <div class="modal-actions">
-          <n-button @click="modals.changeRealname = false">取消</n-button>
+          <n-button style="margin-right: 16px;" @click="modals.changeRealname = false">取消</n-button>
           <n-button :loading="loading" type="primary" @click="handleChangeRealname">提交认证</n-button>
         </div>
       </n-form>
       </n-modal>
+
+    <!-- 裁剪头像模态窗口 -->
+    <n-modal v-model:show="cropperVisible" preset="card" title="裁剪头像" style="width: 500px;">
+      <div class="cropper-container" style="height: 360px;">
+        <Cropper
+          :src="cropperImg"
+          :stencil-props="{
+            aspectRatio: 1,
+            minWidth: '50%',
+            minHeight: '50%'
+          }"
+          :resize-image="{
+            touch: true,
+            wheel: true
+          }"
+          :stencil-component="CircleStencil"
+          :auto-zoom="true"
+          :canvas="{
+            width: 300,
+            height: 300
+          }"
+          :default-visibility="true"
+          :class-names="{
+            default: 'vue-advanced-cropper'
+          }"
+          style="height: 300px;"
+          ref="cropperRef"
+        />
+      </div>
+      <div class="modal-actions">
+        <n-button style="margin-right: 16px;" @click="cropperVisible = false">取消</n-button>
+        <n-button type="primary" @click="handleCropConfirm">确认</n-button>
+      </div>
+    </n-modal>
   </div>
 </template>
 
@@ -246,6 +294,9 @@ import userInfo from "../../components/UserInfo.vue";
 import { UploadFileInfo } from 'naive-ui'
 import { userApi } from '../../net'
 import { accessHandle, removeToken } from '../../net/base'
+import { Cropper, CircleStencil } from 'vue-advanced-cropper'
+import 'vue-advanced-cropper/dist/style.css'
+
 
 const userInfoRef = ref<InstanceType<typeof userInfo>>();
 // 消息提示
@@ -378,6 +429,12 @@ const emailCodeButtonText = computed(() => {
   return '获取验证码'
 })
 
+// 新增裁剪相关的响应式变量
+const cropperImg = ref('')
+const cropperVisible = ref(false)
+const cropperRef = ref()
+const croppedAvatarBase64 = ref('') // 保存裁剪后的base64
+
 // 显示模态窗口
 const showModal = (modalName) => {
   modals[modalName] = true
@@ -485,58 +542,63 @@ const handleBeforeUpload = async (options: { file: UploadFileInfo }) => {
     message.error('图片大小不能超过2MB')
     return false
   }
-  
-  // 创建一个FileReader来读取文件并预览
+
   const reader = new FileReader()
   reader.onload = (e) => {
-    // 关键修改：将预览地址同时赋值给文件对象的url属性
-    file.url = e.target?.result as string
-    forms.avatar.avatarUrl = e.target?.result as string
+    cropperImg.value = e.target?.result as string
+    cropperVisible.value = true
   }
-  
-  // 读取文件为DataURL以便预览
   if (file.file) {
     reader.readAsDataURL(file.file)
-    forms.avatar.avatarFile = [file]
   }
-  
-  return false // 阻止默认上传行为，我们手动处理
+  return false
 }
 
-const handleChangeAvatar = async () => {
-  if (!forms.avatar.avatarFile || forms.avatar.avatarFile.length === 0) {
-    message.error('请先上传头像')
+const handleCropConfirm = async () => {
+  if (!cropperRef.value) {
+    message.error('裁剪器未初始化')
     return
   }
-  
-  const file = forms.avatar.avatarFile[0].file as File
-  if (!file) {
-    message.error('请先选择头像文件')
+  const { canvas } = cropperRef.value.getResult()
+  if (!canvas) {
+    message.error('裁剪失败')
     return
   }
-  
-  const formData = new FormData()
-  formData.append('avatar', file)
+  // 保存base64
+  croppedAvatarBase64.value = canvas.toDataURL('image/jpeg', 0.9)
+  // 预览区显示裁剪后的图片
+  forms.avatar.avatarUrl = croppedAvatarBase64.value
+  cropperVisible.value = false
+}
+
+const handleChangeAvatar = () => {
+  if (!croppedAvatarBase64.value) {
+    message.error('请先上传并裁剪头像')
+    return
+  }
   loading.value = true
-  try {
-    message.loading('正在上传头像...')
-    userApi.post('/user/update/avatar', formData, {
-      ...accessHandle(),
-      'Content-Type': 'multipart/form-data',
-    }, (data) => {
+  message.loading('正在上传头像...')
+  // 去掉base64头部
+  const base64Data = croppedAvatarBase64.value.split(',')[1]
+  userApi.post('/user/update/avatar', {
+    file: base64Data
+  }, accessHandle(), (data) => {
+    if (data.code === 0) {
       localStorage.setItem('avatar', data.data)
-      message.success(data.message)
+      message.success('头像上传成功')
+      modals.changeAvatar = false
       setTimeout(() => {
         window.location.reload()
       }, 1000)
-    })
-  } catch (error) {
-    message.error('头像上传失败，请稍后再试')
-  }
-  finally {
-    loading.value = false 
-  }
+    } else {
+      message.error(data.message || '头像上传失败')
+    }
+  }, (error) => {
+    message.error(typeof error === 'string' ? error : '头像上传失败')
+  })
+  loading.value = false
 }
+
 // 处理修改密码
 const handleChangePassword = async () => {
   if (!forms.password.currentPassword) {
@@ -688,11 +750,6 @@ const handleSendPhoneCode = async () => {
     
     &:hover {
       box-shadow: $box-shadow-hover;
-    }
-
-    :deep(.n-card-header) {
-      padding: 16px 16px 8px 16px;
-      border-bottom: 1px solid $border-color;
     }
 
     :deep(.n-card__content) {
@@ -852,25 +909,27 @@ const handleSendPhoneCode = async () => {
   .modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
     margin-top: 24px;
     padding-top: 16px;
     border-top: 1px solid $border-color;
+
+    .n-button {
+      min-width: 80px;
+      margin-left: 16px;
+      
+      &:first-child {
+        margin-left: 0;
+      }
+    }
   }
 
   .avatar-preview {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    overflow: hidden;
+    width: 100%;
+    height: 120px;
     margin: 0 auto;
-    box-shadow: $box-shadow-light;
-    
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   // 响应式设计
@@ -930,6 +989,61 @@ const handleSendPhoneCode = async () => {
     .user-subtitle {
       font-size: 14px;
     }
+  }
+}
+
+// 裁剪器容器样式
+.cropper-container {
+  width: 100%;
+  height: 300px;
+  position: relative;
+  margin-bottom: 20px;
+  
+  :deep(.vue-advanced-cropper) {
+    height: 300px !important;
+    
+    .vue-advanced-cropper__image {
+      opacity: 1 !important;
+    }
+
+    .vue-circle-stencil {
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+      max-width: 200px;
+      max-height: 200px;
+    }
+  }
+}
+
+.preview-container {
+  margin-top: 20px;
+  
+  .cropper-preview {
+    border: 2px solid #eee;
+  }
+}
+
+// 确保裁剪区域是圆形的
+:deep(.cropper-view-box),
+:deep(.cropper-face) {
+  border-radius: 50%;
+}
+
+:deep(.cropper-view-box) {
+  outline: 0;
+}
+
+// 确保所有模态窗口的按钮样式一致
+:deep(.n-modal) {
+  .modal-actions {
+    .n-button + .n-button {
+      margin-left: 16px;
+    }
+  }
+}
+
+:deep(.n-form-item) {
+  .n-form-item-label {
+    font-size: 16px;
   }
 }
 </style>

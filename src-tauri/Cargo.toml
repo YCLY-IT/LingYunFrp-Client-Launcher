@@ -1,6 +1,6 @@
 [package]
 name = "lingyunfrp-tauri-client"
-version = "1.1.0"
+version = "1.1.1"
 description = "凌云FRP图形化客户端，更方便使用"
 authors = ["LYFRP"]
 edition = "2021"
@@ -12,7 +12,7 @@ tauri-build = { version = "2.3.0", features = [] }
 
 [dependencies]
 open = "5.3.2"
-reqwest = { version = "0.12.20", features = ["json"] }
+reqwest = { version = "0.12.20", features = ["json", "multipart"] }
 tokio = { version = "1", features = ["full"] }
 tauri = { version = "2.6.0", features = ["tray-icon", "image-png"] }
 tauri-plugin-opener = "2.3.1"
@@ -20,6 +20,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-notification = "2.2.3"
 tauri-plugin-single-instance = "2"
+base64 = "0.21"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55.0"

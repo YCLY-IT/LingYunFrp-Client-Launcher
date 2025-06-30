@@ -1,7 +1,7 @@
 {
   "name": "lingyunfrp-tauri-client",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "title": "LingYunFRP",
   "title2": "凌云FRP",
@@ -34,6 +34,7 @@
     "unplugin-auto-import": "^19.3.0",
     "unplugin-vue-components": "^28.7.0",
     "vue": "^3.5.17",
+    "vue-advanced-cropper": "^2.8.9",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
