@@ -1,7 +1,7 @@
 // 虚拟网络节点
 export interface VirtualNetworkNode {
   id: string;
-  name: string;
+  nickname: string;
   is_online: boolean;
   is_owner: boolean;
   virtual_ip: string;
@@ -11,6 +11,7 @@ export interface VirtualNetworkNode {
 export interface VirtualNetworkConfig {
   name: string;
   network_id: string;
+  owner_id: number;
   password?: string;
   virtual_subnet: string;
   max_players: number;
@@ -20,7 +21,7 @@ export interface VirtualNetworkConfig {
 export interface VirtualNetwork {
   config: VirtualNetworkConfig;
   status: 'Active' | 'Inactive';
-  nodes: Record<string, VirtualNetworkNode>;
+  nodes: VirtualNetworkNode[];
 }
 
 // 创建网络请求

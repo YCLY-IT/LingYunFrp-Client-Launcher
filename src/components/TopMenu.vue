@@ -73,10 +73,11 @@
       <template #header>
         你确定要关闭吗?
       </template>
-        你也可以同样点击右上角的X图标来关闭当前弹窗。
+        这样会关闭所有隧道, 你也可以同样点击右上角的X图标来关闭当前弹窗。
         <br>
       <template #action>
-        <NButton size="small" @click="handleToClose">确定</NButton>
+        <NButton size="small" type="error" @click="handleToClose(false)">确定</NButton>
+        <NButton size="small" type="warning" @click="handleToClose(true)">保留隧道</NButton>
         <NButton size="small" type="primary" @click="handleToCloseToPanel">最小化托盘</NButton>
       </template>
   </NModal>
@@ -87,7 +88,7 @@
 import packageData from '../../package.json'
 import { h, ref, inject, computed, Ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { NLayoutHeader, NIcon, NButton, NDropdown, useDialog, useMessage, NSwitch, NPopover, NMenu, MenuOption, NDrawer, NDrawerContent, NScrollbar, NModal } from 'naive-ui'
+import { NLayoutHeader, NIcon, NButton, NDropdown, useDialog, NSwitch, NPopover, NMenu, NDrawer, NDrawerContent, NScrollbar, NModal, useMessage } from 'naive-ui'
 import { PersonCircleOutline, LogOutOutline, SunnyOutline, MoonOutline, MenuOutline, HomeOutline, CloseOutline, ScanOutline, RemoveOutline, RefreshOutline } from '@vicons/ionicons5'
 import { switchButtonRailStyle } from '../constants/theme.ts'
 import { getMenuOptions, renderIcon, defaultExpandedKeys } from '../shared/menuOptions.ts'
@@ -95,6 +96,8 @@ import LeftMenu from './LeftMenu.vue'
 import { userApi } from "../net";
 import { accessHandle, removeToken } from "../net/base.ts";
 import { invoke } from '@tauri-apps/api/core'
+import { emitTo } from '@tauri-apps/api/event'
+import type { MenuOption } from '../types/menu'
 
 const router = useRouter()
 const route = useRoute()
@@ -204,8 +207,66 @@ const handleUserMenuSelect = (key: string) => {
   }
 }
 
-const handleMenuSelect = (_: any, item: MenuOption) => {
-  router.push(item.link as string)
+// 管理员权限检查函数
+const checkAdminPermission = async (): Promise<boolean> => {
+  try {
+    const isAdmin = await invoke<boolean>('is_admin')
+    return isAdmin
+  } catch (e) {
+    console.error('管理员权限检测失败:', e)
+    return false
+  }
+}
+
+// 处理虚拟网络菜单点击
+const handleNetworkMenuClick = async (): Promise<boolean> => {
+  const isAdmin = await checkAdminPermission()
+  if (!isAdmin) {
+    dialog.warning({
+      title: '需要管理员权限',
+      content: '虚拟网络功能需要以管理员权限运行，是否以管理员权限重启？',
+      positiveText: '以管理员权限重启',
+      negativeText: '取消',
+      onPositiveClick: async () => {
+        try {
+          await emitTo('main', 'request_admin')
+        } catch (e) {
+          message.error('重启失败，请手动以管理员权限运行')
+        }
+      },
+      onNegativeClick: () => {
+        // 用户取消，不做任何操作
+      }
+    })
+    return false // 阻止默认导航
+  }
+  
+  // 有管理员权限，正常导航
+  router.push('/dashboard/network')
+  return true
+}
+
+const handleMenuSelect = async (_: any, item: MenuOption) => {
+  // 检查是否有自定义的 onClick 处理函数
+  if (item.onClick) {
+    if (typeof item.onClick === 'function') {
+      const result = await item.onClick()
+      if (result === false) {
+        // 如果返回 false，表示阻止默认导航
+        return
+      }
+    } else if (item.onClick === 'check-admin-and-navigate') {
+      // 处理虚拟网络菜单的特殊逻辑
+      const result = await handleNetworkMenuClick()
+      if (result === false) {
+        return
+      }
+    }
+  } else if (item.link) {
+    // 默认导航行为
+    router.push(item.link as string)
+  }
+  
   showMenu.value = false
 }
 
@@ -220,8 +281,8 @@ const handleToRefresh = () => {
 }
 
 
-const handleToClose = async () => {
-  await invoke('quit_window');
+const handleToClose = async (isKeep: boolean) => {
+  await invoke('quit_window', { isKeep: isKeep });
 }
 
 const handleToMinimize = async () => {
@@ -234,10 +295,6 @@ const handleToMaximize = async () => {
 
 const handleToCloseToPanel = async () => {
   ToClose.value = false
-  new Notification('FRP客户端', {
-    body: 'FRP客户端已最小化到托盘',
-    silent: true,
-  })
   await invoke('hide_to_tray');
 }
 const handleResize = () => {

@@ -2,14 +2,20 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import naive from 'naive-ui'
 
 import { invoke } from '@tauri-apps/api/core';
 
 const isDebug = await invoke<boolean>('get_now_mode')
 if (!isDebug){
   document.addEventListener('keydown', (e) => {
-    e.preventDefault()
+    if (
+      (e.ctrlKey && e.shiftKey && e.key === 'I') || // Ctrl+Shift+I
+      (e.ctrlKey && e.shiftKey && e.key === 'J') || // Ctrl+Shift+J
+      (e.ctrlKey && e.key === 'U') ||               // Ctrl+U
+      (e.key === 'F12')
+    ) {
+      e.preventDefault()
+    }
   })
   document.addEventListener('contextmenu', (e) => {
      e.preventDefault() 
@@ -32,7 +38,6 @@ if (!isDebug){
 const app = createApp(App)
 
 app.use(createPinia())
-app.use(naive)
 app.use(router)
 
 // 等待路由准备就绪后再挂载应用

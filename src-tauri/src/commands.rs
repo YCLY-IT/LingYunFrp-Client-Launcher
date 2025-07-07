@@ -8,6 +8,8 @@ use std::io::BufRead;
 use crate::config;
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
+use tauri::path::BaseDirectory;
+use tauri_plugin_notification::NotificationExt;
 
 #[tauri::command]
 pub fn close_window(window: tauri::Window) {
@@ -15,11 +17,26 @@ pub fn close_window(window: tauri::Window) {
 }
 
 #[tauri::command]
-pub fn quit_window(window: tauri::Window, app: tauri::AppHandle) {
+pub fn quit_window(window: tauri::Window, app: tauri::AppHandle, is_keep: bool) {
     *app.state::<Mutex<bool>>().lock().unwrap() = true;
+    if is_keep {
+        let _ = window.close();
+        let app_clone = app.clone();
+        let _ = window.emit("before-quit", ());
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_secs(1));
+            app_clone.exit(0);
+        });
+        return;
+    }
     let _ = kill_all_processes();
     let _ = window.close();
-    app.exit(0);
+    let app_clone = app.clone();
+    let _ = window.emit("before-quit", ());
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        app_clone.exit(0);
+    });
 }
 
 #[tauri::command]
@@ -40,17 +57,31 @@ pub fn toggle_maximize(window: tauri::Window) {
 #[tauri::command]
 pub fn hide_to_tray(window: tauri::Window) {
     window.hide().unwrap();
+    let icon_path = window.app_handle().path().resolve("icons/icon.png", BaseDirectory::Resource).unwrap();
+    let _ = window.app_handle().notification()
+        .builder()
+        .title("LingYunFRP")
+        .body("LingYunFRP客户端已最小化到托盘")
+        .icon(icon_path.to_string_lossy())
+        .show();
 }
 
 #[tauri::command]
 pub fn check_frpc_exists(app: tauri::AppHandle) -> bool {
+    // 根据操作系统确定可执行文件名
+    let executable_name = if cfg!(target_os = "windows") {
+        "frpc.exe"
+    } else {
+        "frpc"
+    };
+    
     let app_data_dir = app.path().app_data_dir().unwrap();
-    let frpc_path = app_data_dir.join("frpc.exe");
+    let frpc_path = app_data_dir.join(executable_name);
     if frpc_path.exists() {
         return true;
     }
     if let Ok(exe_dir) = std::env::current_exe() {
-        let exe_path = exe_dir.parent().unwrap().join("frpc.exe");
+        let exe_path = exe_dir.parent().unwrap().join(executable_name);
         if exe_path.exists() {
             return true;
         }
@@ -83,19 +114,49 @@ pub async fn get_app_data_dir(app: tauri::AppHandle) -> Result<String, String> {
 #[tauri::command]
 pub async fn open_app_data_dir(app: tauri::AppHandle) -> Result<(), String> {
     let app_data_dir = app.path().app_data_dir().map_err(|_| "无法获取应用数据目录")?;
-    std::process::Command::new("explorer")
-        .arg(app_data_dir)
-        .spawn()
-        .map_err(|e| format!("打开目录失败: {}", e))?;
+    
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(app_data_dir)
+            .spawn()
+            .map_err(|e| format!("打开目录失败: {}", e))?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(app_data_dir)
+            .spawn()
+            .map_err(|e| format!("打开目录失败: {}", e))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(app_data_dir)
+            .spawn()
+            .map_err(|e| format!("打开目录失败: {}", e))?;
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    {
+        return Err("不支持的操作系统".to_string());
+    }
+    
     Ok(())
 }
 
 #[tauri::command]
 pub async fn download_frpc(app: tauri::AppHandle) -> Result<(), String> {
+    // 根据操作系统确定可执行文件名
+    let executable_name = if cfg!(target_os = "windows") {
+        "frpc.exe"
+    } else {
+        "frpc"
+    };
+    
     let app_data_dir = app.path().app_data_dir().map_err(|_| "无法获取应用数据目录")?;
-    let frpc_path = app_data_dir.join("frpc.exe");
+    let frpc_path = app_data_dir.join(executable_name);
     if frpc_path.exists() {
-        return Err("frpc.exe已存在".to_string());
+        return Err(format!("{}已存在", executable_name));
     }
     let info = get_system_info();
     let mut parts = info.split_whitespace();
@@ -108,7 +169,7 @@ pub async fn download_frpc(app: tauri::AppHandle) -> Result<(), String> {
     let frpc_url = format!(
         "{}{}{}{}{}{}{}",
         config::api_url(),
-        "/frp/updates/latest?software=LingYunFrpClient&system=",
+        "/frp/updates/latest?software=Frpc&system=",
         system,
         "&arch=",
         arch,
@@ -131,7 +192,7 @@ pub async fn download_frpc(app: tauri::AppHandle) -> Result<(), String> {
         return Err(format!("下载失败，状态码: {}", status));
     }
     let json: serde_json::Value = serde_json::from_str(&resp_text).map_err(|e| format!("解析JSON失败: {}", e))?;
-    let download_url = json["latest_info"]["download_url"]
+    let download_url = json["data"]["latest_info"]["download_url"]
         .as_str()
         .ok_or("未找到下载链接")?;
 
@@ -237,11 +298,6 @@ pub async fn toggle_auto_start(enable: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn get_cpl_version() -> String {
-    config::version().to_string()
-}
-
-#[tauri::command]
 pub fn kill_all_processes() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
@@ -278,10 +334,17 @@ pub async fn start_proxy(
     proxy_id: u32,
     token: String,
 ) -> Result<bool, String> {
+    // 根据操作系统确定可执行文件名
+    let executable_name = if cfg!(target_os = "windows") {
+        "frpc.exe"
+    } else {
+        "frpc"
+    };
+    
     let app_data_dir = app.path().app_data_dir().map_err(|_| "无法获取应用数据目录")?;
-    let frpc_path = app_data_dir.join("frpc.exe");
+    let frpc_path = app_data_dir.join(executable_name);
     if !frpc_path.exists() {
-        return Err("frpc.exe 不存在".to_string());
+        return Err(format!("{} 不存在", executable_name));
     }
     let mut command = std::process::Command::new(&frpc_path);
     command
@@ -366,33 +429,78 @@ pub async fn stop_proxy(app: tauri::AppHandle, proxy_id: u32) -> Result<bool, St
 }
 
 #[tauri::command]
-pub fn get_frpc_cli_version(app: tauri::AppHandle) -> Result<String, String> {
+pub async fn get_frpc_cli_version(app: tauri::AppHandle) -> Result<String, String> {
+    // 根据操作系统确定可执行文件名
+    let executable_name = if cfg!(target_os = "windows") {
+        "frpc.exe"
+    } else {
+        "frpc"
+    };
+    
     let frpc_path = {
         let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-        let data_path = app_data_dir.join("frpc.exe");
+        let data_path = app_data_dir.join(executable_name);
         if data_path.exists() {
             data_path
         } else if let Ok(exe_dir) = std::env::current_exe() {
             let exe_path = exe_dir.parent()
                 .ok_or("无法获取父目录")?
-                .join("frpc.exe");
+                .join(executable_name);
             exe_path
         } else {
             return Err("frpc executable not found".into());
         }
     };
     let frpc_path_clone = frpc_path.clone();
-    let output = std::process::Command::new(frpc_path)
-        .arg("--version")
-        .output()
-        .map_err(|e| format!("执行失败: {}", e))?;
+    
+    // 使用 tokio::spawn 在线程池中异步执行命令
+    let output = tokio::task::spawn_blocking(move || {
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            std::process::Command::new(frpc_path)
+                .arg("--version")
+                .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                .output()
+        }
+        #[cfg(target_os = "macos")]
+        {
+            std::process::Command::new(frpc_path)
+                .arg("--version")
+                .output()
+        }
+        #[cfg(target_os = "linux")]
+        {
+            std::process::Command::new(frpc_path)
+                .arg("--version")
+                .output()
+        }
+        #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+        {
+            std::process::Command::new(frpc_path)
+                .arg("--version")
+                .output()
+        }
+    })
+    .await
+    .map_err(|e| format!("任务执行失败: {}", e))?
+    .map_err(|e| format!("执行失败: {}", e))?;
+    
     let version = String::from_utf8(output.stdout)
         .map(|v| v.trim().replace(['\r', '\n'], ""))
         .map_err(|e| format!("编码错误: {}", e))?;
+    
+    // 根据操作系统处理路径分隔符
+    let path_str = if cfg!(target_os = "windows") {
+        frpc_path_clone.to_string_lossy().replace('\\', "\\\\")
+    } else {
+        frpc_path_clone.to_string_lossy().to_string()
+    };
+    
     Ok(serde_json::json!({
         "code": 0,
         "version": version,
-        "path": frpc_path_clone.to_string_lossy().replace('\\', "\\\\")
+        "path": path_str
     }).to_string())
 }
 
@@ -508,3 +616,61 @@ pub fn get_system_info() -> String {
 pub fn get_api_url() -> String {
     config::api_url().to_string()
 }
+
+#[tauri::command]
+pub fn is_admin() -> Result<bool, String> {
+    #[cfg(target_os = "windows")]
+    {
+        Ok(is_elevated::is_elevated())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        use nix::unistd::Uid;
+        Ok(Uid::effective().is_root())
+    }
+}
+
+#[tauri::command]
+pub async fn check_auto_start_status() -> Result<bool, String> {
+    #[cfg(target_os = "windows")]
+    {
+        use winreg::{RegKey, enums::HKEY_CURRENT_USER, enums::KEY_READ};
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let path = r"Software\Microsoft\Windows\CurrentVersion\Run";
+        match hkcu.open_subkey_with_flags(path, KEY_READ) {
+            Ok(key) => {
+                let app_name = "LingYunFrp";
+                let exe_path = std::env::current_exe()
+                    .map_err(|e| format!("获取当前程序路径失败: {}", e))?
+                    .to_string_lossy()
+                    .into_owned();
+                match key.get_value::<String, _>(app_name) {
+                    Ok(reg_path) => Ok(reg_path == exe_path),
+                    Err(_) => Ok(false),
+                }
+            }
+            Err(_) => Ok(false),
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        use std::fs;
+        use std::env;
+        use std::path::PathBuf;
+        let home_dir = env::var("HOME").map_err(|_| "无法获取HOME目录".to_string())?;
+        let plist_path = PathBuf::from(home_dir).join("Library/LaunchAgents/cn.lyfrp.autostart.plist");
+        Ok(plist_path.exists())
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::fs;
+        use std::env;
+        use std::path::PathBuf;
+        let home_dir = env::var("HOME").map_err(|_| "无法获取HOME目录".to_string())?;
+        let desktop_path = PathBuf::from(home_dir).join(".config/autostart/cn.lyfrp.desktop");
+        Ok(desktop_path.exists())
+    }
+}
+
+
+

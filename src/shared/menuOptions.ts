@@ -1,7 +1,8 @@
 import { h, Component, ref } from 'vue'
 import { HomeOutline, AddCircleOutline, AppsOutline, IdCardOutline, SettingsOutline, ListOutline, WifiOutline } from '@vicons/ionicons5'
-import { NIcon, type MenuOption } from 'naive-ui'
-import { SquareTerminal } from 'lucide-vue-next';
+import { NIcon } from 'naive-ui'
+import { SquareTerminal } from 'lucide-vue-next'
+import type { MenuOption } from '../types/menu'
 
 const baseMenuOptions: MenuOption[] = [
   {
@@ -32,9 +33,7 @@ const baseMenuOptions: MenuOption[] = [
   {
     label: '虚拟网络',
     icon: renderIcon(WifiOutline),
-    disabled: true, // TODO: 暂时禁用
     key: 'network',
-    link: '/dashboard/network',
   },
   {
     label: '用户中心',
@@ -55,6 +54,7 @@ const baseMenuOptions: MenuOption[] = [
     link: '/dashboard/settings',
   }
 ]
+
 export function getMenuOptions(): MenuOption[] {
   const options = [...baseMenuOptions]
   return options

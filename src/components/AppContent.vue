@@ -11,18 +11,16 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, RouterView, useRouter } from 'vue-router'
-import { NGlobalStyle, useLoadingBar, useMessage, useDialog, useNotification } from 'naive-ui'
+import { NGlobalStyle, useLoadingBar, useDialog, useNotification, useMessage } from 'naive-ui'
 import { Window } from '../types'
 import HomeMenu from './HomeMenu.vue'
-
-// UI组件初始化（保持不变）
-const loadingBar = useLoadingBar()
-const message = useMessage()
 const dialog = useDialog()
 const notification = useNotification()
 
 const route = useRoute()
 const router = useRouter()  // 新增路由实例
+const loadingBar = useLoadingBar()
+const message = useMessage()
 
 // 修改后的计算属性
 const isDashboard = computed(() => {

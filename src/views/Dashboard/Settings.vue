@@ -14,7 +14,6 @@ import {
   NInput,
   NCollapse,
   NCollapseItem,
-  NPopconfirm,
   NText,
   NScrollbar,
   NDrawer,
@@ -42,7 +41,7 @@ const activeNames = ref<string[]>(['2']);
 
 const getCurrentVersion = async () => {
   try {
-    const version = await invoke('get_cpl_version') as string;
+    const version = await invoke('get_client_version') as string;
     currentVersion.value = version;
   } catch (e) {
     currentVersion.value = '获取失败';
@@ -190,12 +189,20 @@ const getFrpcVersion = async () => {
 };
 
 const killAllProcesses = async () => {
-  try {
-    await invoke('kill_all_processes');
-    message.success('已终止所有 frpc 进程');
-  } catch (e) {
-    message.error(`操作失败: ${e}`);
-  }
+  dialog.warning({
+    title: '终止所有 Frpc 进程',
+    content: '此操作将终止所有正在运行的 Frpc 进程，这将会断开所有隧道连接。确定要继续吗？',
+    positiveText: '确定终止',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await invoke('kill_all_processes');
+        message.success('已终止所有 frpc 进程');
+      } catch (e) {
+        message.error(`操作失败: ${e}`);
+      }
+    }
+  });
 };
 
 const openAppDataDir = async () => {
@@ -256,13 +263,29 @@ onMounted(async () => {
 });
 
 const restoreUpdateNotification = () => {
-  localStorage.removeItem('suppressUpdateNotification');
-  message.success('已恢复更新提示');
+  dialog.warning({
+    title: '恢复更新提示',
+    content: '确定要恢复更新提示吗？恢复后，软件将重新显示更新通知。',
+    positiveText: '确定恢复',
+    negativeText: '取消',
+    onPositiveClick: () => {
+      localStorage.removeItem('suppressUpdateNotification');
+      message.success('已恢复更新提示');
+    }
+  });
 };
 
 const disableUpdateNotification = () => {
-  localStorage.setItem('suppressUpdateNotification', 'true');
-  message.success('已禁用更新提示');
+  dialog.warning({
+    title: '禁用更新提示',
+    content: '确定要禁用更新提示吗？禁用后，软件将不再显示更新通知。您可以在设置中重新启用。',
+    positiveText: '确定禁用',
+    negativeText: '取消',
+    onPositiveClick: () => {
+      localStorage.setItem('suppressUpdateNotification', 'true');
+      message.success('已禁用更新提示');
+    }
+  });
 };
 </script>
 
@@ -306,16 +329,9 @@ const disableUpdateNotification = () => {
                         <n-button @click="showManualMode" :disabled="downloading">
                         手动配置 Frpc 可执行文件
                         </n-button>
-                        <n-popconfirm 
-                          @positive-click="killAllProcesses" 
-                          :disabled="downloading"
-                          positive-text="终止"
-                          negative-text="取消">
-                          <template #trigger>
-                            <n-button type="warning" :disabled="downloading">终止所有 Frpc 进程</n-button>
-                          </template>
-                          确认终止所有 Frpc 进程？这将会断开所有连接
-                        </n-popconfirm>
+                        <n-button type="warning" :disabled="downloading" @click="killAllProcesses">
+                        终止所有 Frpc 进程
+                        </n-button>
                     </n-space>
                     <br />
                     <n-card title="运行日志" class="mt-4">

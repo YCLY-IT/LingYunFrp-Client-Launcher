@@ -87,7 +87,7 @@ const getUserTraffic = async (): Promise<void> => {
   userApi.get('/user/info/traffic', accessHandle(), (data) => {
     traffic.value = data.data
   }, (messageText) => {
-    message.error('获取用户流量失败:' + messageText)
+    message.error(messageText)
   })
 }
 

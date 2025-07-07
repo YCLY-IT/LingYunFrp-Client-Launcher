@@ -259,8 +259,6 @@ input, textarea, select {
 }
 </style>
 
-<style>
-.n-card {
-  border-radius: 10px; /* 设置全局圆角大小 */
-}
+<style lang="scss">
+@use "./assets/styles/index.scss";
 </style>

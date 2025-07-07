@@ -100,7 +100,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { NTag, useMessage, NSkeleton, NButton, NIcon, NSpace, NText, NAlert } from 'naive-ui'
+import { NTag, NSkeleton, NButton, NIcon, NSpace, NText, NAlert, useMessage, useDialog } from 'naive-ui'
 import { CalendarOutline } from '@vicons/ionicons5'
 import {userApi} from "../net";
 import {accessHandle} from "../net/base.ts";
@@ -109,6 +109,7 @@ const emit = defineEmits<{
   (e: 'update'): void
 }>()
 const message = useMessage()
+const dialog = useDialog()
 const loading = ref(true)
 const signLoading = ref(false)
 const isSignAvailable = ref(false)
@@ -169,19 +170,20 @@ const handleSign = async () => {
   signLoading.value = true
   userApi.post('/user/sign', {}, accessHandle(), (data) => {
     if (data.code === 0) {
-      message.success(`签到成功, 获得 ${data.data.point} 积分 和 ${data.data.traffic}GB 流量`)
+      dialog.success({
+        title: '签到成功',
+        content: `获得 ${data.data.point} 积分 和 ${data.data.traffic}GB 流量`,
+        positiveText: '好的',
+      })
       isSignAvailable.value = false
-      // 刷新用户信息以更新流量显示
+      signLoading.value = false
       emit('update')
       fetchUserInfo()
     } else {
       message.error(data.message || '签到失败')
+      signLoading.value = false
     }
-    signLoading.value = false
-  }, (error) => {
-    message.error(error || '签到失败')
-    signLoading.value = false
-})
+  })
 }
 
 const handleCopyToken = async () => {
@@ -194,23 +196,24 @@ const handleCopyToken = async () => {
 };
 
 const fetchUserInfo = async () => {
-    loading.value = true
-
-  userApi.get('/user/info', accessHandle(), (data) => {
-    if (data.code === 0) {
-      userInfo.value = data.data
-      localStorage.setItem('group', userInfo.value.group)
-      localStorage.setItem('token', userInfo.value.token)
-      localStorage.setItem('avatar', userInfo.value.avatar)
-      isSignAvailable.value = !data.data.sign
-    } else {
-      message.error(data.message || '获取用户信息失败')
-    }
-    loading.value = false
-  }, (error) => {
-    message.error(error || '获取用户信息失败')
-    loading.value = false
-  })
+  loading.value = true
+  try{
+    userApi.get('/user/info', accessHandle(), (data) => {
+      if (data.code === 0) {
+        userInfo.value = data.data
+        localStorage.setItem('group', userInfo.value.group)
+        localStorage.setItem('token', userInfo.value.token)
+        localStorage.setItem('avatar', userInfo.value.avatar)
+        localStorage.setItem('username', userInfo.value.username)
+        localStorage.setItem('nickname', userInfo.value.nickname)
+        localStorage.setItem('token', userInfo.value.token)
+        isSignAvailable.value = !data.data.sign
+      }
+      loading.value = false
+    })
+  } catch (e) {
+    console.log(e)
+  }
 }
 onMounted(async () => {
   await fetchUserInfo()

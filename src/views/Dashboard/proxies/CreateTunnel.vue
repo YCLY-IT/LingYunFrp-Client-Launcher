@@ -23,53 +23,59 @@
           </template>
         </NInput>
         
-        <div style="margin-top: 10px;">
-          <NText>区域筛选：</NText>
-          <div class="region-tags-row" style="margin-top: 5px;">
-            <NTag 
-              :type="selectedRegion === 'all' ? 'primary' : 'default'" 
-              checkable 
-              :checked="selectedRegion === 'all'"
-              @click="selectedRegion = 'all'"
-            >
-              全部
-            </NTag>
-            <NTag 
-              :type="selectedRegion === 'cn' ? 'primary' : 'default'" 
-              checkable 
-              :checked="selectedRegion === 'cn'"
-              @click="selectedRegion = 'cn'"
-            >
-              中国大陆
-            </NTag>
-            <NTag 
-              :type="selectedRegion === 'cn-out' ? 'primary' : 'default'" 
-              checkable 
-              :checked="selectedRegion === 'cn-out'"
-              @click="selectedRegion = 'cn-out'"
-            >
-              中国港澳台
-            </NTag>
-            <NTag 
-              :type="selectedRegion === 'out' ? 'primary' : 'default'" 
-              checkable 
-              :checked="selectedRegion === 'out'"
-              @click="selectedRegion = 'out'"
-            >
-              海外地区
-            </NTag>
+        <div class="filter-row">
+          <div class="region-filter">
+            <NText>区域筛选：</NText>
+            <div class="region-tags-row" style="margin-top: 5px;">
+              <NTag 
+                :type="selectedRegion === 'all' ? 'primary' : 'default'" 
+                checkable 
+                :checked="selectedRegion === 'all'"
+                @click="selectedRegion = 'all'"
+              >全部</NTag>
+              <NTag 
+                :type="selectedRegion === 'cn' ? 'primary' : 'default'" 
+                checkable 
+                :checked="selectedRegion === 'cn'"
+                @click="selectedRegion = 'cn'"
+              >中国大陆</NTag>
+              <NTag 
+                :type="selectedRegion === 'cn-out' ? 'primary' : 'default'" 
+                checkable 
+                :checked="selectedRegion === 'cn-out'"
+                @click="selectedRegion = 'cn-out'"
+              >中国港澳台</NTag>
+              <NTag 
+                :type="selectedRegion === 'out' ? 'primary' : 'default'" 
+                checkable 
+                :checked="selectedRegion === 'out'"
+                @click="selectedRegion = 'out'"
+              >海外地区</NTag>
+            </div>
           </div>
-        </div>
-        <!-- 新增：用户组筛选 -->
-        <div style="margin-top: 10px;">
-          <NText>用户组筛选：</NText>
-          <NSelect
-            style="margin-top: 5px; width: 220px;"
-            v-model:value="selectedGroup"
-            :options="[{ label: '全部', value: 'all' }, ...groupList]"
-            clearable
-            placeholder="请选择用户组"
-          />
+          <div class="group-filter">
+            <NText>用户组筛选：</NText>
+            <NSelect
+              class="group-select"
+              style="width: 220px;"
+              v-model:value="selectedGroup"
+              :options="[{ label: '全部', value: 'all' }, ...groupList]"
+              clearable
+              placeholder="请选择用户组"
+            />
+          </div>
+          <div class="protocol-filter">
+            <NText>协议筛选：</NText>
+            <NSelect
+              class="protocol-select"
+              style="width: 100%;"
+              v-model:value="selectedProtocols"
+              :options="protocolOptions"
+              multiple
+              clearable
+              placeholder="请选择协议"
+            />
+          </div>
         </div>
       </NSpace>
     </NCard>
@@ -79,40 +85,29 @@
       <NSpin :show="nodeLoading" tip="节点加载中...">
         <NSpace vertical>
           <!-- 修改这里的cols属性从1改为3 -->
-          <NGrid x-gap="16" y-gap="16" cols="3" responsive="screen" style="padding-top: 14px;">
+          <NGrid x-gap="12" y-gap="12" cols="3" responsive="screen" style="padding-top: 14px;">
             <NGridItem v-for="node in filteredNodes" :key="node.value">
-              <NCard hoverable @click="handleNodeSelect(node)"
-                     :class="{ 'selected-node': selectedNodeId === node.value }" class="node-item">
+              <NCard
+                hoverable
+                @click="handleNodeSelect(node)"
+                :class="[{'selected-node': selectedNodeId === node.value, 'node-offline': !node.isOnline}]"
+                class="node-item"
+              >
                 <div class="node-header">
                   <div class="node-title">
                     <NTag type="info" size="small"># {{ node.id }}</NTag>
-                    <NText style="white-space: nowrap; margin-right: 8px;">{{ node.name }}</NText>
+                    <NText style="white-space: nowrap; margin-left: -3px; margin-right: 4px;">{{ node.name }}</NText>
                   </div>
                   <div class="node-tags">
-                    <!-- 显示在线/离线状态标签 -->
-                    <NTag :type="node.isOnline ? 'success' : 'error'" size="small">
-                      {{ node.isOnline ? '在线' : '离线' }}
-                    </NTag>
-                    
-                    <!-- 显示区域标签 -->
                     <NTag :type="getRegionTagType(node.location)" size="small">
                       {{ getRegionName(node.location) }}
-                    </NTag>
-                    
-                    <!-- 显示协议标签 -->
-                    <NTag v-if="supportsUdp(node)" type="success" size="small">UDP</NTag>
-                    <NTag v-if="supportsHttp(node)" type="success" size="small">
-                      {{ supportsHttps(node) ? 'HTTP(S)' : 'HTTP' }}
-                    </NTag>
-                    <NTag v-else="supportsHttps(node)" type="success" size="small">
-                      HTTPS
                     </NTag>
                   </div>
                 </div>
                 
-                <NText depth="3" style="font-size: 13px; margin: 8px 0;">{{ node.description }}</NText>
+                <NText depth="3" style="font-size: 13px; margin: 6px 0;">{{ node.description }}</NText>
                 
-                <NSpace vertical size="small" style="margin-top: 8px;">
+                <NSpace vertical style="margin-top: 4px;">
                   <div class="info-item">
                     <NSpace wrap>
                       <NTag
@@ -125,7 +120,15 @@
                       </NTag>
                     </NSpace>
                   </div>
-                  <div class="info-item">
+                  <div class="info-item" style="margin-top: -1px;">
+                    <NSpace wrap>
+                      <NTag v-if="supportsTcp(node)" type="success" size="small">TCP</NTag>
+                      <NTag v-if="supportsUdp(node)" type="success" size="small">UDP</NTag>
+                      <NTag v-if="supportsHttp(node)" type="success" size="small">HTTP</NTag>
+                      <NTag v-if="supportsHttps(node)" type="success" size="small">HTTPS</NTag>
+                    </NSpace>
+                  </div>
+                  <div class="info-item" style="margin-top: -1px;">
                     <NSpace wrap>
                       <NTag type="warning" size="small">
                         {{ node.portRange.min }} - {{ node.portRange.max }}
@@ -298,8 +301,9 @@ const nodeLoading = ref(false)
 
 // 新增搜索和区域筛选
 const searchQuery = ref('')
-const selectedRegion = ref('all') // 'all', 'cn', 'cn-out', 'out'
-const selectedGroup = ref('all')
+const selectedRegion = ref('all')
+const selectedGroup = ref('all') 
+const selectedProtocols = ref<string[]>([])
 // 新增弹窗状态
 const showConfigModal = ref(false)
 const showCreateConfirmModal = ref(false)
@@ -321,7 +325,7 @@ const formValue = ref({
   useCompression: false
 })
 
-const proxyTypeOptions = [
+const protocolOptions = [
   { label: 'TCP', value: 'tcp' },
   { label: 'UDP', value: 'udp' },
   { label: 'HTTP', value: 'http' },
@@ -390,6 +394,12 @@ const filteredNodes = computed(() => {
         return false
       }
     }
+    // 协议多选筛选
+    if (selectedProtocols.value.length > 0) {
+      if (!selectedProtocols.value.some(protocol => node.allowedProtocols.includes(protocol))) {
+        return false
+      }
+    }
     // 搜索筛选
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase()
@@ -399,12 +409,15 @@ const filteredNodes = computed(() => {
         node.id.toString().includes(query)
       )
     }
-    
     return true
   })
 })
 
 // 添加协议支持检查函数
+const supportsTcp = (node: any) => {
+  return node.allowedProtocols.includes('tcp')
+}
+
 const supportsUdp = (node: any) => {
   return node.allowedProtocols.includes('udp')
 }
@@ -601,8 +614,8 @@ const handleNodeSelect = (node: any) => {
 }
 
 const allowedProxyTypeOptions = computed(() => {
-  if (!selectedNode.value) return proxyTypeOptions
-  return proxyTypeOptions.filter(opt =>
+  if (!selectedNode.value) return protocolOptions
+  return protocolOptions.filter(opt =>
       selectedNode.value?.allowedProtocols.includes(opt.value)
   )
 })
@@ -786,12 +799,12 @@ watch(showRealnameModal, (newVal) => {
   }
 
   .selected-node {
-    box-shadow: 0 0 8px rgba($primary-color, 0.2);
-    background-color: rgba($primary-color, 0.05);
-    border-color: $primary-color !important;
+    box-shadow: 0 0 4px rgba($primary-color, 0.15);
+    background-color: rgba($primary-color, 0.02);
+    border-color: rgba($primary-color, 0.3) !important;
 
     &:hover {
-      background-color: rgba($primary-color, 0.08);
+      background-color: rgba($primary-color, 0.04);
     }
   }
 
@@ -816,7 +829,10 @@ watch(showRealnameModal, (newVal) => {
   .info-item {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 8px;
+    margin-bottom: 2px;
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
   
   .no-results {
@@ -883,6 +899,85 @@ watch(showRealnameModal, (newVal) => {
   flex-wrap: nowrap;
   .n-tag {
     border-radius: 16px !important;
+  }
+}
+
+.node-offline {
+  filter: grayscale(0.3);
+  opacity: 0.7;
+}
+
+.node-tags :deep(.n-tag) {
+  margin-left: -1px;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.region-filter {
+  flex: 0 0 auto;
+}
+
+.group-filter {
+  flex: 0 0 auto;
+}
+
+.protocol-filter {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.protocol-select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .filter-row {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .region-filter, .group-filter, .protocol-filter {
+    width: 100%;
+  }
+  .group-select, .protocol-select {
+    width: 100% !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+/* PC端 */
+.group-select {
+  width: 250px;
+  max-width: 100%;
+}
+
+.protocol-select{
+  width: 340px;
+  max-width: 100%;
+}
+
+/* 移动端 */
+@media (max-width: 768px) {
+  .group-select, .protocol-select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .group-filter, .protocol-filter {
+    width: 100%;
+    margin: 0;
   }
 }
 </style>

@@ -41,12 +41,12 @@ jobs:
       - name: 打包绿色版 zip
         run: |
           cd src-tauri/target/release/bundle/macos
-          7z a LingYunFrp-Tauri-Client-macos-portable.zip 凌云FRP.app
+          7z a LingYunFrp-Client-Launcher-macos-portable.zip 凌云FRP.app
       - name: 上传绿色版 zip
         uses: actions/upload-artifact@v4
         with:
           name: macos-portable-zip
-          path: src-tauri/target/release/bundle/macos/LingYunFrp-Tauri-Client-macos-portable.zip
+          path: src-tauri/target/release/bundle/macos/LingYunFrp-Client-Launcher-macos-portable.zip
 
   build-linux:
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
@@ -90,12 +90,12 @@ jobs:
       - name: 打包绿色版 zip
         run: |
           cd src-tauri/target/release
-          7z a LingYunFrp-Tauri-Client-linux-portable.zip lingyunfrp-tauri-client
+          7z a LingYunFrp-Client-Launcher-linux-portable.zip lingyunfrp-client-launcher
       - name: 上传绿色版 zip
         uses: actions/upload-artifact@v4
         with:
           name: linux-portable-zip
-          path: src-tauri/target/release/LingYunFrp-Tauri-Client-linux-portable.zip
+          path: src-tauri/target/release/LingYunFrp-Client-Launcher-linux-portable.zip
 
   build-windows:
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
@@ -125,9 +125,9 @@ jobs:
       - name: 打包绿色版 zip
         run: |
           cd src-tauri/target/release
-          7z a LingYunFrp-Tauri-Client-windows-portable.zip LingYunFrp-Tauri-Client.exe
+          7z a LingYunFrp-Client-Launcher-windows-portable.zip LingYunFrp-Client-Launcher.exe
       - name: 上传绿色版 zip
         uses: actions/upload-artifact@v4
         with:
           name: windows-portable-zip
-          path: src-tauri/target/release/LingYunFrp-Tauri-Client-windows-portable.zip
+          path: src-tauri/target/release/LingYunFrp-Client-Launcher-windows-portable.zip

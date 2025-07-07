@@ -1,6 +1,31 @@
 <template>
   <div class="network-container">
-
+    <n-alert v-if="!tapDriverInstalled" type="error" style="margin-bottom: 16px;">
+      未检测到虚拟网卡驱动，请先安装驱动后再使用本功能。
+    </n-alert>
+    <n-modal v-model:show="showInstallDialog" title="驱动安装" preset="dialog" :mask-closable="false" :closable="false">
+      <template #default>
+        <div v-if="!downloading">
+          <p>未检测到虚拟网卡驱动</p>
+        </div>
+        <div v-else>
+          <n-progress type="line" :percentage="downloadProgress" />
+          <p>下载进度：{{ downloadProgress }}%</p>
+        </div>
+      </template>
+      <template #action>
+        <n-button v-if="!downloading" type="primary" @click="showInstallDialog = false">确定</n-button>
+      </template>
+    </n-modal>
+    <n-modal v-model:show="showAdminDialog" title="需要管理员权限" preset="dialog" :mask-closable="false" :closable="false">
+      <template #default>
+        <p>本功能需要以管理员权限运行，是否以管理员权限重启？</p>
+      </template>
+      <template #action>
+        <n-button type="primary" @click="handleAdminDialog(true)">以管理员权限重启</n-button>
+        <n-button @click="handleAdminDialog(false)">返回上一页</n-button>
+      </template>
+    </n-modal>
     <!-- 主要功能区域 -->
     <div class="main-content">
       <n-tabs v-model:value="activeTab" type="line" animated class="network-tabs">
@@ -68,7 +93,7 @@
                         <n-icon size="20"><PersonOutline /></n-icon>
                       </div>
                       <div class="connection-info">
-                        <span class="connection-name">{{ node.name }}</span>
+                        <span class="connection-name">{{ node.nickname }}</span>
                         <div class="connection-meta">
                           <span class="connection-status" :class="node.is_online ? 'online' : 'offline'">
                             {{ node.is_online ? '在线' : '离线' }}
@@ -88,7 +113,7 @@
                         <n-icon size="20"><PersonOutline /></n-icon>
                       </div>
                       <div class="connection-info">
-                        <span class="connection-name">{{ node.name }}</span>
+                        <span class="connection-name">{{ node.nickname }}</span>
                         <div class="connection-meta">
                           <span class="connection-status" :class="node.is_online ? 'online' : 'offline'">
                             {{ node.is_online ? '在线' : '离线' }}
@@ -102,7 +127,10 @@
                 </div>
                 <div class="network-actions">
                   <n-space>
-                    <n-button type="error" @click="leaveNetwork" :loading="leaving">
+                    <n-button type="info" @click="loadCurrentNetworkWithReset" :disabled="!tapDriverInstalled">
+                      刷新状态
+                    </n-button>
+                    <n-button type="error" @click="leaveNetwork" :loading="leaving" :disabled="!tapDriverInstalled">
                       {{ leaving ? '断开中...' : '断开连接' }}
                     </n-button>
                   </n-space>
@@ -117,19 +145,41 @@
             <n-card title="创建新网络" class="create-network-card">
               <n-space vertical size="large">
                 <n-form-item label="网络名称">
-                  <n-input v-model:value="networkName" placeholder="请输入网络名称" :maxlength="20" show-count :disabled="!!currentNetwork" />
+                  <n-input v-model:value="networkName" placeholder="请输入网络名称" :maxlength="20" show-count :disabled="!!currentNetwork || !tapDriverInstalled" />
                 </n-form-item>
                 <n-form-item label="网络密码（可选）">
-                  <n-input v-model:value="networkPassword" placeholder="设置网络密码（可选）" type="password" show-password-on="click" :disabled="!!currentNetwork" />
+                  <n-input v-model:value="networkPassword" placeholder="设置网络密码（可选）" type="password" show-password-on="click" :disabled="!!currentNetwork || !tapDriverInstalled" />
                 </n-form-item>
                 <n-form-item label="网络状态">
-                  <n-switch v-model:value="networkIsPublic" :checked-value="true" :unchecked-value="false" :disabled="!!currentNetwork" />
+                  <n-switch v-model:value="networkIsPublic" :checked-value="true" :unchecked-value="false" :disabled="!!currentNetwork || !tapDriverInstalled" />
                   <span style="margin-left: 8px; color: #666;">{{ networkIsPublic ? '公开网络' : '私密网络' }}</span>
                 </n-form-item>
                 <n-form-item label="最大连接数">
-                  <n-input-number v-model:value="maxConnections" :min="1" :max="50" placeholder="最大连接数" :disabled="!!currentNetwork" />
+                  <n-input-number v-model:value="maxConnections" :min="1" :max="50" placeholder="最大连接数" :disabled="!!currentNetwork || !tapDriverInstalled" />
                 </n-form-item>
-                <n-button type="primary" @click="createNetwork" :loading="creating" :disabled="!networkName || !!currentNetwork" block size="large">
+                
+                <!-- 高级配置折叠栏 -->
+                <n-collapse>
+                  <n-collapse-item title="高级配置" name="advanced">
+                    <n-space vertical size="large">
+                      <n-form-item label="虚拟网络端口">
+                        <n-input-number 
+                          v-model:value="virtualNetworkPort" 
+                          :min="1024" 
+                          :max="65535" 
+                          placeholder="虚拟网络端口" 
+                          :disabled="!!currentNetwork || !tapDriverInstalled"
+                          style="width: 100%;"
+                        />
+                        <template #feedback>
+                          <span style="color: #666; font-size: 12px;">端口范围：1024-65535，默认：10000</span>
+                        </template>
+                      </n-form-item>
+                    </n-space>
+                  </n-collapse-item>
+                </n-collapse>
+                
+                <n-button type="primary" @click="createNetwork" :loading="creating" :disabled="!networkName || !!currentNetwork || !tapDriverInstalled" block size="large">
                   {{ creating ? '创建中...' : currentNetwork ? '已连接网络' : '创建网络' }}
                 </n-button>
               </n-space>
@@ -143,12 +193,12 @@
               <n-card title="加入网络" class="join-network-card">
                 <n-space vertical size="large">
                   <n-form-item label="网络ID">
-                    <n-input v-model:value="joinNetworkId" placeholder="请输入网络ID" :maxlength="10" :disabled="!!currentNetwork" />
+                    <n-input v-model:value="joinNetworkId" placeholder="请输入网络ID" :maxlength="10" :disabled="!!currentNetwork || !tapDriverInstalled" />
                   </n-form-item>
                   <n-form-item label="网络密码">
-                    <n-input v-model:value="joinPassword" placeholder="请输入网络密码（如果有）" type="password" show-password-on="click" :disabled="!!currentNetwork" />
+                    <n-input v-model:value="joinPassword" placeholder="请输入网络密码（如果有）" type="password" show-password-on="click" :disabled="!!currentNetwork || !tapDriverInstalled" />
                   </n-form-item>
-                  <n-button type="info" @click="joinNetwork" :loading="joining" :disabled="!joinNetworkId || !!currentNetwork" block size="large">
+                  <n-button type="info" @click="joinNetwork" :loading="joining" :disabled="!joinNetworkId || !!currentNetwork || !tapDriverInstalled" block size="large">
                     {{ joining ? '连接中...' : currentNetwork ? '已连接网络' : '加入网络' }}
                   </n-button>
                 </n-space>
@@ -167,7 +217,7 @@
                   </div>
                   <div v-else class="networks-container">
                     <div class="network-list">
-                      <div v-for="network in recentNetworks" :key="network.id" class="network-item" :class="{ 'disabled': !!currentNetwork }" @click="quickJoin(network)">
+                      <div v-for="network in recentNetworks" :key="network.id" class="network-item" :class="{ 'disabled': !!currentNetwork || !tapDriverInstalled }" @click="!currentNetwork && tapDriverInstalled && quickJoin(network)">
                         <div class="network-info">
                           <span class="network-name">{{ network.name }}</span>
                           <div class="network-meta">
@@ -186,14 +236,14 @@
                 </n-tab-pane>
                 <n-tab-pane name="public" tab="公开网络">
                   <div class="public-networks-header">
-                    <n-button type="primary" size="small" @click="refreshPublicNetworks" :loading="loadingPublicNetworks">刷新</n-button>
+                    <n-button type="primary" size="small" @click="refreshPublicNetworks" :loading="loadingPublicNetworks" :disabled="!tapDriverInstalled">刷新</n-button>
                   </div>
                   <div v-if="publicNetworks.length === 0" class="empty-state">
                     <n-empty description="暂无公开网络" size="small" />
                   </div>
                   <div v-else class="networks-container">
                     <div class="network-list">
-                      <div v-for="network in publicNetworks" :key="network.id" class="network-item" :class="{ 'disabled': !!currentNetwork }" @click="quickJoin(network)">
+                      <div v-for="network in publicNetworks" :key="network.id" class="network-item" :class="{ 'disabled': !!currentNetwork || !tapDriverInstalled }" @click="!currentNetwork && tapDriverInstalled && quickJoin(network)">
                         <div class="network-info">
                           <span class="network-name">{{ network.name }}</span>
                           <div class="network-meta">
@@ -259,7 +309,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, h } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import {
   NCard,
   NButton,
@@ -272,12 +322,13 @@ import {
   NIcon,
   useMessage,
   useNotification,
+  useDialog,
   NSwitch,
   NTabs,
   NTabPane,
   NInputNumber,
-  useDialog,
-  NForm
+  NCollapse,
+  NCollapseItem,
 } from 'naive-ui'
 import {
   WifiOutline,
@@ -288,26 +339,22 @@ import {
 } from '@vicons/ionicons5'
 import { NetworkListItem, VirtualNetwork } from '../../types/virtualNetwork'
 import { useVirtualNetworkManager } from '../../composables/useVirtualNetworkManager'
-import { VirtualNetworkAPI } from '../../api/virtualNetwork'
+import { VirtualNetworkAPI } from '../../net/user/virtualNetwork'
+import { invoke } from '@tauri-apps/api/core'
+import { emitTo, listen } from '@tauri-apps/api/event'
+import { useRouter } from 'vue-router'
 
 const message = useMessage()
 const notification = useNotification()
 const dialog = useDialog()
-
-dialog.error({
-  title: '未正式启用',
-  content: '虚拟网络功能还仍处于开发阶段目前还无法使用，敬请期待正式版本',
-  positiveText: '确定',
-  onPositiveClick: () => {
-    
-  }
-})
+const router = useRouter()
 
 // 表单数据
 const networkName = ref('')
 const networkPassword = ref('')
 const networkIsPublic = ref(true)
 const maxConnections = ref(10)
+const virtualNetworkPort = ref(19417)
 const joinNetworkId = ref('')
 const joinPassword = ref('')
 
@@ -328,8 +375,27 @@ const publicNetworks = ref<NetworkListItem[]>([])
 // 网络管理器
 const networkManager = useVirtualNetworkManager()
 
+const showInstallDialog = ref(false)
+const downloading = ref(false)
+const downloadProgress = ref(0)
+const tapDriverInstalled = ref(true)
+const showAdminDialog = ref(false)
+
+const pollingTimer = ref<number | null>(null)
+// 新增：标记虚拟网卡启动失败弹窗是否已弹出
+const virtualNetworkErrorDialogShown = ref(false)
+
+listen<number>('tap-driver-download-progress', (event) => {
+  downloadProgress.value = event.payload
+})
+
 // 创建网络
 const createNetwork = async () => {
+  if (!tapDriverInstalled.value) {
+    message.error('请先安装虚拟网卡驱动')
+    showInstallDialog.value = true
+    return
+  }
   if (!networkName.value) {
     message.warning('请填写完整的网络信息')
     return
@@ -342,8 +408,56 @@ const createNetwork = async () => {
       is_public: networkIsPublic.value,
       max_players: maxConnections.value
     })
-    if (response.code === 0 && response.data) {
+    if (response.code === 0) {
       currentNetwork.value = response.data
+      // === 通过 user_id 匹配本机节点 ===
+      let myUserId = response.data.config.owner_id
+      let myNode = response.data.nodes.find((n: any) => n.user_id === myUserId)
+      if (!myNode) myNode = response.data.nodes[0]
+      let myPublicAddr = myNode?.public_addr || ''
+      let myLocalPort = virtualNetworkPort.value
+      if (myPublicAddr) {
+        const parts = myPublicAddr.split(':')
+        if (parts.length >= 2) {
+          myLocalPort = Number(parts[1]) || virtualNetworkPort.value
+        }
+      }
+      const myVirtualIp = myNode?.virtual_ip
+      if (myVirtualIp) {
+        try {
+          await invoke('start_virtual_network', { virtualIp: myVirtualIp })
+          message.success('虚拟网卡已启动')
+          // 启动虚拟网卡成功后再自动连接对端节点
+          await invoke('auto_connect_peers', {
+            nodes: response.data.nodes,
+            myPublicAddr: myPublicAddr,
+            myLocalPort: myLocalPort
+          })
+        } catch (e) {
+          dialog.error({
+            title: '虚拟网卡启动失败',
+            content: '虚拟网卡启动失败: ' + e,
+            positiveText: '手动启动',
+            negativeText: '取消',
+            onPositiveClick: async () => {
+              try {
+                await invoke('start_virtual_network', { virtualIp: myVirtualIp })
+                message.success('虚拟网卡已启动')
+                // 启动虚拟网卡成功后再自动连接对端节点
+                await invoke('auto_connect_peers', {
+                  nodes: response.data.nodes,
+                  myPublicAddr: myPublicAddr,
+                  myLocalPort: myLocalPort
+                })
+              } catch (e) {
+                message.error('手动启动虚拟网卡失败: ' + e)
+              }
+            }
+          })
+        }
+      } else {
+        message.error('未找到本机虚拟IP，无法启动虚拟网卡')
+      }
       await navigator.clipboard.writeText(response.data.config.network_id)
       message.success('网络创建成功！网络ID已复制到剪贴板')
       notification.success({
@@ -357,10 +471,28 @@ const createNetwork = async () => {
       maxConnections.value = 10
       loadRecentNetworks()
     } else {
-      message.error(response.message || '创建网络失败')
+      // 创建失败时显示对话框
+      dialog.error({
+        title: '创建网络失败',
+        content: response.message || '创建网络失败，请检查网络连接或稍后重试',
+        positiveText: '重试',
+        negativeText: '取消',
+        onPositiveClick: () => {
+          createNetwork()
+        }
+      })
     }
   } catch (error) {
-    message.error('创建网络失败，请重试')
+    // 网络错误时显示对话框
+    dialog.error({
+      title: '网络错误',
+      content: '创建网络失败，可能是网络连接问题或服务器暂时不可用。请检查网络连接后重试。',
+      positiveText: '重试',
+      negativeText: '取消',
+      onPositiveClick: () => {
+        createNetwork()
+      }
+    })
     // eslint-disable-next-line no-console
     console.error('创建网络错误:', error)
   } finally {
@@ -382,6 +514,35 @@ const joinNetwork = async () => {
     })
     if (response.code === 0 && response.data) {
       currentNetwork.value = response.data
+      // === 通过 user_id 匹配本机节点 ===
+      let myUserId = response.data.config.owner_id
+      let myNode = response.data.nodes.find((n: any) => n.user_id === myUserId)
+      if (!myNode) myNode = response.data.nodes[0]
+      let myPublicAddr = myNode?.public_addr || ''
+      let myLocalPort = virtualNetworkPort.value
+      if (myPublicAddr) {
+        const parts = myPublicAddr.split(':')
+        if (parts.length >= 2) {
+          myLocalPort = Number(parts[1]) || virtualNetworkPort.value
+        }
+      }
+      const myVirtualIp = myNode?.virtual_ip
+      if (myVirtualIp) {
+        try {
+          await invoke('start_virtual_network', { virtual_ip: myVirtualIp })
+          message.success('虚拟网卡已启动')
+          // 启动虚拟网卡成功后再自动连接对端节点
+          await invoke('auto_connect_peers', {
+            nodes: response.data.nodes,
+            my_public_addr: myPublicAddr,
+            my_local_port: myLocalPort
+          })
+        } catch (e) {
+          message.error('虚拟网卡启动失败')
+        }
+      } else {
+        message.error('未找到本机虚拟IP，无法启动虚拟网卡')
+      }
       message.success('成功加入网络！')
       await nextTick()
       activeTab.value = 'status'
@@ -389,10 +550,28 @@ const joinNetwork = async () => {
       joinPassword.value = ''
       loadRecentNetworks()
     } else {
-      message.error(response.message || '加入网络失败')
+      // 加入失败时显示对话框
+      dialog.error({
+        title: '加入网络失败',
+        content: response.message || '加入网络失败，请检查网络ID和密码是否正确',
+        positiveText: '重试',
+        negativeText: '取消',
+        onPositiveClick: () => {
+          joinNetwork()
+        }
+      })
     }
   } catch (error) {
-    message.error('加入网络失败，请检查网络ID和密码')
+    // 网络错误时显示对话框
+    dialog.error({
+      title: '网络错误',
+      content: '加入网络失败，可能是网络连接问题或服务器暂时不可用。请检查网络连接后重试。',
+      positiveText: '重试',
+      negativeText: '取消',
+      onPositiveClick: () => {
+        joinNetwork()
+      }
+    })
     // eslint-disable-next-line no-console
     console.error('加入网络错误:', error)
   } finally {
@@ -403,19 +582,57 @@ const joinNetwork = async () => {
 // 离开网络
 const leaveNetwork = async () => {
   if (!currentNetwork.value) return
+  // 检查是否为房主
+  const myUserId = currentNetwork.value.config.owner_id
+  const myNode = currentNetwork.value.nodes.find((n: any) => n.user_id === myUserId)
+  if (myNode && myNode.is_owner) {
+    dialog.warning({
+      title: '房主离开提示',
+      content: '您是该房间的房主，离开后房间将解散，所有成员都将断开连接。是否确认离开？',
+      positiveText: '确认离开',
+      negativeText: '取消',
+      onPositiveClick: async () => {
+        await doLeaveNetwork()
+      }
+    })
+    return
+  }
+  await doLeaveNetwork()
+}
+
+// 真正执行离开网络的函数
+const doLeaveNetwork = async () => {
   leaving.value = true
   try {
-    const response = await VirtualNetworkAPI.leaveNetwork()
+    const response = await VirtualNetworkAPI.leaveNetwork(currentNetwork.value.config.network_id)
     if (response.code === 0) {
       currentNetwork.value = null
       message.success('已断开网络连接')
       await nextTick()
       activeTab.value = 'create'
     } else {
-      message.error(response.message || '断开连接失败')
+      // 断开连接失败时显示对话框
+      dialog.error({
+        title: '断开连接失败',
+        content: response.message || '断开网络连接失败，请稍后重试',
+        positiveText: '重试',
+        negativeText: '取消',
+        onPositiveClick: () => {
+          leaveNetwork()
+        }
+      })
     }
   } catch (error) {
-    message.error('断开连接失败')
+    // 网络错误时显示对话框
+    dialog.error({
+      title: '网络错误',
+      content: '断开网络连接失败，可能是网络连接问题。请检查网络连接后重试。',
+      positiveText: '重试',
+      negativeText: '取消',
+      onPositiveClick: () => {
+        leaveNetwork()
+      }
+    })
     // eslint-disable-next-line no-console
     console.error('断开连接错误:', error)
   } finally {
@@ -439,7 +656,16 @@ const refreshPublicNetworks = async () => {
   try {
     publicNetworks.value = await VirtualNetworkAPI.getPublicNetworks()
   } catch (error) {
-    message.error('获取公开网络失败')
+    // 获取公开网络失败时显示对话框
+    dialog.error({
+      title: '获取网络列表失败',
+      content: '获取公开网络列表失败，可能是网络连接问题。请检查网络连接后重试。',
+      positiveText: '重试',
+      negativeText: '取消',
+      onPositiveClick: () => {
+        refreshPublicNetworks()
+      }
+    })
     // eslint-disable-next-line no-console
     console.error('获取公开网络错误:', error)
   } finally {
@@ -455,6 +681,81 @@ const loadRecentNetworks = async () => {
     // eslint-disable-next-line no-console
     console.error('获取最近网络错误:', error)
   }
+}
+
+const isOkForStartNetwork = ref(false)
+// 获取当前网络状态
+const loadCurrentNetwork = async () => {
+  try {
+    const response = await VirtualNetworkAPI.getCurrentNetwork()
+    console.log('当前网络状态完整响应:', JSON.stringify(response, null, 2))
+    
+    if (response.code === 0 && response.data) {
+      currentNetwork.value = response.data
+      console.log('当前网络状态:', response.data)
+      // === 自动启动虚拟网卡和连接节点 ===
+      let myUserId = response.data.config.owner_id
+      let myNode = response.data.nodes.find((n: any) => n.user_id === myUserId)
+      if (!myNode) myNode = response.data.nodes[0]
+      let myPublicAddr = myNode?.public_addr || ''
+      let myLocalPort = virtualNetworkPort.value
+      if (myPublicAddr) {
+        const parts = myPublicAddr.split(':')
+        if (parts.length >= 2) {
+          myLocalPort = Number(parts[1]) || virtualNetworkPort.value
+        }
+      }
+      const myVirtualIp = myNode?.virtual_ip
+      if (myVirtualIp && !isOkForStartNetwork.value) {
+        try {
+          await invoke('auto_connect_peers', {
+            nodes: response.data.nodes,
+            myPublicAddr: myPublicAddr,
+            myLocalPort: myLocalPort
+          })
+          await invoke('start_virtual_network', { virtualIp: myVirtualIp })
+          isOkForStartNetwork.value = true
+          // 启动成功，重置弹窗标记
+          virtualNetworkErrorDialogShown.value = false
+        } catch (e) {
+          // 只弹一次
+          if (!virtualNetworkErrorDialogShown.value) {
+            virtualNetworkErrorDialogShown.value = true
+            if(e != "虚拟网卡已启动"){
+              dialog.error({
+                title: '虚拟网卡启动失败',
+                content: '启动错误:' + e,
+                positiveText: '重试',
+                negativeText: '取消',
+                onPositiveClick: () => {
+                  virtualNetworkErrorDialogShown.value = false
+                  loadCurrentNetwork()
+                }
+              })
+            }
+          }
+        }
+      }
+      setTimeout(() => {
+        if (activeTab.value !== 'status') {
+          activeTab.value = 'status'
+        }
+      }, 50)
+    } else {
+      currentNetwork.value = null
+      console.log('当前没有连接任何网络，响应:', response)
+    }
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('获取当前网络状态错误:', error)
+    message.error('获取网络状态失败')
+  }
+}
+
+// 刷新状态按钮，主动刷新时重置弹窗标记
+const loadCurrentNetworkWithReset = async () => {
+  virtualNetworkErrorDialogShown.value = false
+  await loadCurrentNetwork()
 }
 
 // 复制到剪贴板
@@ -485,16 +786,61 @@ const initNetworkManager = async () => {
   }
 }
 
+const handleAdminDialog = async (agree: boolean) => {
+  showAdminDialog.value = false
+  if (agree) {
+    // 以管理员权限重启
+    await emitTo('main', 'request_admin')
+  } else {
+    // 返回上一页
+    router.back()
+  }
+}
+
 onMounted(async () => {
+  // 检查管理员权限
+  setTimeout(async () => {
+    try {
+      const isAdmin = await invoke<boolean>('is_admin')
+      if (!isAdmin) {
+        showAdminDialog.value = true
+        return
+      }
+    } catch (e) {
+      message.error('管理员权限检测失败')
+    }
+  }, 50)
+  // 1. 检查驱动
+  try {
+    const installed = await invoke<boolean>('is_tap_driver_installed')
+    tapDriverInstalled.value = installed
+    if (!installed) {
+      showInstallDialog.value = true
+      message.error('未检测到虚拟网卡驱动，请先安装驱动后再使用')
+      return // 关键：未安装直接 return，后续不执行
+    }
+  } catch (e) {
+    tapDriverInstalled.value = false
+    message.error('驱动检测失败，请检查环境')
+    return // 检测失败也 return
+  }
+  // 2. 只有驱动检测通过才执行后续
   await initNetworkManager()
   await Promise.all([
+    loadCurrentNetwork(),
     loadRecentNetworks(),
     refreshPublicNetworks()
   ])
+  pollingTimer.value = window.setInterval(() => {
+    loadCurrentNetwork()
+  }, 10000)
 })
 
 onUnmounted(() => {
   networkManager.destroy()
+  if (pollingTimer.value) {
+    clearInterval(pollingTimer.value)
+  }
 })
 </script>
 

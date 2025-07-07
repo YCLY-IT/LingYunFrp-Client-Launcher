@@ -3,10 +3,33 @@ import { invoke } from '@tauri-apps/api/core';
 
 const clientVersion = await invoke<string>('get_client_version');
 
+class DialogDeduplicator {
+    private static instance: DialogDeduplicator;
+    private lastShowTime: number = 0;
+    private readonly DEBOUNCE_TIME = 4000;
+
+    static getInstance(): DialogDeduplicator {
+        if (!DialogDeduplicator.instance) {
+            DialogDeduplicator.instance = new DialogDeduplicator();
+        }
+        return DialogDeduplicator.instance;
+    }
+
+    showDialog(options: any): void {
+        const now = Date.now();
+        if (now - this.lastShowTime < this.DEBOUNCE_TIME) {
+            return; // 4秒内只弹一次
+        }
+        this.lastShowTime = now;
+        window.$dialog?.error(options);
+    }
+}
+
+const dialogDeduplicator = DialogDeduplicator.getInstance();
 // 消息去重机制
 class MessageDeduplicator {
     private static instance: MessageDeduplicator;
-    private messageQueue: Map<string, number> = new Map();
+    private lastShowTime: number = 0;
     private readonly DEBOUNCE_TIME = 4000;
 
     static getInstance(): MessageDeduplicator {
@@ -18,51 +41,29 @@ class MessageDeduplicator {
 
     showMessage(message: string, type: 'error' | 'warning' | 'success' | 'info' = 'error'): void {
         const now = Date.now();
-        const key = `${type}:${message}`;
-        
-        // 检查是否在去重时间窗口内
-        const lastTime = this.messageQueue.get(key);
-        if (lastTime && (now - lastTime) < this.DEBOUNCE_TIME) {
-            return; // 跳过重复消息
+        if (now - this.lastShowTime < this.DEBOUNCE_TIME) {
+            return; // 4秒内只显示一条消息
         }
-        
-        // 更新消息时间戳
-        this.messageQueue.set(key, now);
-        
-        // 显示消息
+        this.lastShowTime = now;
+
         switch (type) {
             case 'error':
-                window.$message?.error(message);
+                messageDeduplicator.showMessage(message, 'error');
                 break;
             case 'warning':
-                window.$message?.warning(message);
+                messageDeduplicator.showMessage(message, 'warning');
                 break;
             case 'success':
-                window.$message?.success(message);
+                messageDeduplicator.showMessage(message, 'success');
                 break;
             case 'info':
-                window.$message?.info(message);
+                messageDeduplicator.showMessage(message, 'info');
                 break;
-        }
-    }
-
-    // 清理过期的消息记录
-    cleanup(): void {
-        const now = Date.now();
-        for (const [key, time] of this.messageQueue.entries()) {
-            if ((now - time) > this.DEBOUNCE_TIME) {
-                this.messageQueue.delete(key);
-            }
         }
     }
 }
 
 const messageDeduplicator = MessageDeduplicator.getInstance();
-
-// 定期清理过期消息记录
-setInterval(() => {
-    messageDeduplicator.cleanup();
-}, 5000);
 
 const defaultFailure = (messageText: string) => {
     //! TODO: only console warning, don't show message here
@@ -75,19 +76,10 @@ const defaultError = (err: any) => {
     console.error(err);
     if (err.response) {
         if (err.response.data.code === 2) {
-            window.$dialog?.error({
-                title: '提示',
-                content: '登录信息已过期，请重新登录',
-                positiveText: '确定',
-                negativeText: '取消',
-                onPositiveClick: () => {
-                    removeToken();
-                    window.location.href = '/login';
-                }
-            });
+            messageDeduplicator.showMessage('登录信息已过期，请重新登录', 'error');
         }
     }
-    window.$message?.error(err.response?.data?.message || '请求失败，网络可能存在问题');
+    messageDeduplicator.showMessage('请求失败，网络可能存在问题', 'error');
     window.$loadingBar?.error()
 };
 
@@ -132,7 +124,7 @@ declare const window: Window
 
 function accessHandle() {
     return {
-        'Authorization': getToken()
+        'Authorization': `Bearer ${getToken()}`
     };
 
 }
@@ -156,7 +148,7 @@ function post(url: string, data: any, headers: Record<string, string | number>, 
             success(data);
             window.$loadingBar?.finish();
         } else if (data.code === 2) {
-            window.$dialog?.error({
+            dialogDeduplicator.showDialog({
                 title: '提示',
                 content: '登录信息已过期，请重新登录',
                 positiveText: '确定',
@@ -201,7 +193,7 @@ function get(url: string, headers: Record<string, string>, success: Function, fa
                 window.$loadingBar?.finish()
                 success(data);
             }else if (data.code === 2) {
-                window.$dialog?.error({
+                dialogDeduplicator.showDialog({
                     title: '提示',
                     content: '登录信息已过期，请重新登录',
                     positiveText: '确定',
@@ -238,5 +230,6 @@ function OpenBrowser(url: string) {
             console.error('打开浏览器失败:', err);
         });
 }
+
 
 export { defaultFailure, defaultError, storeToken, getToken, accessHandle, removeToken, post, get, unauthorized, OpenBrowser }

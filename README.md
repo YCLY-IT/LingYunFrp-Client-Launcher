@@ -21,7 +21,7 @@
 ## 目录结构
 
 ```
-LingYunFrp-Tauri-Client/
+LingYunFrp-Client-Launcher/
 ├── src/                # 前端源码
 │   ├── api/            # API 封装
 │   ├── components/     # 公共组件
@@ -98,6 +98,6 @@ pnpm run tauri build
 - 官网：[https://www.lyfrp.cn](https://www.lyfrp.cn)
 - 邮箱：1263115878@qq.com
 - QQ群：882670857
-- GitHub：[https://github.com/YCLY-IT/LingYunFrp-Tauri-Client](https://github.com/YCLY-IT/LingYunFrp-Tauri-Client)
+- GitHub：[https://github.com/YCLY-IT/LingYunFrp-Client-Launcher](https://github.com/YCLY-IT/LingYunFrp-Client-Launcher)
 
 ---

@@ -3,11 +3,18 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { listen } from '@tauri-apps/api/event'
 import { useMessage, NButton, NCard, NLog, NSpace, NSwitch, NSelect } from 'naive-ui'
 import type { LogInst, SelectOption } from 'naive-ui'
-import hljs from 'highlight.js'
+import hljs from 'highlight.js/lib/core'
+import javascript from 'highlight.js/lib/languages/javascript'
+import json from 'highlight.js/lib/languages/json'
+import bash from 'highlight.js/lib/languages/bash'
 import ansiToHtml from 'ansi-to-html'
 import { useLinkTunnelsStore } from '../../stores/counter'
 
-// 扩展Window接口，添加全局属性
+hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('json', json)
+hljs.registerLanguage('bash', bash)
+
+// 扩展Window接口，添加全局属性（保留兼容性）
 declare global {
   interface Window {
     __logSystemInitialized?: boolean;
@@ -49,7 +56,7 @@ const selectedTunnel = ref('all')
 const MAX_LOG_COUNT = 10000; // 全局最大日志条数，增加以保存更多日志
 
 // 添加全局标记，避免重复初始化日志
-const logSystemInitialized = ref(!!window.__logSystemInitialized);
+const logSystemInitialized = ref(!!sessionStorage.getItem('logSystemInitialized'));
 
 // 计算日志内容的MD5散列值
 function hashCode(str: string): string {
@@ -338,8 +345,8 @@ const clearLogs = () => {
   logs.value = '';
   
   // 重置筛选器选项
-  // tunnelOptions.value = [{ label: '全部日志', value: 'all' }];
-  // selectedTunnel.value = 'all';
+  tunnelOptions.value = [{ label: '全部日志', value: 'all' }];
+  selectedTunnel.value = 'all';
   
   // 清除监听器设置记录
   for (const key of Object.keys(localStorage)) {
@@ -347,6 +354,12 @@ const clearLogs = () => {
       localStorage.removeItem(key);
     }
   }
+  
+  // 清除全局初始化标记，确保下次刷新时重新初始化
+  sessionStorage.removeItem('logSystemInitialized');
+  logSystemInitialized.value = false;
+  
+  console.log('日志已清除');
 };
 
 // 防止日志过长，定期清理
@@ -389,9 +402,10 @@ onMounted(async () => {
   }
   
   // 检查日志系统是否已初始化，避免重复输出初始化消息
-  if (!logSystemInitialized.value) {
+  const sessionInitialized = sessionStorage.getItem('logSystemInitialized');
+  if (!sessionInitialized) {
     // 首次初始化，添加标记
-    window.__logSystemInitialized = true;
+    sessionStorage.setItem('logSystemInitialized', 'true');
     logSystemInitialized.value = true;
     
     // 添加一条测试日志

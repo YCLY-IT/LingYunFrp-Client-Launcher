@@ -7,7 +7,7 @@ const pkgPath = path.resolve(__dirname, 'package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 const oldVersion = pkg.version;
 const [major, minor, patch] = oldVersion.split('.').map(Number);
-let newPatch = patch < 9 ? patch + 1 : 9;
+let newPatch = patch < 99 ? patch + 1 : 99;
 const newVersion = [major, minor, newPatch].join('.');
 pkg.version = newVersion;
 fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');

@@ -19,7 +19,6 @@
                   show-password-on="click" />
         </NFormItem>
         <div class="checkbox-forgot">
-          <!-- <router-link to="/forget" class="forgot-link" style="color: #1976D2">忘记密码？</router-link> -->
            <a href="#" class="forgot-link" @click.prevent="OpenBrowser(packageData.url + '/forget')">忘记密码？</a>
            <p></p>
         </div>
@@ -37,7 +36,7 @@
 
 <style lang="scss" scoped>
 .login {
-  background-image: url('https://dailybing.com/api/v1');
+  background-image: url('https://api.nxvav.cn/api/bing');
   height: 100vh;
   overflow: hidden;
   display: flex;
@@ -50,7 +49,7 @@
 import packageData from '../../package.json';
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { NForm, NFormItem, NInput, NButton, NCard, NIcon, type FormRules, useMessage, type FormInst } from 'naive-ui'
+import { NForm, NFormItem, NInput, NButton, NCard, NIcon, type FormRules, type FormInst, useMessage } from 'naive-ui'
 import { LogInOutline } from '@vicons/ionicons5'
 import { userApi } from '../net'
 import { OpenBrowser } from '../net/base'

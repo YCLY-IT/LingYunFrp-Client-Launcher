@@ -1,358 +1,360 @@
 <template>
   <div class="proxies">
     <NCard title="隧道管理" class="tunnel-manager-card">
-      <div class="toolbar">
-        <div class="search-box">
-          <NInput v-model:value="searchText" placeholder="搜索隧道..." clearable size="medium">
-            <template #prefix>
-              <NIcon>
-                <SearchOutline />
-              </NIcon>
-            </template>
-          </NInput>
-        </div>
-
-        <div class="toolbar-right">
-          <NButtonGroup>
-            <NButton :type="viewMode === 'grid' ? 'primary' : 'default'" @click="viewMode = 'grid'" size="medium">
-              <template #icon>
+      <n-spin size="large" :show="loading">
+        <div class="toolbar">
+          <div class="search-box">
+            <NInput v-model:value="searchText" placeholder="搜索隧道..." clearable size="medium">
+              <template #prefix>
                 <NIcon>
-                  <GridOutline />
+                  <SearchOutline />
                 </NIcon>
               </template>
-              <span class="view-text">网格</span><span class="view-suffix">视图</span>
-            </NButton>
-            <NButton :type="viewMode === 'list' ? 'primary' : 'default'" @click="viewMode = 'list'" size="medium">
+            </NInput>
+          </div>
+
+          <div class="toolbar-right">
+            <NButtonGroup>
+              <NButton :type="viewMode === 'grid' ? 'primary' : 'default'" @click="viewMode = 'grid'" size="medium">
+                <template #icon>
+                  <NIcon>
+                    <GridOutline />
+                  </NIcon>
+                </template>
+                <span class="view-text">网格</span><span class="view-suffix">视图</span>
+              </NButton>
+              <NButton :type="viewMode === 'list' ? 'primary' : 'default'" @click="viewMode = 'list'" size="medium">
+                <template #icon>
+                  <NIcon>
+                    <ListOutline />
+                  </NIcon>
+                </template>
+                <span class="view-text">列表</span><span class="view-suffix">视图</span>
+              </NButton>
+            </NButtonGroup>
+
+            <NButton secondary @click="handleRefresh" size="medium">
               <template #icon>
                 <NIcon>
-                  <ListOutline />
+                  <RefreshOutline />
                 </NIcon>
-              </template>
-              <span class="view-text">列表</span><span class="view-suffix">视图</span>
+              </template>刷新
             </NButton>
-          </NButtonGroup>
-
-          <NButton secondary @click="handleRefresh" size="medium">
-            <template #icon>
-              <NIcon>
-                <RefreshOutline />
-              </NIcon>
-            </template>刷新
-          </NButton>
+          </div>
         </div>
-      </div>
 
-      <!-- 网格视图 -->
-      <div v-if="viewMode === 'grid'" class="proxy-grid">
-        <template v-if="filteredProxies.length">
-          <NCard v-for="proxy in filteredProxies" :key="proxy.proxyId" class="tunnel-card" hoverable>
-            <template #header>
-              <div class="tunnel-header">
-                <NText class="tunnel-title" strong>
-                  隧道: {{ proxy.proxyName }}
-                </NText>
-                <NSpace size="small">
-                  <NTag :type="proxy.isOnline ? 'success' : 'error'" size="small" round>
-                    {{ proxy.isOnline ? '在线' : '离线' }}
-                  </NTag>
-                  <NTag v-if="!getNodeStatus(proxy.nodeId)" type="error" size="small" round>
-                    节点离线
-                  </NTag>
-                  <NTag v-if="proxy.isBanned" type="error" size="small" round>
-                    已封禁
-                  </NTag>
-                  <NTag v-if="proxy.isDisabled" type="warning" size="small" round>
-                    已禁用
-                  </NTag>
+        <!-- 网格视图 -->
+        <div v-if="viewMode === 'grid'" class="proxy-grid">
+          <template v-if="filteredProxies.length">
+            <NCard v-for="proxy in filteredProxies" :key="proxy.proxyId" class="tunnel-card" hoverable>
+              <template #header>
+                <div class="tunnel-header">
+                  <NText class="tunnel-title" strong>
+                    隧道: {{ proxy.proxyName }}
+                  </NText>
+                  <NSpace size="small">
+                    <NTag :type="proxy.isOnline ? 'success' : 'error'" size="small" round>
+                      {{ proxy.isOnline ? '在线' : '离线' }}
+                    </NTag>
+                    <NTag v-if="!getNodeStatus(proxy.nodeId)" type="error" size="small" round>
+                      节点离线
+                    </NTag>
+                    <NTag v-if="proxy.isBanned" type="error" size="small" round>
+                      已封禁
+                    </NTag>
+                    <NTag v-if="proxy.isDisabled" type="warning" size="small" round>
+                      已禁用
+                    </NTag>
+                  </NSpace>
+                </div>
+              </template>
+              
+              <NSpace vertical size="medium">
+                <NDescriptions :column="1" size="small" label-placement="left">
+                  <NDescriptionsItem label="ID">
+                    <NTag type="info" size="small" round># {{ proxy.proxyId }}</NTag>
+                  </NDescriptionsItem>
+                  <NDescriptionsItem label="协议">
+                    <NTag :type="proxy.proxyType === 'http' || proxy.proxyType === 'https' ? 'warning' : 'success'" size="small" round>
+                      {{ proxy.proxyType.toUpperCase() }}
+                    </NTag>
+                  </NDescriptionsItem>
+                  <NDescriptionsItem :label="proxy.proxyType === 'http' || proxy.proxyType === 'https' ? '绑定域名' : '远程端口'">
+                    <div v-if="proxy.proxyType === 'http' || proxy.proxyType === 'https'">
+                      <NSpace size="small" wrap>
+                        <NTag 
+                          v-for="domain in JSON.parse(proxy.domain || '[]')" 
+                          :key="domain" 
+                          type="info" 
+                          size="small" 
+                          round
+                          style="cursor: pointer"
+                          @click="() => openUrl(proxy.proxyType, domain)"
+                        >
+                          {{ domain }}
+                        </NTag>
+                      </NSpace>
+                    </div>
+                    <NText v-else>{{ proxy.remotePort }}</NText>
+                  </NDescriptionsItem>
+                  <NDescriptionsItem label="节点">
+                    <NText depth="3">{{ getNodeLabel(proxy.nodeId) }}</NText>
+                  </NDescriptionsItem>
+                </NDescriptions>
+              </NSpace>
+
+              <template #action>
+                <NSpace justify="space-between" center>
+                  <NDropdown :options="dropdownOptions(proxy)" @select="key => handleSelect(key, proxy)" trigger="click">
+                    <NButton secondary size="small">
+                      <template #icon>
+                        <NIcon>
+                          <BuildOutline />
+                        </NIcon>
+                      </template>
+                      更多
+                    </NButton>
+                  </NDropdown>
+                  <NSwitch 
+                    :disabled="!getNodeStatus(proxy.nodeId)" 
+                    :loading 
+                    :value="proxy.isOnline" 
+                    @click="handleStarProxy(proxy)"
+                    size="medium"
+                  />
                 </NSpace>
-              </div>
-            </template>
-            
-            <NSpace vertical size="medium">
-              <NDescriptions :column="1" size="small" label-placement="left">
-                <NDescriptionsItem label="ID">
-                  <NTag type="info" size="small" round># {{ proxy.proxyId }}</NTag>
-                </NDescriptionsItem>
-                <NDescriptionsItem label="协议">
-                  <NTag :type="proxy.proxyType === 'http' || proxy.proxyType === 'https' ? 'warning' : 'success'" size="small" round>
-                    {{ proxy.proxyType.toUpperCase() }}
-                  </NTag>
-                </NDescriptionsItem>
-                <NDescriptionsItem :label="proxy.proxyType === 'http' || proxy.proxyType === 'https' ? '绑定域名' : '远程端口'">
-                  <div v-if="proxy.proxyType === 'http' || proxy.proxyType === 'https'">
-                    <NSpace size="small" wrap>
-                      <NTag 
-                        v-for="domain in JSON.parse(proxy.domain || '[]')" 
-                        :key="domain" 
-                        type="info" 
-                        size="small" 
-                        round
-                        style="cursor: pointer"
-                        @click="() => openUrl(proxy.proxyType, domain)"
-                      >
-                        {{ domain }}
-                      </NTag>
-                    </NSpace>
-                  </div>
-                  <NText v-else>{{ proxy.remotePort }}</NText>
-                </NDescriptionsItem>
-                <NDescriptionsItem label="节点">
-                  <NText depth="3">{{ getNodeLabel(proxy.nodeId) }}</NText>
-                </NDescriptionsItem>
-              </NDescriptions>
-            </NSpace>
-
-            <template #action>
-              <NSpace justify="space-between" center>
-                <NDropdown :options="dropdownOptions(proxy)" @select="key => handleSelect(key, proxy)" trigger="click">
-                  <NButton secondary size="small">
-                    <template #icon>
-                      <NIcon>
-                        <BuildOutline />
-                      </NIcon>
-                    </template>
-                    更多
-                  </NButton>
-                </NDropdown>
-                <NSwitch 
-                  :disabled="!getNodeStatus(proxy.nodeId)" 
-                  :loading 
-                  :value="proxy.isOnline" 
-                  @click="handleStarProxy(proxy)"
-                  size="medium"
-                />
-              </NSpace>
-            </template>
-          </NCard>
-        </template>
-        <div v-else class="empty-state">
-          <NEmpty description="暂无隧道" size="large">
-            <template #extra>
-              <NButton type="primary" @click="() => router.push('/dashboard/proxy/create')">
-                <template #icon>
-                  <NIcon>
-                    <AddOutline />
-                  </NIcon>
-                </template>
-                创建隧道
-              </NButton>
-            </template>
-          </NEmpty>
-        </div>
-      </div>
-
-      <!-- 列表视图 -->
-      <template v-else>
-        <NDataTable 
-          v-if="filteredProxies.length" 
-          :columns="columns" 
-          :data="filteredProxies"
-          :bordered="false"
-          :single-line="false"
-          size="medium"
-          class="tunnel-table"
-        />
-        <div v-else class="empty-state">
-          <NEmpty description="暂无隧道" size="large">
-            <template #extra>
-              <NButton type="primary" @click="() => router.push('/proxy/create')">
-                <template #icon>
-                  <NIcon>
-                    <AddOutline />
-                  </NIcon>
-                </template>
-                创建隧道
-              </NButton>
-            </template>
-          </NEmpty>
-        </div>
-      </template>
-    </NCard>
-
-    <!-- 远程地址信息弹窗 -->
-    <NModal v-model:show="showModal" preset="dialog" title="隧道详细信息" style="width: 800px; max-width: 90vw">
-      <template #header>
-        <div>隧道详细信息</div>
-      </template>
-      <div v-if="selectedProxy" style="padding: 16px 0" :class="{
-        'proxy-detail-container': selectedProxy.proxyType === 'http' || selectedProxy.proxyType === 'https'
-      }">
-        <div class="proxy-detail-left">
-          <NDescriptions :column="1" size="medium" label-placement="left" bordered>
-            <NDescriptionsItem label="状态">
-              <NSpace size="small">
-                <NTag :type="selectedProxy.isOnline ? 'success' : 'error'" size="small" round>
-                  {{ selectedProxy.isOnline ? '在线' : '离线' }}
-                </NTag>
-                <NTag v-if="selectedProxy.isBanned" type="error" size="small" round>
-                  已封禁
-                </NTag>
-              </NSpace>
-            </NDescriptionsItem>
-            <NDescriptionsItem label="隧道名称">
-              <NText>{{ selectedProxy.proxyName }}</NText>
-            </NDescriptionsItem>
-            <NDescriptionsItem label="协议类型">
-              <NTag type="info" size="small" round>{{ selectedProxy.proxyType.toUpperCase() }}</NTag>
-            </NDescriptionsItem>
-            <NDescriptionsItem label="本地端口">
-              <NText code>{{ selectedProxy.localPort }}</NText>
-            </NDescriptionsItem>
-            <NDescriptionsItem label="本地地址">
-              <NText code>{{ selectedProxy.localIp }}</NText>
-            </NDescriptionsItem>
-            <NDescriptionsItem label="节点名称">
-              <NText>{{ getNodeLabel(selectedProxy.nodeId).split(' - ')[1] }}</NText>
-            </NDescriptionsItem>
-            <NDescriptionsItem v-if="selectedProxy.proxyType === 'http' || selectedProxy.proxyType === 'https'" label="绑定域名">
-              <NSpace size="small" wrap>
-                <NTag 
-                  size="small" 
-                  v-for="domain in JSON.parse(selectedProxy.domain || '[]')" 
-                  :key="domain" 
-                  type="info"
-                  round
-                  style="cursor: pointer" 
-                  @click="selectedProxy && openUrl(selectedProxy.proxyType, domain)"
-                >
-                  {{ domain }}
-                </NTag>
-              </NSpace>
-            </NDescriptionsItem>
-            <NDescriptionsItem v-else label="链接地址">
-              <NText code>
-                {{nodeOptions.find(node => node.value === selectedProxy?.nodeId)?.hostname}}:{{
-                  selectedProxy.remotePort
-                }}
-              </NText>
-            </NDescriptionsItem>
-          </NDescriptions>
-        </div>
-        <template v-if="selectedProxy.proxyType === 'http' || selectedProxy.proxyType === 'https'">
-          <div class="proxy-detail-right">
-            <NCard title="域名解析配置" size="small">
-              <NAlert type="info" style="margin-bottom: 16px">
-                添加以下信息至您的域名解析配置后，服务才会生效。
-              </NAlert>
-              <NDataTable 
-                size="small" 
-                :single-line="false"
-                :data="JSON.parse(selectedProxy.domain || '[]').map(domain => ({
-                  domain,
-                  rootDomain: splitDomain(domain).rootDomain,
-                  host: splitDomain(domain).host,
-                  recordType: isIPAddress(nodeOptions.find(n => n.value === selectedProxy?.nodeId)?.hostname || '') ? 'A' : 'CNAME',
-                  recordValue: nodeOptions.find(n => n.value === selectedProxy?.nodeId || '')?.hostname
-                }))"
-                :columns="[
-                  { title: '根域名', key: 'rootDomain' },
-                  { title: '主机记录', key: 'host' },
-                  { title: '记录类型', key: 'recordType' },
-                  { title: '记录值', key: 'recordValue', render: (row) => h(NText, { type: 'primary', code: true }, { default: () => row.recordValue }) }
-                ]"
-                :bordered="false"
-              />
+              </template>
             </NCard>
+          </template>
+          <div v-else class="empty-state">
+            <NEmpty description="暂无隧道" size="large">
+              <template #extra>
+                <NButton type="primary" @click="() => router.push('/dashboard/proxy/create')">
+                  <template #icon>
+                    <NIcon>
+                      <AddOutline />
+                    </NIcon>
+                  </template>
+                  创建隧道
+                </NButton>
+              </template>
+            </NEmpty>
+          </div>
+        </div>
+
+        <!-- 列表视图 -->
+        <template v-else>
+          <NDataTable 
+            v-if="filteredProxies.length" 
+            :columns="columns" 
+            :data="filteredProxies"
+            :bordered="false"
+            :single-line="false"
+            size="medium"
+            class="tunnel-table"
+          />
+          <div v-else class="empty-state">
+            <NEmpty description="暂无隧道" size="large">
+              <template #extra>
+                <NButton type="primary" @click="() => router.push('/proxy/create')">
+                  <template #icon>
+                    <NIcon>
+                      <AddOutline />
+                    </NIcon>
+                  </template>
+                  创建隧道
+                </NButton>
+              </template>
+            </NEmpty>
           </div>
         </template>
-      </div>
-    </NModal>
+      </n-spin>
 
-    <!-- 删除确认弹窗 -->
-    <NModal v-model:show="showDeleteModal" preset="dialog" title="是否删除此隧道？" style="width: 400px">
-      <template #header>
-        <div>删除确认</div>
-      </template>
-      <NText>确定要删除此隧道吗？此操作不可恢复。</NText>
-      <template #action>
-        <NSpace>
-          <NButton size="small" @click="showDeleteModal = false">取消</NButton>
-          <NButton size="small" type="error" :loading="loading" @click="handleDeleteConfirm">删除</NButton>
-        </NSpace>
-      </template>
-    </NModal>
+      <!-- 远程地址信息弹窗 -->
+      <NModal v-model:show="showModal" preset="dialog" title="隧道详细信息" style="width: 800px; max-width: 90vw">
+        <template #header>
+          <div>隧道详细信息</div>
+        </template>
+        <div v-if="selectedProxy" style="padding: 16px 0" :class="{
+          'proxy-detail-container': selectedProxy.proxyType === 'http' || selectedProxy.proxyType === 'https'
+        }">
+          <div class="proxy-detail-left">
+            <NDescriptions :column="1" size="medium" label-placement="left" bordered>
+              <NDescriptionsItem label="状态">
+                <NSpace size="small">
+                  <NTag :type="selectedProxy.isOnline ? 'success' : 'error'" size="small" round>
+                    {{ selectedProxy.isOnline ? '在线' : '离线' }}
+                  </NTag>
+                  <NTag v-if="selectedProxy.isBanned" type="error" size="small" round>
+                    已封禁
+                  </NTag>
+                </NSpace>
+              </NDescriptionsItem>
+              <NDescriptionsItem label="隧道名称">
+                <NText>{{ selectedProxy.proxyName }}</NText>
+              </NDescriptionsItem>
+              <NDescriptionsItem label="协议类型">
+                <NTag type="info" size="small" round>{{ selectedProxy.proxyType.toUpperCase() }}</NTag>
+              </NDescriptionsItem>
+              <NDescriptionsItem label="本地端口">
+                <NText code>{{ selectedProxy.localPort }}</NText>
+              </NDescriptionsItem>
+              <NDescriptionsItem label="本地地址">
+                <NText code>{{ selectedProxy.localIp }}</NText>
+              </NDescriptionsItem>
+              <NDescriptionsItem label="节点名称">
+                <NText>{{ getNodeLabel(selectedProxy.nodeId).split(' - ')[1] }}</NText>
+              </NDescriptionsItem>
+              <NDescriptionsItem v-if="selectedProxy.proxyType === 'http' || selectedProxy.proxyType === 'https'" label="绑定域名">
+                <NSpace size="small" wrap>
+                  <NTag 
+                    size="small" 
+                    v-for="domain in JSON.parse(selectedProxy.domain || '[]')" 
+                    :key="domain" 
+                    type="info"
+                    round
+                    style="cursor: pointer" 
+                    @click="selectedProxy && openUrl(selectedProxy.proxyType, domain)"
+                  >
+                    {{ domain }}
+                  </NTag>
+                </NSpace>
+              </NDescriptionsItem>
+              <NDescriptionsItem v-else label="链接地址">
+                <NText code>
+                  {{nodeOptions.find(node => node.value === selectedProxy?.nodeId)?.hostname}}:{{
+                    selectedProxy.remotePort
+                  }}
+                </NText>
+              </NDescriptionsItem>
+            </NDescriptions>
+          </div>
+          <template v-if="selectedProxy.proxyType === 'http' || selectedProxy.proxyType === 'https'">
+            <div class="proxy-detail-right">
+              <NCard title="域名解析配置" size="small">
+                <NAlert type="info" style="margin-bottom: 16px">
+                  添加以下信息至您的域名解析配置后，服务才会生效。
+                </NAlert>
+                <NDataTable 
+                  size="small" 
+                  :single-line="false"
+                  :data="JSON.parse(selectedProxy.domain || '[]').map(domain => ({
+                    domain,
+                    rootDomain: splitDomain(domain).rootDomain,
+                    host: splitDomain(domain).host,
+                    recordType: isIPAddress(nodeOptions.find(n => n.value === selectedProxy?.nodeId)?.hostname || '') ? 'A' : 'CNAME',
+                    recordValue: nodeOptions.find(n => n.value === selectedProxy?.nodeId || '')?.hostname
+                  }))"
+                  :columns="[
+                    { title: '根域名', key: 'rootDomain' },
+                    { title: '主机记录', key: 'host' },
+                    { title: '记录类型', key: 'recordType' },
+                    { title: '记录值', key: 'recordValue', render: (row) => h(NText, { type: 'primary', code: true }, { default: () => row.recordValue }) }
+                  ]"
+                  :bordered="false"
+                />
+              </NCard>
+            </div>
+          </template>
+        </div>
+      </NModal>
 
-    <!-- 编辑隧道弹窗 -->
-    <NModal v-model:show="showEditModal" preset="dialog" title="编辑隧道" style="width: 800px; max-width: 90vw">
-      <NForm ref="editFormRef" :model="editForm" :rules="rules" label-placement="left" label-width="120"
-             require-mark-placement="right-hanging" size="medium" style="padding-top: 12px;">
-        <NFormItem label="隧道名称" path="proxyName">
-          <NInput v-model:value="editForm.proxyName" placeholder="请输入隧道名称" />
-        </NFormItem>
-        <NFormItem label="本地地址" path="localIp">
-          <NInput v-model:value="editForm.localIp" placeholder="请输入本地地址" />
-        </NFormItem>
-        <NFormItem label="本地端口" path="localPort">
-          <NInputNumber v-model:value="editForm.localPort" :min="1" :max="65535" placeholder="请输入本地端口" />
-        </NFormItem>
-        <NFormItem v-if="editForm.proxyType !== 'http' && editForm.proxyType !== 'https'" label="远程端口"
-                   path="remotePort">
+      <!-- 删除确认弹窗 -->
+      <NModal v-model:show="showDeleteModal" preset="dialog" title="是否删除此隧道？" style="width: 400px">
+        <template #header>
+          <div>删除确认</div>
+        </template>
+        <NText>确定要删除此隧道吗？此操作不可恢复。</NText>
+        <template #action>
           <NSpace>
-            <NInputNumber v-model:value="editForm.remotePort" :min="1" :max="65535" placeholder="请输入远程端口" />
-            <NButton size="medium" :loading="gettingFreePort" @click="handleGetFreePortForEdit">
-              获取空闲端口
-            </NButton>
+            <NButton size="small" @click="showDeleteModal = false">取消</NButton>
+            <NButton size="small" type="error" :loading="loading" @click="handleDeleteConfirm">删除</NButton>
           </NSpace>
-        </NFormItem>
-        <NFormItem v-if="editForm.proxyType === 'http' || editForm.proxyType === 'https'" label="绑定域名" path="domain">
-          <NDynamicTags v-model:value="domainTags" :render-tag="renderDomainTag" @update:value="handleDomainsUpdate" />
-        </NFormItem>
+        </template>
+      </NModal>
 
-        <NDivider>高级配置</NDivider>
-        <NText depth="3" style="padding-bottom: 15px; display: block;">
-          提示：仅推荐技术用户使用, 一般用户请勿随意填写。请确保您的配置正确, 否则隧道可能无法启动。
-        </NText>
+      <!-- 编辑隧道弹窗 -->
+      <NModal v-model:show="showEditModal" preset="dialog" title="编辑隧道" style="width: 800px; max-width: 90vw">
+        <NForm ref="editFormRef" :model="editForm" :rules="rules" label-placement="left" label-width="120"
+               require-mark-placement="right-hanging" size="medium" style="padding-top: 12px;">
+          <NFormItem label="隧道名称" path="proxyName">
+            <NInput v-model:value="editForm.proxyName" placeholder="请输入隧道名称" />
+          </NFormItem>
+          <NFormItem label="本地地址" path="localIp">
+            <NInput v-model:value="editForm.localIp" placeholder="请输入本地地址" />
+          </NFormItem>
+          <NFormItem label="本地端口" path="localPort">
+            <NInputNumber v-model:value="editForm.localPort" :min="1" :max="65535" placeholder="请输入本地端口" />
+          </NFormItem>
+          <NFormItem v-if="editForm.proxyType !== 'http' && editForm.proxyType !== 'https'" label="远程端口"
+                     path="remotePort">
+            <NSpace>
+              <NInputNumber v-model:value="editForm.remotePort" :min="1" :max="65535" placeholder="请输入远程端口" />
+              <NButton size="medium" :loading="gettingFreePort" @click="handleGetFreePortForEdit">
+                获取空闲端口
+              </NButton>
+            </NSpace>
+          </NFormItem>
+          <NFormItem v-if="editForm.proxyType === 'http' || editForm.proxyType === 'https'" label="绑定域名" path="domain">
+            <NDynamicTags v-model:value="domainTags" :render-tag="renderDomainTag" @update:value="handleDomainsUpdate" />
+          </NFormItem>
 
-        <NFormItem label="访问密钥" path="accessKey">
-          <NInput v-model:value="editForm.accessKey" placeholder="访问密钥已不再支持" :disabled="true"/>
-        </NFormItem>
-        <NFormItem label="Host Header Rewrite" path="hostHeaderRewrite">
-          <NInput v-model:value="editForm.hostHeaderRewrite" placeholder="请输入 Host 请求头重写值" />
-        </NFormItem>
-        <NFormItem label="X-From-Where" path="headerXFromWhere">
-          <NInput v-model:value="editForm.headerXFromWhere" placeholder="请输入 X-From-Where 请求头值" />
-        </NFormItem>
-        <NFormItem label="Proxy Protocol" path="proxyProtocolVersion">
-          <NSelect v-model:value="editForm.proxy_protocol_version" :options="[
-            { label: '不启用', value: '' },
-            { label: 'v1', value: 'v1' },
-            { label: 'v2', value: 'v2' }
-          ]" placeholder="Proxy Protocol Version" />
-        </NFormItem>
-        <NFormItem label="其他选项">
+          <NDivider>高级配置</NDivider>
+          <NText depth="3" style="padding-bottom: 15px; display: block;">
+            提示：仅推荐技术用户使用, 一般用户请勿随意填写。请确保您的配置正确, 否则隧道可能无法启动。
+          </NText>
+
+          <NFormItem label="访问密钥" path="accessKey">
+            <NInput v-model:value="editForm.accessKey" placeholder="访问密钥已不再支持" :disabled="true"/>
+          </NFormItem>
+          <NFormItem label="Host Header Rewrite" path="hostHeaderRewrite">
+            <NInput v-model:value="editForm.hostHeaderRewrite" placeholder="请输入 Host 请求头重写值" />
+          </NFormItem>
+          <NFormItem label="X-From-Where" path="headerXFromWhere">
+            <NInput v-model:value="editForm.headerXFromWhere" placeholder="请输入 X-From-Where 请求头值" />
+          </NFormItem>
+          <NFormItem label="Proxy Protocol" path="proxyProtocolVersion">
+            <NSelect v-model:value="editForm.proxy_protocol_version" :options="[
+              { label: '不启用', value: '' },
+              { label: 'v1', value: 'v1' },
+              { label: 'v2', value: 'v2' }
+            ]" placeholder="Proxy Protocol Version" />
+          </NFormItem>
+          <NFormItem label="其他选项">
+            <NSpace>
+              <NSwitch v-model:value="editForm.use_encryption" :rail-style="switchButtonRailStyle">
+                <template #checked>启用加密</template>
+                <template #unchecked>禁用加密</template>
+              </NSwitch>
+              <NSwitch v-model:value="editForm.use_compression" :rail-style="switchButtonRailStyle">
+                <template #checked>启用压缩</template>
+                <template #unchecked>禁用压缩</template>
+              </NSwitch>
+            </NSpace>
+          </NFormItem>
+        </NForm>
+        <template #action>
           <NSpace>
-            <NSwitch v-model:value="editForm.use_encryption" :rail-style="switchButtonRailStyle">
-              <template #checked>启用加密</template>
-              <template #unchecked>禁用加密</template>
-            </NSwitch>
-            <NSwitch v-model:value="editForm.use_compression" :rail-style="switchButtonRailStyle">
-              <template #checked>启用压缩</template>
-              <template #unchecked>禁用压缩</template>
-            </NSwitch>
+            <NButton size="small" @click="showEditModal = false">取消</NButton>
+            <NButton size="small" type="primary" :loading="loading" @click="handleEditSubmit">确定</NButton>
           </NSpace>
-        </NFormItem>
-      </NForm>
-      <template #action>
-        <NSpace>
-          <NButton size="small" @click="showEditModal = false">取消</NButton>
-          <NButton size="small" type="primary" :loading="loading" @click="handleEditSubmit">确定</NButton>
-        </NSpace>
-      </template>
-    </NModal>
+        </template>
+      </NModal>
 
-    <!-- 禁用/启用确认弹窗 -->
-    <NModal v-model:show="showToggleModal" preset="dialog" style="width: 400px">
-      <template #header>
-        <div>{{ toggleModalTitle }}</div>
-      </template>
-      <div>{{ toggleModalContent }}</div>
-      <template #action>
-        <NSpace>
-          <NButton size="small" @click="showToggleModal = false">取消</NButton>
-          <NButton size="small" type="primary" :loading="loading" @click="handleToggleConfirm">确定</NButton>
-        </NSpace>
-      </template>
-    </NModal>
+      <!-- 禁用/启用确认弹窗 -->
+      <NModal v-model:show="showToggleModal" preset="dialog" style="width: 400px">
+        <template #header>
+          <div>{{ toggleModalTitle }}</div>
+        </template>
+        <div>{{ toggleModalContent }}</div>
+        <template #action>
+          <NSpace>
+            <NButton size="small" @click="showToggleModal = false">取消</NButton>
+            <NButton size="small" type="primary" :loading="loading" @click="handleToggleConfirm">确定</NButton>
+          </NSpace>
+        </template>
+      </NModal>
+    </NCard>
   </div>
 </template>
 
@@ -363,6 +365,7 @@ import {
   NModal, NInput, NDropdown, NForm, NFormItem, NSelect, NInputNumber,
   useMessage, type FormInst, type FormRules, NDivider, NSwitch, NText,
   NEmpty, NAlert, NDynamicTags, NDescriptions, NDescriptionsItem,
+  NSpin,
 } from 'naive-ui'
 import { GridOutline, ListOutline, BuildOutline, RefreshOutline, SearchOutline, InformationCircleOutline, CreateOutline, TrashOutline, PowerOutline, AddOutline, EllipsisHorizontalCircleOutline } from '@vicons/ionicons5'
 import type { Node, Proxy } from '../../../types'
@@ -454,6 +457,7 @@ const getNodeStatus = (nodeId: number) => {
 // -------------------- 数据获取 --------------------
 const fetchNodes = async () => {
   try {
+    loading.value = true
     userApi.get("/proxy/node/list", accessHandle(), (data) => {
       if (data.code === 0) {
         nodeOptions.value = (data.data || []).map((node: any) => ({
@@ -464,7 +468,11 @@ const fetchNodes = async () => {
         message.error('获取节点列表失败')
       }
     })
-  } catch (e) { message.error('获取节点列表失败') }
+    loading.value = false
+  } catch (e) { 
+    loading.value = false
+    message.error('获取节点列表失败') 
+  }
 }
 const fetchProxies = async () => {
   loading.value = true
@@ -478,16 +486,14 @@ const fetchProxies = async () => {
   } finally { loading.value = false }
 }
 const fetchNodesAndProxies = async () => {
+  loading.value = true
   await fetchNodes(); await fetchProxies();
 }
 
 // -------------------- Token 获取 --------------------
 const fetchToken = async () => {
   try {
-    userApi.get("/user/info/token", accessHandle(), (data) => {
-      if (data.code === 0) token.value = data.data.token.token
-      else message.error(data.message || '获取Token失败')
-    }, () => message.error('获取Token失败'))
+    token.value = localStorage.getItem('token') || ''
   } catch (e) { message.error('获取Token失败') }
 }
 

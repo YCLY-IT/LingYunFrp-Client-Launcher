@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { NCard, NAlert, NButton, useMessage } from 'naive-ui'
+import { NCard, NAlert, NButton} from 'naive-ui'
 import { ref, onMounted, computed } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
@@ -58,12 +58,12 @@ import UserInfo from "../../components/UserInfo.vue"
 import { Traffic } from '../../types/User'
 
 const router = useRouter()
-const message = useMessage()
 const notices = ref('')
 const nickname = localStorage.getItem('nickname') || ''
 
 // 用户信息引用
 const userInfoRef = ref<{ userInfo: { isRealname: boolean; avatar: string; signRemainder: number; } } | null>(null)
+const statisticRef = ref()
 
 // 是否实名认证
 const IsRealname = computed(() => userInfoRef.value?.userInfo.isRealname || true)
@@ -115,6 +115,7 @@ const renderedNotice = computed(() => {
 
 const handleUserUpdate = () => {
   getUserTraffic()
+  statisticRef.value?.getUserTraffic()
 }
 
 // 获取通知
@@ -122,11 +123,7 @@ const fetchNotice = async (): Promise<void> => {
   userApi.get('/user/info/broadcast', accessHandle(), (data) => {
     if (data.code === 0) {
       notices.value = data.data[0].broadcast
-    } else {
-      message.error(data.message || '获取公告失败')
     }
-  }, (messageText) => {
-    message.error('获取公告失败:' + messageText)
   })
 }
 
@@ -136,16 +133,12 @@ const getHitokoto = async (): Promise<void> => {
   userApi.getHitokoto({}, (data) => {
     textHitokoto.value = data.hitokoto
     loading.value = false
-  }, (messageText) => {
-    message.error('获取一言失败:' + messageText)
   })
 }
 // 获取用户流量
 const getUserTraffic = async (): Promise<void> => {
   userApi.get('/user/info/traffic', accessHandle(), (data) => {
     traffic.value = data.data
-  }, (messageText) => {
-    message.error('获取用户流量失败:' + messageText)
   })
 }
 

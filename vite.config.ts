@@ -10,6 +10,28 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vitejs.dev/config/
 export default defineConfig({
   base: './',
+  build: {
+    target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks(id: any) {
+          if (id.includes('node_modules')) {
+            if (id.includes('naive-ui')) return;
+            if (id.includes('vue-router')) return 'vue-router';
+            if (id.includes('pinia')) return 'pinia';
+            if (id.includes('@vueuse')) return 'vueuse';
+            if (id.includes('axios')) return 'axios';
+            if (id.includes('highlight.js')) return 'highlightjs';
+            if (id.includes('dayjs')) return 'dayjs';
+            if (id.includes('numbro')) return 'numbro';
+            if (id.includes('@tauri-apps')) return 'tauri';
+            if (id.includes('/node_modules/vue')) return 'vue-core';
+            return 'vendor';
+          }
+        }
+      }
+    }
+  },
   plugins: [
     vue(),
     AutoImport({
@@ -50,8 +72,5 @@ export default defineConfig({
       // 3. tell vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
     },
-  },
-  build: {
-    target: 'esnext',
   },
 });
