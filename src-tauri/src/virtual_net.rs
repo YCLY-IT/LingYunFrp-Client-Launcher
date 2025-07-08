@@ -5,14 +5,20 @@ use std::sync::Mutex;
 use std::time::Duration;
 use tokio::time::sleep;
 use crate::commands::forward_request;
-#[cfg(windows)]
+
+#[cfg(target_os = "windows")]
 use std::sync::Arc;
+#[cfg(target_os = "windows")]
 use std::process::Command;
+#[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
-#[cfg(any(target_os = "linux", target_os = "macos"))]
-use tun::TunDevice;
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 use wintun;
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+use tun::platform::Device as TunDevice;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+use std::io::{Read, Write};
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
@@ -497,7 +503,7 @@ let tun_to_udp = std::thread::spawn({
 
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-fn start_p2p_forward<TunDevice>(
+fn start_p2p_forward(
     tun: &'static Mutex<Option<TunDevice>>,
     peer_addr: String,
     local_port: u16,
