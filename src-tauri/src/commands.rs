@@ -670,5 +670,20 @@ pub async fn check_auto_start_status() -> Result<bool, String> {
     }
 }
 
+#[tauri::command]
+pub async fn get_bing_wallpaper_base64() -> Result<String, String> {
+    let resp = reqwest::get("https://api.nxvav.cn/api/bing")
+        .await
+        .map_err(|e| format!("请求API失败: {}", e))?;
+    let url = resp.url().to_string();
+
+    let img_resp = reqwest::get(&url)
+        .await
+        .map_err(|e| format!("请求图片失败: {}", e))?;
+    let bytes = img_resp.bytes().await.map_err(|e| format!("读取图片失败: {}", e))?;
+    let base64_str = base64::engine::general_purpose::STANDARD.encode(&bytes);
+    Ok(base64_str)
+} 
+
 
 

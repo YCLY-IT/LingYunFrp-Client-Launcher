@@ -34,25 +34,15 @@
   </div>
 </template>
 
-<style lang="scss" scoped>
-.login {
-  background-image: url('https://api.nxvav.cn/api/bing');
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  position: relative;
-}
-</style>
-
-
 <script setup lang="ts">
 import packageData from '../../package.json';
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { NForm, NFormItem, NInput, NButton, NCard, NIcon, type FormRules, type FormInst, useMessage } from 'naive-ui'
 import { LogInOutline } from '@vicons/ionicons5'
 import { userApi } from '../net'
 import { OpenBrowser } from '../net/base'
+import { invoke } from '@tauri-apps/api/core';
 
 const router = useRouter()
 const message = useMessage()
@@ -113,8 +103,28 @@ if (!formValue.value.username) {
   }
 }
 
+onMounted(async () => {
+  const loginEl = document.querySelector('.login') as HTMLElement
+  if (loginEl) {
+    try {
+      const base64 = await invoke<string>('get_bing_wallpaper_base64')
+      loginEl.style.backgroundImage = `url('data:image/jpeg;base64,${base64}')`
+      loginEl.style.backgroundSize = 'cover'
+      loginEl.style.backgroundPosition = 'center'
+    } catch (e) {
+      // 失败时可设置默认背景
+      loginEl.style.background = '#222'
+    }
+  }
+})
 </script>
 
 <style lang="scss" scoped>
 @use '../assets/styles/login.scss';
+.login {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  position: relative;
+}
 </style>
