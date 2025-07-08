@@ -16,7 +16,7 @@ use std::os::windows::process::CommandExt;
 use wintun;
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-use tun::platform::Device as TunDevice;
+use tun::Device as TunDevice;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::io::{Read, Write};
 
