@@ -654,7 +654,6 @@ pub async fn check_auto_start_status() -> Result<bool, String> {
     }
     #[cfg(target_os = "macos")]
     {
-        use std::fs;
         use std::env;
         use std::path::PathBuf;
         let home_dir = env::var("HOME").map_err(|_| "无法获取HOME目录".to_string())?;
@@ -663,7 +662,6 @@ pub async fn check_auto_start_status() -> Result<bool, String> {
     }
     #[cfg(target_os = "linux")]
     {
-        use std::fs;
         use std::env;
         use std::path::PathBuf;
         let home_dir = env::var("HOME").map_err(|_| "无法获取HOME目录".to_string())?;

@@ -5,11 +5,14 @@ use std::sync::Mutex;
 use std::time::Duration;
 use tokio::time::sleep;
 use crate::commands::forward_request;
-use std::sync::Arc;
-use wintun;
-use std::process::Command;
 #[cfg(windows)]
+use std::sync::Arc;
+use std::process::Command;
 use std::os::windows::process::CommandExt;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+use tun::TunDevice;
+#[cfg(windows)]
+use wintun;
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
@@ -405,7 +408,7 @@ pub async fn start_virtual_network(virtual_ip: String) -> Result<String, String>
         config.up();
         config.tun_name("LingYunTun");
         let dev = TunDevice::new(&config)
-            .map_err(|e| format!("创建TUN失败: {}", format_error_chain(&e)))?;
+            .map_err(|e| format!("创建TUN失败: {}", e))?;
         TUN_HANDLE.get_or_init(|| Mutex::new(Some(dev)));
     }
     running.store(true, Ordering::SeqCst);
@@ -494,7 +497,7 @@ let tun_to_udp = std::thread::spawn({
 
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-fn start_p2p_forward(
+fn start_p2p_forward<TunDevice>(
     tun: &'static Mutex<Option<TunDevice>>,
     peer_addr: String,
     local_port: u16,

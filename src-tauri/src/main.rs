@@ -51,7 +51,7 @@ use commands::{
     is_admin,
     check_auto_start_status
 };
-
+#[cfg(target_os = "windows")]
 use windows::core::PCWSTR;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -327,7 +327,7 @@ fn run_as_admin() {
         std::process::exit(0);
     });
 }
-
+#[cfg(target_os = "windows")]
 fn wide_null(s: &str) -> Vec<u16> {
     use std::os::windows::ffi::OsStrExt;
     std::ffi::OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
