@@ -4,8 +4,10 @@ import App from './App.vue'
 import router from './router'
 
 import { invoke } from '@tauri-apps/api/core';
-
-const isDebug = await invoke<boolean>('get_now_mode')
+async function getIsDebug() {
+  return await invoke<boolean>('get_now_mode');
+}
+const isDebug = await getIsDebug();
 if (!isDebug){
   document.addEventListener('keydown', (e) => {
     if (

@@ -11,7 +11,7 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig({
   base: './',
   build: {
-    target: 'esnext',
+    target: 'es2022',
     rollupOptions: {
       output: {
         manualChunks(id: any) {

@@ -1,7 +1,8 @@
 import { Window } from '../types'
 import { invoke } from '@tauri-apps/api/core';
-
-const clientVersion = await invoke<string>('get_client_version');
+async function getClientVersion() {
+    return await invoke<string>('get_client_version');
+}
 
 class DialogDeduplicator {
     private static instance: DialogDeduplicator;
@@ -130,11 +131,11 @@ function accessHandle() {
 }
 
 //! TODO: use promise instead of callback
-function post(url: string, data: any, headers: Record<string, string | number>, success: Function, failure = defaultFailure, error = defaultError) {
+async function post(url: string, data: any, headers: Record<string, string | number>, success: Function, failure = defaultFailure, error = defaultError) {
     window.$loadingBar?.start();
     const postHeaders = {
         ...headers,
-        'ClientVersion': clientVersion,
+        'ClientVersion': await getClientVersion(),
         'Client': 'LingYunFrpClient',
     }
     // 通过 Tauri 后端转发请求
@@ -171,11 +172,11 @@ function post(url: string, data: any, headers: Record<string, string | number>, 
 }
 
 //! TODO: use promise instead of callback
-function get(url: string, headers: Record<string, string>, success: Function, failure = defaultFailure, error = defaultError) {
+async function get(url: string, headers: Record<string, string>, success: Function, failure = defaultFailure, error = defaultError) {
     window.$loadingBar?.start();
     const getHeaders = {
         ...headers,
-        'ClientVersion': clientVersion,
+        'ClientVersion': await getClientVersion(),
         'Client': 'LingYunFrpClient'
     }
     invoke('forward_request', {

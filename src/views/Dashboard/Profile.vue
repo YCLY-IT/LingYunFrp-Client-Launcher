@@ -160,35 +160,67 @@
     <!-- 更改头像模态窗口 -->
     <n-modal v-model:show="modals.changeAvatar" preset="card" title="更改头像" style="width: 500px;">
       <n-form ref="avatarFormRef" :model="forms.avatar">
-        <n-form-item label="上传头像" path="avatarUrl">
-          <n-upload
-            @before-upload="handleBeforeUpload"
-            v-model:file-list="forms.avatar.avatarFile"
-            accept="image/*"
-            list-type="image-card"
-            :max="1"
-          >
-          </n-upload>
-        </n-form-item>
-        <n-form-item label="预览" style="text-align: center;">
+        <n-tabs v-model:value="forms.avatar.avatarMode">
+          <n-tab-pane name="upload" tab="上传图片">
+            <n-form-item label="上传头像" path="avatarUrl">
+              <n-upload
+                @before-upload="handleBeforeUpload"
+                v-model:file-list="forms.avatar.avatarFile"
+                accept="image/*"
+                list-type="image-card"
+                :max="1"
+              />
+            </n-form-item>
+          </n-tab-pane>
+          <n-tab-pane name="qq" tab="QQ 头像">
+            <n-form-item label="QQ号">
+              <n-input v-model:value="forms.avatar.qqNumber" placeholder="请输入QQ号" />
+            </n-form-item>
+          </n-tab-pane>
+          <n-tab-pane name="cravatar" tab="Cravatar">
+            <n-form-item label="邮箱">
+              <n-input :value="UserInfo.email" disabled />
+            </n-form-item>
+          </n-tab-pane>
+        </n-tabs>
+        <n-form-item label="预览">
           <div class="avatar-preview">
-            <div 
-              :style="{
-                backgroundImage: `url(${forms.avatar.avatarUrl})`,
-                borderRadius: '50%',
-                width: '120px',
-                height: '120px',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                margin: '20px auto',
-                border: '2px solid var(--n-border-color)'
-              }"
-              alt="Avatar Preview"
-            />
+            <template v-if="forms.avatar.avatarMode === 'upload'">
+              <div 
+                :style="{
+                  backgroundImage: `url(${forms.avatar.avatarUrl})`,
+                  borderRadius: '50%',
+                  width: '100px',
+                  height: '100px',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }"
+                alt="Avatar Preview"
+              />
+            </template>
+            <template v-else-if="forms.avatar.avatarMode === 'qq' && forms.avatar.qqNumber">
+              <img :src="`https://q1.qlogo.cn/g?b=qq&nk=${forms.avatar.qqNumber}&s=640`" style="width:100px;height:100px;border-radius:50%;object-fit:cover;" />
+            </template>
+            <template v-else-if="forms.avatar.avatarMode === 'cravatar'">
+              <img :src="`https://cravatar.cn/avatar/${md5(UserInfo.email)}?s=100`" style="width:100px;height:100px;border-radius:50%;object-fit:cover;" />
+            </template>
+            <template v-else>
+              <div 
+                :style="{
+                  backgroundImage: `url(${UserInfo.avatar})`,
+                  borderRadius: '50%',
+                  width: '100px',
+                  height: '100px',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }"
+                alt="当前头像"
+              />
+            </template>
           </div>
         </n-form-item>
         <div class="modal-actions">
-          <n-button style="margin-right: 16px;" @click="modals.changeAvatar = false">取消</n-button>
+          <n-button @click="modals.changeAvatar = false">取消</n-button>
           <n-button :loading="loading" type="primary" @click="handleChangeAvatar">确认修改</n-button>
         </div>
       </n-form>
@@ -244,11 +276,12 @@
     <n-modal v-model:show="cropperVisible" preset="card" title="裁剪头像" style="width: 500px;">
       <div class="cropper-container" style="height: 360px;">
         <Cropper
+          ref="cropperRef"
           :src="cropperImg"
           :stencil-props="{
             aspectRatio: 1,
-            minWidth: '50%',
-            minHeight: '50%'
+            minWidth: '80%',
+            minHeight: '80%'
           }"
           :resize-image="{
             touch: true,
@@ -265,11 +298,10 @@
             default: 'vue-advanced-cropper'
           }"
           style="height: 300px;"
-          ref="cropperRef"
         />
       </div>
       <div class="modal-actions">
-        <n-button style="margin-right: 16px;" @click="cropperVisible = false">取消</n-button>
+        <n-button @click="cropperVisible = false">取消</n-button>
         <n-button type="primary" @click="handleCropConfirm">确认</n-button>
       </div>
     </n-modal>
@@ -287,7 +319,9 @@ import {
   NIcon,
   NCard,
   NUpload,
-  useMessage 
+  useMessage,
+  NTabs,
+  NTabPane
 } from 'naive-ui'
 import { UserIcon, ImageUpIcon, LockIcon, BadgeCheckIcon, ChevronRightIcon } from 'lucide-vue-next'
 import userInfo from "../../components/UserInfo.vue";
@@ -296,6 +330,7 @@ import { userApi } from '../../net'
 import { accessHandle, removeToken } from '../../net/base'
 import { Cropper, CircleStencil } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
+import md5 from 'blueimp-md5'
 
 
 const userInfoRef = ref<InstanceType<typeof userInfo>>();
@@ -327,8 +362,10 @@ const forms = reactive({
     emailCode: ''
   },
   avatar: {
+    avatarMode: 'upload', // 'upload' | 'qq' | 'cravatar'
     avatarUrl: UserInfo.avatar || '',
-    avatarFile: [] as UploadFileInfo[]
+    avatarFile: [] as UploadFileInfo[],
+    qqNumber: '',
   },
   password: {
     currentPassword: '',
@@ -429,11 +466,11 @@ const emailCodeButtonText = computed(() => {
   return '获取验证码'
 })
 
-// 新增裁剪相关的响应式变量
+// 裁剪相关
 const cropperImg = ref('')
 const cropperVisible = ref(false)
 const cropperRef = ref()
-const croppedAvatarBase64 = ref('') // 保存裁剪后的base64
+const croppedAvatarBase64 = ref('')
 
 // 显示模态窗口
 const showModal = (modalName) => {
@@ -531,7 +568,7 @@ const handleUpdateNickname = async () => {
   }
 }
 
-// 处理更改头像前的验证
+// 上传前处理（本地上传）
 const handleBeforeUpload = async (options: { file: UploadFileInfo }) => {
   const { file } = options
   if (!file.type?.startsWith('image/')) {
@@ -542,7 +579,6 @@ const handleBeforeUpload = async (options: { file: UploadFileInfo }) => {
     message.error('图片大小不能超过2MB')
     return false
   }
-
   const reader = new FileReader()
   reader.onload = (e) => {
     cropperImg.value = e.target?.result as string
@@ -554,35 +590,64 @@ const handleBeforeUpload = async (options: { file: UploadFileInfo }) => {
   return false
 }
 
-const handleCropConfirm = async () => {
-  if (!cropperRef.value) {
-    message.error('裁剪器未初始化')
-    return
-  }
+// 裁剪确认
+const handleCropConfirm = () => {
   const { canvas } = cropperRef.value.getResult()
-  if (!canvas) {
-    message.error('裁剪失败')
-    return
+  if (canvas) {
+    croppedAvatarBase64.value = canvas.toDataURL('image/png', 1)
+    forms.avatar.avatarUrl = croppedAvatarBase64.value
+    // 生成 UploadFileInfo 结构
+    const arr = croppedAvatarBase64.value.split(',')
+    const bstr = atob(arr[1])
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    const file = new File([u8arr], 'avatar.png', { type: 'image/png' })
+    forms.avatar.avatarFile = [{
+      id: Date.now().toString(),
+      name: 'avatar.png',
+      status: 'finished',
+      percentage: 100,
+      file: file,
+      url: croppedAvatarBase64.value,
+      type: 'image/png',
+      batchId: null,
+      thumbnailUrl: '',
+      fullPath: ''
+    }]
+    cropperVisible.value = false
   }
-  // 保存base64
-  croppedAvatarBase64.value = canvas.toDataURL('image/jpeg', 0.9)
-  // 预览区显示裁剪后的图片
-  forms.avatar.avatarUrl = croppedAvatarBase64.value
-  cropperVisible.value = false
 }
 
+// 头像上传主逻辑
 const handleChangeAvatar = () => {
-  if (!croppedAvatarBase64.value) {
-    message.error('请先上传并裁剪头像')
-    return
+  let params: any = { mode: forms.avatar.avatarMode }
+  if (forms.avatar.avatarMode === 'upload') {
+    if (!forms.avatar.avatarFile || forms.avatar.avatarFile.length === 0) {
+      message.error('请先上传头像')
+      return
+    }
+    // base64去头部
+    const base64Data = forms.avatar.avatarUrl.split(',')[1]
+    params = { mode: 'upload', file: base64Data }
+  } else if (forms.avatar.avatarMode === 'qq') {
+    if (!forms.avatar.qqNumber) {
+      message.error('请输入QQ号')
+      return
+    }
+    params = { mode: 'qq', qq: forms.avatar.qqNumber }
+  } else if (forms.avatar.avatarMode === 'cravatar') {
+    if (!UserInfo.email) {
+      message.error('未获取到邮箱，无法使用Cravatar')
+      return
+    }
+    params = { mode: 'cravatar', cravatar: md5(UserInfo.email) }
   }
   loading.value = true
   message.loading('正在上传头像...')
-  // 去掉base64头部
-  const base64Data = croppedAvatarBase64.value.split(',')[1]
-  userApi.post('/user/update/avatar', {
-    file: base64Data
-  }, accessHandle(), (data) => {
+  userApi.post('/user/update/avatar', params, undefined, (data) => {
     if (data.code === 0) {
       localStorage.setItem('avatar', data.data)
       message.success('头像上传成功')
@@ -593,10 +658,11 @@ const handleChangeAvatar = () => {
     } else {
       message.error(data.message || '头像上传失败')
     }
+    loading.value = false
   }, (error) => {
     message.error(typeof error === 'string' ? error : '头像上传失败')
+    loading.value = false
   })
-  loading.value = false
 }
 
 // 处理修改密码
