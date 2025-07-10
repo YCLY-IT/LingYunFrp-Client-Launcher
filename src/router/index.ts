@@ -1,4 +1,4 @@
-import {createRouter, createWebHistory} from 'vue-router'
+import {createRouter, createWebHashHistory} from 'vue-router'
 import { unauthorized} from "../net/base.js";
 import { Window } from '../types'
 
@@ -6,7 +6,7 @@ import { Window } from '../types'
 declare const window: Window
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',

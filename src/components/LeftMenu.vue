@@ -73,13 +73,17 @@ const handleMenuSelect = async (key: string, _option: MenuOption) => {
   if (!opt) return
 
   if (opt.key === 'network') {
-    // 这里调用真正的权限校验和跳转逻辑
-    await handleNetworkMenuClick()
+    // 只有校验通过并且页面切换后才激活菜单
+    const ok = await handleNetworkMenuClick()
+    if (ok) {
+      selectedKey.value = key
+      emit('select')
+    }
   } else if (opt.link) {
     router.push(opt.link)
+    selectedKey.value = key
+    emit('select')
   }
-  selectedKey.value = key
-  emit('select')
 }
 
 const selectedKey = ref('dashboardIndex')
