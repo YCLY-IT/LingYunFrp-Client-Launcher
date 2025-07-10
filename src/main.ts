@@ -19,22 +19,6 @@ if (!isDebug){
       e.preventDefault()
     }
   })
-  document.addEventListener('contextmenu', (e) => {
-     e.preventDefault() 
-  })
-  document.addEventListener('copy', (e) => {
-    e.preventDefault() 
-  })
-  document.addEventListener('paste', (e) => {
-    e.preventDefault()
-  })
-  document.addEventListener('cut', (e) => {
-    e.preventDefault() 
-  })
-  //禁用开发者
-  window.oncontextmenu = () => {
-    return false 
-  }
 }
 
 const app = createApp(App)

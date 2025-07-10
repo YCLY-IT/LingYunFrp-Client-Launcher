@@ -6,6 +6,7 @@
           <NNotificationProvider>
             <NLoadingBarProvider>
               <AppContent />
+              <CustomContextMenu ref="contextMenuRef" />
             </NLoadingBarProvider>
           </NNotificationProvider>
         </NMessageProvider>
@@ -30,6 +31,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { userApi } from './net'
 import { accessHandle } from './net/base'
+import CustomContextMenu from './components/CustomContextMenu.vue'
 
 // 从localStorage读取主题状态，默认跟随系统
 const isDarkMode = ref(localStorage.getItem('theme') === 'dark' || 
@@ -182,6 +184,7 @@ provide('theme', {
   theme,
   toggleTheme
 })
+const contextMenuRef = ref()
 
 onMounted(async () => {
   // 设置主题
@@ -212,6 +215,12 @@ onMounted(async () => {
   setTimeout(() => {
     checkForUpdates()
   }, 2000)
+
+  // 监听右键菜单事件
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+    contextMenuRef.value?.showMenu(e.clientX, e.clientY)
+  })
 })
 
 const checkFrpcHas = async () => {
