@@ -67,7 +67,7 @@
             </div>
             
             <!-- 实人认证 -->
-            <div v-if="!UserInfo.isRealname" class="setting-item setting-item-warning" @click="showModal('changeRealname')">
+            <div v-if="!UserInfo.isRealname" class="setting-item setting-item-warning" @click="openRealnameVerification">
               <div class="setting-icon">
                 <BadgeCheckIcon />
               </div>
@@ -245,32 +245,7 @@
       </n-form>
     </n-modal>
 
-    <!-- 实名认证模态窗口 -->
-     <n-modal v-model:show="modals.changeRealname" preset="card" title="实名认证" style="width: 500px;">
-      <n-form ref="realnameFormRef" :model="forms.realname" :rules="rules.realname">
-        <n-form-item label="姓名" path="realname">
-          <n-input v-model:value="forms.realname.realname" placeholder="请输入真实姓名" />
-        </n-form-item>
-        <n-form-item label="身份证号" path="idCard">
-          <n-input v-model:value="forms.realname.idCard" placeholder="请输入身份证号" />
-        </n-form-item>
-        <n-form-item label="手机号" path="phone">
-          <n-input v-model:value="forms.realname.phone" placeholder="请输入手机号" />
-        </n-form-item>
-        <n-form-item label="验证码" path="phoneCode">
-          <div style="display: flex; gap: 8px;">
-            <n-input v-model:value="forms.realname.phoneCode" placeholder="请输入验证码" />
-            <n-button :disabled="emailCodeSending" @click="handleSendPhoneCode">
-              {{ emailCodeButtonText }}
-            </n-button>
-          </div>
-        </n-form-item>
-        <div class="modal-actions">
-          <n-button style="margin-right: 16px;" @click="modals.changeRealname = false">取消</n-button>
-          <n-button :loading="loading" type="primary" @click="handleChangeRealname">提交认证</n-button>
-        </div>
-      </n-form>
-      </n-modal>
+
 
     <!-- 裁剪头像模态窗口 -->
     <n-modal v-model:show="cropperVisible" preset="card" title="裁剪头像" style="width: 500px;">
@@ -327,7 +302,7 @@ import { UserIcon, ImageUpIcon, LockIcon, BadgeCheckIcon, ChevronRightIcon } fro
 import userInfo from "../../components/UserInfo.vue";
 import { UploadFileInfo } from 'naive-ui'
 import { userApi } from '../../net'
-import { accessHandle, removeToken } from '../../net/base'
+import { accessHandle, OpenBrowser, removeToken } from '../../net/base'
 import { Cropper, CircleStencil } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import md5 from 'blueimp-md5'
@@ -351,7 +326,6 @@ const modals = reactive({
   changePassword: false,
   changeEmail: false,
   changeNickname: false,
-  changeRealname: false,
 })
 
 // 表单数据
@@ -379,12 +353,6 @@ const forms = reactive({
   },
   nickname: {
     newNickname: ''
-  },
-  realname: {
-    realname: '',
-    idCard: '' ,
-    phone: '',
-    phoneCode: '',
   }
 })
 
@@ -438,16 +406,6 @@ email: {
     { len: 6, message: '验证码长度应为6位', trigger: 'blur' }
   ],
 },
-realname: {
-  realname: [
-    { required: true, message: '请输入真实姓名', trigger: 'blur' },
-    { min: 2, max: 20, message: '真实姓名长度应在2-20个字符之间', trigger: 'blur' }
-  ],
-  idCard: [
-    { required: true, message: '请输入身份证号', trigger: 'blur' },
-    { pattern: /^[1-9]\d{5}(18|19)\d{8}[\dXx]$/, message: '请输入有效的身份证号', trigger: 'blur' }
-  ]
-},
 
 }
 
@@ -475,6 +433,11 @@ const croppedAvatarBase64 = ref('')
 // 显示模态窗口
 const showModal = (modalName) => {
   modals[modalName] = true
+}
+
+const openRealnameVerification = () => {
+  message.info('正在打开实名认证页面...')
+  OpenBrowser('https://www.lyfrp.cn/dashboard/profile')
 }
 
 // 处理修改用户名
@@ -699,73 +662,6 @@ const handleChangePassword = async () => {
     loading.value = false
   }
 }
-
-
-const handleChangeRealname = async () => {
-  if (!forms.realname.realname) {
-    message.error('请输入真实姓名')
-    return
-  }
-  if (!forms.realname.idCard) {
-    message.error('请输入身份证号')
-    return 
-  }
-  loading.value = true
-  try {
-  userApi.post(
-      '/user/realname',
-      { name: forms.realname.realname, IDCard: forms.realname.idCard },
-      accessHandle(),
-      (data) => {
-        if (data.code === 0) {
-          message.success(data.message)
-          modals.changeRealname = false
-          UserInfo.isRealname = true
-        }else{
-          message.error(data.message)
-        }
-      },
-      (error) => {
-        message.error(error)
-        loading.value = false
-      },
-  )
-  } catch (error) {
-    message.error('真实姓名认证失败')
-  }
-}
-
-const handleSendPhoneCode = async () => {
-  if (!forms.realname.phone) {
-    message.error('请输入手机号码')
-    return
-  }
-  if (!/^[1][3,4,5,7,8][0-9]{9}$/.test(forms.realname.phone)) {
-    message.error('请输入有效的手机号码')
-    return
-  }
-  loading.value = true
-  try {
-    userApi.sendSmsCode(forms.realname.phone, "realname", (data) => {
-        message.success(data.message)
-        emailCodeSending.value = true
-        emailCodeCountdown.value = 60
-        const timer = setInterval(() => {
-          if (emailCodeCountdown.value > 0) {
-            emailCodeCountdown.value--
-          } else {
-            clearInterval(timer)
-          }
-        }, 1000)
-    })
-  } catch (error) {
-    message.error('验证码发送失败') 
-  } finally {
-    loading.value = false
-    emailCodeSending.value = false
-  }
-}
-
 </script>
 
 <style lang="scss" scoped>

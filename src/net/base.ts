@@ -221,9 +221,9 @@ function unauthorized() {
 }
 
 
-function OpenBrowser(url: string) {
+async function OpenBrowser(url: string) {
     // 外部浏览器打开
-    invoke('open_url', { url: url })
+    await invoke('open_url', { url: url })
         .then(() => {
             console.log('打开浏览器成功');
         })
