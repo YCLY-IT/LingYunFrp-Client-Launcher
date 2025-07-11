@@ -1,25 +1,25 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { defineStore } from "pinia";
+import { ref } from "vue";
 
-export const useLinkTunnelsStore = defineStore('linkTunnels', () => {
-  const linkLaunchedTunnels = ref<Set<string>>(new Set())
+export const useLinkTunnelsStore = defineStore("linkTunnels", () => {
+  const linkLaunchedTunnels = ref<Set<string>>(new Set());
 
   const addLinkTunnel = (tunnelId: string) => {
-    linkLaunchedTunnels.value.add(tunnelId)
-  }
+    linkLaunchedTunnels.value.add(tunnelId);
+  };
 
   const removeLinkTunnel = (tunnelId: string) => {
-    linkLaunchedTunnels.value.delete(tunnelId)
-  }
+    linkLaunchedTunnels.value.delete(tunnelId);
+  };
 
   const clearLinkTunnels = () => {
-    linkLaunchedTunnels.value.clear()
-  }
+    linkLaunchedTunnels.value.clear();
+  };
 
   return {
     linkLaunchedTunnels,
     addLinkTunnel,
     removeLinkTunnel,
-    clearLinkTunnels
-  }
-}) 
+    clearLinkTunnels,
+  };
+});

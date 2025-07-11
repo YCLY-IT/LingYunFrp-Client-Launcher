@@ -20,7 +20,7 @@ export interface VirtualNetworkConfig {
 // 虚拟网络
 export interface VirtualNetwork {
   config: VirtualNetworkConfig;
-  status: 'Active' | 'Inactive';
+  status: "Active" | "Inactive";
   nodes: VirtualNetworkNode[];
 }
 
@@ -66,4 +66,4 @@ export interface NetworkListItem {
   currentPlayers?: number;
   maxPlayers?: number;
   owner?: { name: string };
-} 
+}

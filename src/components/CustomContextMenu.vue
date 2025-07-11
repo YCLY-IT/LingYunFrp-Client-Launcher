@@ -1,13 +1,37 @@
 <template>
-  <div v-if="visible" :style="menuStyle" class="custom-context-menu" @contextmenu.prevent>
+  <div
+    v-if="visible"
+    :style="menuStyle"
+    class="custom-context-menu"
+    @contextmenu.prevent
+  >
     <ul>
-      <li v-for="(item, index) in menu" :key="index" @mouseenter="showSubMenu(index)" @mouseleave="hideSubMenu(index)"
-          :class="{ disabled: item.disabled }">
-        <span @click="!item.disabled && handleClick(item)" :style="item.disabled ? 'color:#aaa;cursor:not-allowed;' : ''">{{ item.label }}</span>
+      <li
+        v-for="(item, index) in menu"
+        :key="index"
+        @mouseenter="showSubMenu(index)"
+        @mouseleave="hideSubMenu(index)"
+        :class="{ disabled: item.disabled }"
+      >
+        <span
+          @click="!item.disabled && handleClick(item)"
+          :style="item.disabled ? 'color:#aaa;cursor:not-allowed;' : ''"
+          >{{ item.label }}</span
+        >
         <span v-if="item.children" class="arrow">▶</span>
-        <div v-if="item.children && subMenuIndex === index" class="submenu" :style="subMenuStyle">
+        <div
+          v-if="item.children && subMenuIndex === index"
+          class="submenu"
+          :style="subMenuStyle"
+        >
           <ul>
-            <li v-for="(sub, subIndex) in item.children" :key="subIndex" @click="handleClick(sub)">{{ sub.label }}</li>
+            <li
+              v-for="(sub, subIndex) in item.children"
+              :key="subIndex"
+              @click="handleClick(sub)"
+            >
+              {{ sub.label }}
+            </li>
           </ul>
         </div>
       </li>
@@ -16,7 +40,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount, computed, inject } from 'vue';
+import {
+  ref,
+  reactive,
+  onMounted,
+  onBeforeUnmount,
+  computed,
+  inject,
+} from "vue";
 
 interface MenuItem {
   label: string;
@@ -47,74 +78,86 @@ async function checkClipboard() {
 
 function checkInputActive() {
   const active = document.activeElement as HTMLElement | null;
-  isInputActive.value = !!active && (
-    active instanceof HTMLInputElement ||
-    active instanceof HTMLTextAreaElement ||
-    active.isContentEditable
-  );
+  isInputActive.value =
+    !!active &&
+    (active instanceof HTMLInputElement ||
+      active instanceof HTMLTextAreaElement ||
+      active.isContentEditable);
 }
 
 const defaultMenu: MenuItem[] = [
   {
-    label: '全选',
+    label: "全选",
     onClick: () => {
-      document.execCommand('selectAll');
+      document.execCommand("selectAll");
     },
-    get disabled() { return !isInputActive.value; }
+    get disabled() {
+      return !isInputActive.value;
+    },
   },
   {
-    label: '复制',
+    label: "复制",
     onClick: () => {
-      document.execCommand('copy');
-    }
+      document.execCommand("copy");
+    },
   },
   {
-    label: '粘贴',
+    label: "粘贴",
     onClick: async () => {
       if (clipboardHasData.value) {
-        if (navigator.clipboard && window.document.activeElement instanceof HTMLElement) {
+        if (
+          navigator.clipboard &&
+          window.document.activeElement instanceof HTMLElement
+        ) {
           try {
             const text = await navigator.clipboard.readText();
             const active = window.document.activeElement as HTMLElement;
-            if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+            if (
+              active instanceof HTMLInputElement ||
+              active instanceof HTMLTextAreaElement
+            ) {
               const start = active.selectionStart || 0;
               const end = active.selectionEnd || 0;
               const value = active.value;
               active.value = value.slice(0, start) + text + value.slice(end);
               active.selectionStart = active.selectionEnd = start + text.length;
             } else if (active.isContentEditable) {
-              document.execCommand('insertText', false, text);
+              document.execCommand("insertText", false, text);
             }
           } catch (e) {
             // 粘贴失败
           }
         } else {
-          document.execCommand('paste');
+          document.execCommand("paste");
         }
       }
     },
-    get disabled() { return !clipboardHasData.value; }
+    get disabled() {
+      return !clipboardHasData.value;
+    },
   },
   {
-    label: '剪切',
+    label: "剪切",
     onClick: () => {
-      document.execCommand('cut');
-    }
+      document.execCommand("cut");
+    },
   },
 ];
 
 const menu = computed(() => props.menu ?? defaultMenu);
 
 const visible = ref(false);
-const menuStyle = reactive({ left: '0px', top: '0px' });
-const subMenuStyle = reactive({ left: '100%', top: '0px' });
+const menuStyle = reactive({ left: "0px", top: "0px" });
+const subMenuStyle = reactive({ left: "100%", top: "0px" });
 const subMenuIndex = ref<number | null>(null);
-const themeContext = inject('theme') as { isDarkMode: { value: boolean } }
-const theme = computed(() => themeContext?.isDarkMode.value ? 'dark' : 'light');
+const themeContext = inject("theme") as { isDarkMode: { value: boolean } };
+const theme = computed(() =>
+  themeContext?.isDarkMode.value ? "dark" : "light",
+);
 
 function showMenu(x: number, y: number) {
-  menuStyle.left = x + 'px';
-  menuStyle.top = y + 'px';
+  menuStyle.left = x + "px";
+  menuStyle.top = y + "px";
   visible.value = true;
   checkClipboard();
   checkInputActive();
@@ -136,10 +179,10 @@ function handleClick(item: MenuItem) {
 }
 
 onMounted(() => {
-  document.addEventListener('click', hideMenu);
+  document.addEventListener("click", hideMenu);
 });
 onBeforeUnmount(() => {
-  document.removeEventListener('click', hideMenu);
+  document.removeEventListener("click", hideMenu);
 });
 
 // 暴露方法给父组件
@@ -152,12 +195,14 @@ defineExpose({ showMenu, hideMenu });
   z-index: 9999;
   background: v-bind('theme === "dark" ? "#232323" : "#fff"');
   border: 1px solid v-bind('theme === "dark" ? "#444" : "#e0e0e0"');
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   min-width: 140px;
   user-select: none;
   border-radius: 12px;
   padding: 4px 0;
-  transition: box-shadow 0.2s, background 0.2s;
+  transition:
+    box-shadow 0.2s,
+    background 0.2s;
 }
 .custom-context-menu ul {
   list-style: none;
@@ -187,7 +232,7 @@ defineExpose({ showMenu, hideMenu });
   min-width: 120px;
   background: v-bind('theme === "dark" ? "#232323" : "#fff"');
   border: 1px solid v-bind('theme === "dark" ? "#444" : "#e0e0e0"');
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   border-radius: 10px;
   padding: 4px 0;
 }
@@ -195,4 +240,4 @@ defineExpose({ showMenu, hideMenu });
   color: v-bind('theme === "dark" ? "#666" : "#aaa"');
   cursor: not-allowed;
 }
-</style> 
+</style>

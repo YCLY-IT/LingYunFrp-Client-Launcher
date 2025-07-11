@@ -1,77 +1,76 @@
 export interface UserInfo {
-    userId: number
-    username: string
-    isRealname: boolean
-    group: string
-    friendlyGroup: string
-    usedProxies: number
-    maxProxies: number
-    create_at: number
-    traffic: number
-    outBound: number
-    inBound: number
-    email: string
-    status: number
-    todaySigned: boolean
+  userId: number;
+  username: string;
+  isRealname: boolean;
+  group: string;
+  friendlyGroup: string;
+  usedProxies: number;
+  maxProxies: number;
+  create_at: number;
+  traffic: number;
+  outBound: number;
+  inBound: number;
+  email: string;
+  status: number;
+  todaySigned: boolean;
 }
 export interface FilterUsersArgs {
-    page: number;
-    limit: number;
-    group?: string;
-    isRealname?: boolean;
-    status?: number;
-    keyword?: string;
+  page: number;
+  limit: number;
+  group?: string;
+  isRealname?: boolean;
+  status?: number;
+  keyword?: string;
 }
 
 export interface GetNodesArgs {
-    page: number;
-    limit: number;
-    isOnline?: boolean;
-    isDisabled?: boolean;
-    keyword?: string;
+  page: number;
+  limit: number;
+  isOnline?: boolean;
+  isDisabled?: boolean;
+  keyword?: string;
 }
 
 export interface Node {
-    nodeId: number;
-    name: string;
-    hostname: string;
-    description: string;
-    token: string;
-    servicePort: number;
-    adminPort: number;
-    adminPass: string;
-    allowGroup: string;
-    allowPort: string;
-    allowType: string;
-    isDisabled: boolean;
-    ip: string;
-    needRealname: boolean;
-    status: boolean;
+  nodeId: number;
+  name: string;
+  hostname: string;
+  description: string;
+  token: string;
+  servicePort: number;
+  adminPort: number;
+  adminPass: string;
+  allowGroup: string;
+  allowPort: string;
+  allowType: string;
+  isDisabled: boolean;
+  ip: string;
+  needRealname: boolean;
+  status: boolean;
 }
 export interface Group {
-    name: string
-    friendlyName: string
-    proxies: number
-    traffic: number
-    out_limit: number
-    in_limit: number
+  name: string;
+  friendlyName: string;
+  proxies: number;
+  traffic: number;
+  out_limit: number;
+  in_limit: number;
 }
 
 export interface DownloadSource {
-    id: string
-    path: string
-    name: string
+  id: string;
+  path: string;
+  name: string;
 }
 
-  export interface Traffic {
-    todayUsedTraffic: number
-    allUsedTraffic: number
-    allTraffic: number
-  }
+export interface Traffic {
+  todayUsedTraffic: number;
+  allUsedTraffic: number;
+  allTraffic: number;
+}
 
-  export interface TrafficType {
-    todayUsedTraffic: number
-    allUsedTraffic: number
-    allTraffic: number
-  }
-
+export interface TrafficType {
+  todayUsedTraffic: number;
+  allUsedTraffic: number;
+  allTraffic: number;
+}

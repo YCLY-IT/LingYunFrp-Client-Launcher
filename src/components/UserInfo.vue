@@ -11,15 +11,18 @@
           <div class="user-info-item">
             <div class="user-info-label">用户昵称</div>
             <div class="user-info-value">
-                {{ userInfo.nickname }}
+              {{ userInfo.nickname }}
             </div>
           </div>
 
           <div class="user-info-item-right">
             <div class="user-info-label">实名认证</div>
             <div class="user-info-value">
-              <NTag :type="userInfo.isRealname ? 'success' : 'default'" size="small">
-                {{ userInfo.isRealname ? '已实名' : '未实名' }}
+              <NTag
+                :type="userInfo.isRealname ? 'success' : 'default'"
+                size="small"
+              >
+                {{ userInfo.isRealname ? "已实名" : "未实名" }}
               </NTag>
             </div>
           </div>
@@ -45,17 +48,19 @@
 
           <div class="user-info-item-right">
             <div class="user-info-label">隧道数量</div>
-            <div class="user-info-value">{{ userInfo.usedProxies }} / {{ userInfo.maxProxies }}</div>
+            <div class="user-info-value">
+              {{ userInfo.usedProxies }} / {{ userInfo.maxProxies }}
+            </div>
           </div>
           <div class="user-info-item">
             <div class="user-info-label">剩余流量</div>
             <div class="user-info-value">
-              {{ formattedTraffic }} </div>
+              {{ formattedTraffic }}
+            </div>
           </div>
           <div class="user-info-item-right">
             <div class="user-info-label">剩余积分</div>
-            <div class="user-info-value">
-              {{ userInfo.point }} 分</div>
+            <div class="user-info-value">{{ userInfo.point }} 分</div>
           </div>
           <div class="user-info-item">
             <div class="user-info-label">入站带宽</div>
@@ -64,23 +69,36 @@
 
           <div class="user-info-item-right">
             <div class="user-info-label">出站带宽</div>
-            <div class="user-info-value">{{ userInfo.outlimit / 128 }} Mbps</div>
+            <div class="user-info-value">
+              {{ userInfo.outlimit / 128 }} Mbps
+            </div>
           </div>
           <div class="user-info-item">
             <div class="user-info-value">
               <NSpace class="token-section">
-                <NButton text type="primary" size="small" @click="handleCopyToken">
+                <NButton
+                  text
+                  type="primary"
+                  size="small"
+                  @click="handleCopyToken"
+                >
                   <template #icon>
                     <CopyPlusIcon />
                   </template>
-                  <div style="font-size: 14px;">复制令牌</div>
+                  <div style="font-size: 14px">复制令牌</div>
                 </NButton>
               </NSpace>
             </div>
           </div>
         </template>
         <NSpace class="user-info-item-right" vertical :size="4">
-          <NButton text type="primary" :loading="signLoading" :disabled="!isSignAvailable" @click="handleSign">
+          <NButton
+            text
+            type="primary"
+            :loading="signLoading"
+            :disabled="!isSignAvailable"
+            @click="handleSign"
+          >
             <template #icon>
               <NIcon>
                 <CalendarOutline />
@@ -91,138 +109,151 @@
         </NSpace>
       </div>
     </div>
-    <br>
+    <br />
     <NAlert class="user-info-item" type="info" show-icon>
-      <NText depth="3" style="font-size: 13px;">签到可以获得 10-50 积分 和 1-5GB 流量 </NText>
+      <NText depth="3" style="font-size: 13px"
+        >签到可以获得 10-50 积分 和 1-5GB 流量
+      </NText>
     </NAlert>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { NTag, NSkeleton, NButton, NIcon, NSpace, NText, NAlert, useMessage, useDialog } from 'naive-ui'
-import { CalendarOutline } from '@vicons/ionicons5'
-import {userApi} from "../net";
-import {accessHandle} from "../net/base.ts";
-import { CopyPlusIcon } from 'lucide-vue-next';
+import { ref, onMounted, computed } from "vue";
+import {
+  NTag,
+  NSkeleton,
+  NButton,
+  NIcon,
+  NSpace,
+  NText,
+  NAlert,
+  useMessage,
+  useDialog,
+} from "naive-ui";
+import { CalendarOutline } from "@vicons/ionicons5";
+import { userApi } from "../net";
+import { accessHandle } from "../net/base.ts";
+import { CopyPlusIcon } from "lucide-vue-next";
 const emit = defineEmits<{
-  (e: 'update'): void
-}>()
-const message = useMessage()
-const dialog = useDialog()
-const loading = ref(true)
-const signLoading = ref(false)
-const isSignAvailable = ref(false)
+  (e: "update"): void;
+}>();
+const message = useMessage();
+const dialog = useDialog();
+const loading = ref(true);
+const signLoading = ref(false);
+const isSignAvailable = ref(false);
 
 const userInfo = ref({
   userId: 0,
-  username: '',
-  nickname: '',
+  username: "",
+  nickname: "",
   isRealname: false,
-  group: '',
-  friendlyGroup: '',
+  group: "",
+  friendlyGroup: "",
   usedProxies: 0,
   maxProxies: 0,
-  regTime: '',
+  regTime: "",
   traffic: 0,
   outlimit: 0,
   inlimit: 0,
-  email: '',
+  email: "",
   point: 0,
   status: 0,
-  avatar: '',
+  avatar: "",
   todaySigned: false,
-  token: '',
+  token: "",
   remainder: 0,
   signRemainder: 0,
-})
+});
 
 const formatTime = (isoString: string) => {
   const date = new Date(isoString);
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
   });
 };
 
-
 const formatTraffic = (traffic: number) => {
-  const value = traffic
-  if (isNaN(value)) return traffic
+  const value = traffic;
+  if (isNaN(value)) return traffic;
   if (value >= 1024) {
-    return `${(value / 1024).toFixed(2)} GB`
+    return `${(value / 1024).toFixed(2)} GB`;
   }
-  return `${value.toFixed(2)} MB`
-}
+  return `${value.toFixed(2)} MB`;
+};
 
-const formattedRegTime = computed(() => formatTime(userInfo.value.regTime))
-const formattedTraffic = computed(() => formatTraffic(userInfo.value.traffic))
-const signButtonText = computed(() => signLoading.value ? '签到中...' : (isSignAvailable.value ? '签到' : '已签到'))
+const formattedRegTime = computed(() => formatTime(userInfo.value.regTime));
+const formattedTraffic = computed(() => formatTraffic(userInfo.value.traffic));
+const signButtonText = computed(() =>
+  signLoading.value ? "签到中..." : isSignAvailable.value ? "签到" : "已签到",
+);
 
 // 执行签到
 const handleSign = async () => {
-  if (!isSignAvailable.value || signLoading.value) return
-  signLoading.value = true
-  userApi.post('/user/sign', {}, accessHandle(), (data) => {
+  if (!isSignAvailable.value || signLoading.value) return;
+  signLoading.value = true;
+  userApi.post("/user/sign", {}, accessHandle(), (data) => {
     if (data.code === 0) {
       dialog.success({
-        title: '签到成功',
+        title: "签到成功",
         content: `获得 ${data.data.point} 积分 和 ${data.data.traffic}GB 流量`,
-        positiveText: '好的',
-      })
-      isSignAvailable.value = false
-      signLoading.value = false
-      emit('update')
-      fetchUserInfo()
+        positiveText: "好的",
+      });
+      isSignAvailable.value = false;
+      signLoading.value = false;
+      emit("update");
+      fetchUserInfo();
     } else {
-      message.error(data.message || '签到失败')
-      signLoading.value = false
+      message.error(data.message || "签到失败");
+      signLoading.value = false;
     }
-  })
-}
+  });
+};
 
 const handleCopyToken = async () => {
   try {
     await window.navigator.clipboard.writeText(userInfo.value.token);
-    message.success('Token 已复制到剪贴板');
+    message.success("Token 已复制到剪贴板");
   } catch (err) {
-    message.error('复制失败，请手动复制');
+    message.error("复制失败，请手动复制");
   }
 };
 
 const fetchUserInfo = async () => {
-  loading.value = true
-  try{
-    userApi.get('/user/info', accessHandle(), (data) => {
+  loading.value = true;
+  try {
+    userApi.get("/user/info", accessHandle(), (data) => {
       if (data.code === 0) {
-        userInfo.value = data.data
-        localStorage.setItem('group', userInfo.value.group)
-        localStorage.setItem('token', userInfo.value.token)
-        localStorage.setItem('avatar', userInfo.value.avatar)
-        localStorage.setItem('username', userInfo.value.username)
-        localStorage.setItem('nickname', userInfo.value.nickname)
-        localStorage.setItem('token', userInfo.value.token)
-        isSignAvailable.value = !data.data.sign
+        userInfo.value = data.data;
+        localStorage.setItem("group", userInfo.value.group);
+        localStorage.setItem("token", userInfo.value.token);
+        localStorage.setItem("avatar", userInfo.value.avatar);
+        localStorage.setItem("username", userInfo.value.username);
+        localStorage.setItem("nickname", userInfo.value.nickname);
+        localStorage.setItem("token", userInfo.value.token);
+        isSignAvailable.value = !data.data.sign;
       }
-      loading.value = false
-    })
+      loading.value = false;
+    });
   } catch (e) {
-    console.log(e)
+    console.log(e);
   }
-}
+};
 onMounted(async () => {
-  await fetchUserInfo()
-})
+  await fetchUserInfo();
+});
 defineExpose({
   userInfo,
-})
+});
 </script>
 
 <style lang="scss" scoped>
-@use '../assets/styles/components/userInfo.scss';
+@use "../assets/styles/components/userInfo.scss";
 </style>

@@ -42,8 +42,6 @@
         "language": "zh-CN"
       }
     },
-    "resources": [
-      "driver/"
-    ]
+    "resources": ["driver/"]
   }
 }
