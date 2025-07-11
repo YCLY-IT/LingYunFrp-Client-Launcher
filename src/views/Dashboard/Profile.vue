@@ -81,6 +81,19 @@
                 <n-icon><ChevronRightIcon /></n-icon>
               </div>
             </div>
+            <!-- 重置Token -->
+            <div class="setting-item" @click="showModal('changeResetToken')">
+              <div class="setting-icon">
+                <KeyIcon />
+              </div>
+              <div class="setting-content">
+                <h3 class="setting-title">重置Token</h3>
+                <p class="setting-desc">点击这里可以重置您的Token (退出登录)</p>
+              </div>
+              <div class="setting-arrow">
+                <n-icon><ChevronRightIcon /></n-icon>
+              </div>
+            </div>
           </div>
         </n-card>
       </div>
@@ -167,20 +180,20 @@
             </n-button>
           </div>
         </n-form-item>
-        <div class="modal-actions">
-          <n-button
-            style="margin-right: 16px"
-            @click="modals.changeUsername = false"
-            >取消</n-button
-          >
-          <n-button
-            :loading="loading"
-            type="primary"
-            @click="handleChangeUsername"
-            >确认修改</n-button
-          >
-        </div>
       </n-form>
+      <div class="modal-actions">
+        <n-button
+          style="margin-right: 16px"
+          @click="modals.changeUsername = false"
+          >取消</n-button
+        >
+        <n-button
+          :loading="loading"
+          type="primary"
+          @click="handleChangeUsername"
+          >确认修改</n-button
+        >
+      </div>
     </n-modal>
 
     <!-- 修改昵称模态 -->
@@ -198,27 +211,37 @@
         label-width="auto"
         :show-feedback="false"
       >
-        <n-form-item label="新的昵称">
+        <n-alert type="info" title="提示">
+          在我们称呼你时将会使用该昵称。
+        </n-alert>
+        <n-form-item label="当前昵称" style="margin-top: 20px">
+          <n-input
+            v-model:value="UserInfo.nickname"
+            readonly
+            style="cursor: default"
+          />
+        </n-form-item>
+        <n-form-item label="新的昵称" style="margin-top: 20px">
           <n-input
             v-model:value="forms.nickname.newNickname"
             placeholder="请输入新的昵称"
           />
         </n-form-item>
         <br />
-        <div class="modal-actions">
-          <n-button
-            style="margin-right: 16px"
-            @click="modals.changeNickname = false"
-            >取消</n-button
-          >
-          <n-button
-            :loading="loading"
-            type="primary"
-            @click="handleUpdateNickname"
-            >确定</n-button
-          >
-        </div>
       </n-form>
+      <div class="modal-actions">
+        <n-button
+          style="margin-right: 16px"
+          @click="modals.changeNickname = false"
+          >取消</n-button
+        >
+        <n-button
+          :loading="loading"
+          type="primary"
+          @click="handleUpdateNickname"
+          >确定</n-button
+        >
+      </div>
     </n-modal>
 
     <!-- 更改头像模态窗口 -->
@@ -311,16 +334,13 @@
             </template>
           </div>
         </n-form-item>
-        <div class="modal-actions">
-          <n-button @click="modals.changeAvatar = false">取消</n-button>
-          <n-button
-            :loading="loading"
-            type="primary"
-            @click="handleChangeAvatar"
-            >确认修改</n-button
-          >
-        </div>
       </n-form>
+      <div class="modal-actions">
+        <n-button @click="modals.changeAvatar = false">取消</n-button>
+        <n-button :loading="loading" type="primary" @click="handleChangeAvatar"
+          >确认修改</n-button
+        >
+      </div>
     </n-modal>
 
     <!-- 修改密码模态窗口 -->
@@ -356,20 +376,20 @@
             placeholder="请再次输入新密码"
           />
         </n-form-item>
-        <div class="modal-actions">
-          <n-button
-            style="margin-right: 16px"
-            @click="modals.changePassword = false"
-            >取消</n-button
-          >
-          <n-button
-            :loading="loading"
-            type="primary"
-            @click="handleChangePassword"
-            >确认修改</n-button
-          >
-        </div>
       </n-form>
+      <div class="modal-actions">
+        <n-button
+          style="margin-right: 16px"
+          @click="modals.changePassword = false"
+          >取消</n-button
+        >
+        <n-button
+          :loading="loading"
+          type="primary"
+          @click="handleChangePassword"
+          >确认修改</n-button
+        >
+      </div>
     </n-modal>
 
     <!-- 裁剪头像模态窗口 -->
@@ -410,6 +430,23 @@
         <n-button type="primary" @click="handleCropConfirm">确认</n-button>
       </div>
     </n-modal>
+    <n-modal
+      v-model:show="modals.changeResetToken"
+      type="warning"
+      preset="dialog"
+      title="重置密钥"
+      style="width: 500px"
+    >
+      <div style="margin-bottom: 24px">
+        此操作将重置您的Token（密钥），这将可能导致你的服务全部中断，并会导致当前账号强制退出登录。请确认是否继续？
+      </div>
+      <div class="modal-actions">
+        <n-button @click="modals.changeResetToken = false">取消</n-button>
+        <n-button type="error" @click="handleResetToken" :loading="loading"
+          >确认重置</n-button
+        >
+      </div>
+    </n-modal>
   </div>
 </template>
 
@@ -427,6 +464,7 @@ import {
   useMessage,
   NTabs,
   NTabPane,
+  useDialog,
 } from "naive-ui";
 import {
   UserIcon,
@@ -434,6 +472,8 @@ import {
   LockIcon,
   BadgeCheckIcon,
   ChevronRightIcon,
+  KeyIcon, // 新增
+  // 或 RefreshCcwIcon,
 } from "lucide-vue-next";
 import userInfo from "../../components/UserInfo.vue";
 import { UploadFileInfo } from "naive-ui";
@@ -442,10 +482,12 @@ import { accessHandle, OpenBrowser, removeToken } from "../../net/base";
 import { Cropper, CircleStencil } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
 import md5 from "blueimp-md5";
+import router from "../../router";
 
 const userInfoRef = ref<InstanceType<typeof userInfo>>();
 // 消息提示
 const message = useMessage();
+const dialog = useDialog();
 // 用户信息
 const UserInfo = reactive({
   username: localStorage.getItem("username") || "",
@@ -461,6 +503,7 @@ const modals = reactive({
   changePassword: false,
   changeEmail: false,
   changeNickname: false,
+  changeResetToken: false,
 });
 
 // 表单数据
@@ -622,7 +665,25 @@ const handleChangeUsername = async () => {
   }
   loading.value = false;
 };
-
+const handleResetToken = async () => {
+  loading.value = true;
+  userApi.post("/user/reset/token", {}, accessHandle(), (data) => {
+    if (data.code === 0) {
+      loading.value = false;
+      modals.changeResetToken = false;
+      dialog.success({
+        title: "重置成功",
+        content: "令牌重置成功，请重新登录",
+        positiveText: "确定",
+        onPositiveClick: () => {
+          removeToken();
+          router.push("/login");
+        },
+        closable: false,
+      });
+    }
+  });
+};
 const sendEmailVerificationCode = async (model: string, email: string) => {
   if (emailCodeSending.value) return;
   if (!email) {
@@ -840,6 +901,9 @@ const handleChangePassword = async () => {
 
 <style lang="scss" scoped>
 @use "../../assets/styles/variables" as *;
+.n-button {
+  margin-right: 1em;
+}
 
 .profile-container {
   .welcome-banner {
@@ -1126,6 +1190,11 @@ const handleChangePassword = async () => {
       font-size: 14px;
     }
   }
+}
+
+.profile-container .modal-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
 }
 
 // 裁剪器容器样式

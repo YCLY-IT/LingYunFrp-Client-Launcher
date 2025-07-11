@@ -12,6 +12,7 @@ declare module 'vue' {
     CustomContextMenu: typeof import('./src/components/CustomContextMenu.vue')['default']
     HomeMenu: typeof import('./src/components/HomeMenu.vue')['default']
     LeftMenu: typeof import('./src/components/LeftMenu.vue')['default']
+    NAlert: typeof import('naive-ui')['NAlert']
     NCard: typeof import('naive-ui')['NCard']
     NFlex: typeof import('naive-ui')['NFlex']
     NGi: typeof import('naive-ui')['NGi']
