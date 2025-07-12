@@ -14,6 +14,8 @@ declare module 'vue' {
     LeftMenu: typeof import('./src/components/LeftMenu.vue')['default']
     NAlert: typeof import('naive-ui')['NAlert']
     NCard: typeof import('naive-ui')['NCard']
+    NCollapse: typeof import('naive-ui')['NCollapse']
+    NCollapseItem: typeof import('naive-ui')['NCollapseItem']
     NFlex: typeof import('naive-ui')['NFlex']
     NGi: typeof import('naive-ui')['NGi']
     NGrid: typeof import('naive-ui')['NGrid']

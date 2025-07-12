@@ -489,60 +489,69 @@
             />
           </NFormItem>
 
-          <NDivider>高级配置</NDivider>
-          <NText depth="3" style="padding-bottom: 15px; display: block">
-            提示：仅推荐技术用户使用, 一般用户请勿随意填写。请确保您的配置正确,
-            否则隧道可能无法启动。
-          </NText>
+          <NCollapse>
+            <NCollapseItem title="高级配置" name="advanced">
+              <template #header>
+                <NText>高级配置</NText>
+                <NText depth="3" style="margin-left: 8px; font-size: 12px">
+                  (仅推荐技术用户使用)
+                </NText>
+              </template>
+              <NText depth="3" style="padding-bottom: 15px; display: block">
+                提示：仅推荐技术用户使用,
+                一般用户请勿随意填写。请确保您的配置正确, 否则隧道可能无法启动。
+              </NText>
 
-          <NFormItem label="访问密钥" path="accessKey">
-            <NInput
-              v-model:value="editForm.accessKey"
-              placeholder="访问密钥已不再支持"
-              :disabled="true"
-            />
-          </NFormItem>
-          <NFormItem label="Host Header Rewrite" path="hostHeaderRewrite">
-            <NInput
-              v-model:value="editForm.hostHeaderRewrite"
-              placeholder="请输入 Host 请求头重写值"
-            />
-          </NFormItem>
-          <NFormItem label="X-From-Where" path="headerXFromWhere">
-            <NInput
-              v-model:value="editForm.headerXFromWhere"
-              placeholder="请输入 X-From-Where 请求头值"
-            />
-          </NFormItem>
-          <NFormItem label="Proxy Protocol" path="proxyProtocolVersion">
-            <NSelect
-              v-model:value="editForm.proxy_protocol_version"
-              :options="[
-                { label: '不启用', value: '' },
-                { label: 'v1', value: 'v1' },
-                { label: 'v2', value: 'v2' },
-              ]"
-              placeholder="Proxy Protocol Version"
-            />
-          </NFormItem>
-          <NFormItem label="其他选项">
-            <NSpace>
-              <NSwitch
-                v-model:value="editForm.use_encryption"
-                :rail-style="switchButtonRailStyle"
-              >
-                <template #checked>启用加密</template>
-                <template #unchecked>禁用加密</template>
-              </NSwitch>
-              <NSwitch
-                v-model:value="editForm.use_compression"
-                :rail-style="switchButtonRailStyle"
-              >
-                <template #checked>启用压缩</template>
-                <template #unchecked>禁用压缩</template>
-              </NSwitch>
-            </NSpace>
-          </NFormItem>
+              <NFormItem label="访问密钥" path="accessKey">
+                <NInput
+                  v-model:value="editForm.accessKey"
+                  placeholder="访问密钥已不再支持"
+                  :disabled="true"
+                />
+              </NFormItem>
+              <NFormItem label="Host Header Rewrite" path="hostHeaderRewrite">
+                <NInput
+                  v-model:value="editForm.hostHeaderRewrite"
+                  placeholder="请输入 Host 请求头重写值"
+                />
+              </NFormItem>
+              <NFormItem label="X-From-Where" path="headerXFromWhere">
+                <NInput
+                  v-model:value="editForm.headerXFromWhere"
+                  placeholder="请输入 X-From-Where 请求头值"
+                />
+              </NFormItem>
+              <NFormItem label="Proxy Protocol" path="proxyProtocolVersion">
+                <NSelect
+                  v-model:value="editForm.proxy_protocol_version"
+                  :options="[
+                    { label: '不启用', value: '' },
+                    { label: 'v1', value: 'v1' },
+                    { label: 'v2', value: 'v2' },
+                  ]"
+                  placeholder="Proxy Protocol Version"
+                />
+              </NFormItem>
+              <NFormItem label="其他选项">
+                <NSpace>
+                  <NSwitch
+                    v-model:value="editForm.use_encryption"
+                    :rail-style="switchButtonRailStyle"
+                  >
+                    <template #checked>启用加密</template>
+                    <template #unchecked>禁用加密</template>
+                  </NSwitch>
+                  <NSwitch
+                    v-model:value="editForm.use_compression"
+                    :rail-style="switchButtonRailStyle"
+                  >
+                    <template #checked>启用压缩</template>
+                    <template #unchecked>禁用压缩</template>
+                  </NSwitch>
+                </NSpace>
+              </NFormItem>
+            </NCollapseItem>
+          </NCollapse>
         </NForm>
         <template #action>
           <NSpace>
@@ -607,7 +616,6 @@ import {
   useMessage,
   type FormInst,
   type FormRules,
-  NDivider,
   NSwitch,
   NText,
   NEmpty,
@@ -616,6 +624,8 @@ import {
   NDescriptions,
   NDescriptionsItem,
   NSpin,
+  NCollapse,
+  NCollapseItem,
 } from "naive-ui";
 import {
   GridOutline,

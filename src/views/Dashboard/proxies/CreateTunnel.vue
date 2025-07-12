@@ -576,63 +576,72 @@
           </NSpace>
         </NFormItem>
 
-        <NDivider>高级配置</NDivider>
-        <NText depth="3" style="padding-bottom: 15px; display: block">
-          提示：仅推荐技术用户使用, 一般用户请勿随意填写。请确保您的配置正确,
-          否则隧道可能无法启动。
-        </NText>
+        <NCollapse>
+          <NCollapseItem title="高级配置" name="advanced">
+            <template #header>
+              <NText>高级配置</NText>
+              <NText depth="3" style="margin-left: 8px; font-size: 12px">
+                (仅推荐技术用户使用)
+              </NText>
+            </template>
+            <NText depth="3" style="padding-bottom: 15px; display: block">
+              提示：仅推荐技术用户使用,
+              一般用户请勿随意填写。请确保您的配置正确, 否则隧道可能无法启动。
+            </NText>
 
-        <NFormItem label="访问密钥" path="accessKey">
-          <NInput
-            v-model:value="formValue.accessKey"
-            placeholder="请输入访问密钥"
-          />
-        </NFormItem>
+            <NFormItem label="访问密钥" path="accessKey">
+              <NInput
+                v-model:value="formValue.accessKey"
+                placeholder="请输入访问密钥"
+              />
+            </NFormItem>
 
-        <NFormItem label="Host Header Rewrite" path="hostHeaderRewrite">
-          <NInput
-            v-model:value="formValue.hostHeaderRewrite"
-            placeholder="请输入 Host 请求头重写值"
-          />
-        </NFormItem>
+            <NFormItem label="Host Header Rewrite" path="hostHeaderRewrite">
+              <NInput
+                v-model:value="formValue.hostHeaderRewrite"
+                placeholder="请输入 Host 请求头重写值"
+              />
+            </NFormItem>
 
-        <NFormItem label="X-From-Where" path="headerXFromWhere">
-          <NInput
-            v-model:value="formValue.headerXFromWhere"
-            placeholder="请输入 X-From-Where 请求头值"
-          />
-        </NFormItem>
+            <NFormItem label="X-From-Where" path="headerXFromWhere">
+              <NInput
+                v-model:value="formValue.headerXFromWhere"
+                placeholder="请输入 X-From-Where 请求头值"
+              />
+            </NFormItem>
 
-        <NFormItem label="Proxy Protocol" path="proxyProtocolVersion">
-          <NSelect
-            v-model:value="formValue.proxyProtocolVersion"
-            :options="[
-              { label: '不启用', value: '' },
-              { label: 'v1', value: 'v1' },
-              { label: 'v2', value: 'v2' },
-            ]"
-            placeholder="Proxy Protocol Version"
-          />
-        </NFormItem>
+            <NFormItem label="Proxy Protocol" path="proxyProtocolVersion">
+              <NSelect
+                v-model:value="formValue.proxyProtocolVersion"
+                :options="[
+                  { label: '不启用', value: '' },
+                  { label: 'v1', value: 'v1' },
+                  { label: 'v2', value: 'v2' },
+                ]"
+                placeholder="Proxy Protocol Version"
+              />
+            </NFormItem>
 
-        <NFormItem label="其他选项">
-          <div style="display: flex; gap: 16px">
-            <NSwitch
-              v-model:value="formValue.useEncryption"
-              :rail-style="switchButtonRailStyle"
-            >
-              <template #checked>启用加密</template>
-              <template #unchecked>禁用加密</template>
-            </NSwitch>
-            <NSwitch
-              v-model:value="formValue.useCompression"
-              :rail-style="switchButtonRailStyle"
-            >
-              <template #checked>启用压缩</template>
-              <template #unchecked>禁用压缩</template>
-            </NSwitch>
-          </div>
-        </NFormItem>
+            <NFormItem label="其他选项">
+              <div style="display: flex; gap: 16px">
+                <NSwitch
+                  v-model:value="formValue.useEncryption"
+                  :rail-style="switchButtonRailStyle"
+                >
+                  <template #checked>启用加密</template>
+                  <template #unchecked>禁用加密</template>
+                </NSwitch>
+                <NSwitch
+                  v-model:value="formValue.useCompression"
+                  :rail-style="switchButtonRailStyle"
+                >
+                  <template #checked>启用压缩</template>
+                  <template #unchecked>禁用压缩</template>
+                </NSwitch>
+              </div>
+            </NFormItem>
+          </NCollapseItem>
+        </NCollapse>
       </NForm>
       <template #footer>
         <div style="display: flex; justify-content: flex-end">
@@ -727,7 +736,6 @@ import {
   useMessage,
   type FormRules,
   type FormInst,
-  NDivider,
   NSwitch,
   NTag,
   NSpace,
