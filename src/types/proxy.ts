@@ -12,6 +12,10 @@ export interface CreateProxyArgs {
   proxyProtocolVersion?: string;
   useEncryption: boolean;
   useCompression: boolean;
+  /** 每个IP最大入站速率(KB/s) */
+  ipLimitIn?: number;
+  /** 每个IP最大出站速率(KB/s) */
+  ipLimitOut?: number;
 }
 export interface Proxy {
   proxyId: number;
@@ -39,6 +43,14 @@ export interface Proxy {
   useEncryption: boolean;
   useCompression: boolean;
   proxyProtocolVersion: string;
+  /** 每个IP最大入站速率(KB/s) */
+  ipLimitIn?: number;
+  /** 每个IP最大入站速率单位 */
+  ipLimitInUnit?: string;
+  /** 每个IP最大出站速率(KB/s) */
+  ipLimitOut?: number;
+  /** 每个IP最大出站速率单位 */
+  ipLimitOutUnit?: string;
 }
 export interface UserNodeName {
   nodeId: number;

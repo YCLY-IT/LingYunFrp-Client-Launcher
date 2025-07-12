@@ -332,6 +332,18 @@
                   }}:{{ selectedProxy.remotePort }}
                 </NText>
               </NDescriptionsItem>
+              <NDescriptionsItem
+                v-if="selectedProxy.ipLimitIn"
+                label="入站速率限制"
+              >
+                <NText code>{{ selectedProxy.ipLimitIn }} KB/s</NText>
+              </NDescriptionsItem>
+              <NDescriptionsItem
+                v-if="selectedProxy.ipLimitOut"
+                label="出站速率限制"
+              >
+                <NText code>{{ selectedProxy.ipLimitOut }} KB/s</NText>
+              </NDescriptionsItem>
             </NDescriptions>
           </div>
           <template
@@ -422,86 +434,102 @@
         title="编辑隧道"
         style="width: 800px; max-width: 90vw"
       >
-        <NForm
-          ref="editFormRef"
-          :model="editForm"
-          :rules="rules"
-          label-placement="left"
-          label-width="120"
-          require-mark-placement="right-hanging"
-          size="medium"
-          style="padding-top: 12px"
-        >
-          <NFormItem label="隧道名称" path="proxyName">
-            <NInput
-              v-model:value="editForm.proxyName"
-              placeholder="请输入隧道名称"
-            />
-          </NFormItem>
-          <NFormItem label="本地地址" path="localIp">
-            <NInput
-              v-model:value="editForm.localIp"
-              placeholder="请输入本地地址"
-            />
-          </NFormItem>
-          <NFormItem label="本地端口" path="localPort">
-            <NInputNumber
-              v-model:value="editForm.localPort"
-              :min="1"
-              :max="65535"
-              placeholder="请输入本地端口"
-            />
-          </NFormItem>
-          <NFormItem
-            v-if="
-              editForm.proxyType !== 'http' && editForm.proxyType !== 'https'
-            "
-            label="远程端口"
-            path="remotePort"
-          >
-            <NSpace>
-              <NInputNumber
-                v-model:value="editForm.remotePort"
-                :min="1"
-                :max="65535"
-                placeholder="请输入远程端口"
-              />
-              <NButton
-                size="medium"
-                :loading="gettingFreePort"
-                @click="handleGetFreePortForEdit"
+        <NCollapse v-model:expanded-names="expandedNames" accordion>
+          <NCollapseItem title="基本配置" name="basic">
+            <template #header>
+              <NText>基本配置</NText>
+            </template>
+            <NForm
+              ref="basicFormRef"
+              :model="editForm"
+              :rules="rules"
+              label-placement="left"
+              label-width="120"
+              require-mark-placement="right-hanging"
+              size="medium"
+            >
+              <NFormItem label="隧道名称" path="proxyName">
+                <NInput
+                  v-model:value="editForm.proxyName"
+                  placeholder="请输入隧道名称"
+                />
+              </NFormItem>
+              <NFormItem label="本地地址" path="localIp">
+                <NInput
+                  v-model:value="editForm.localIp"
+                  placeholder="请输入本地地址"
+                />
+              </NFormItem>
+              <NFormItem label="本地端口" path="localPort">
+                <NInputNumber
+                  v-model:value="editForm.localPort"
+                  :min="1"
+                  :max="65535"
+                  placeholder="请输入本地端口"
+                />
+              </NFormItem>
+              <NFormItem
+                v-if="
+                  editForm.proxyType !== 'http' &&
+                  editForm.proxyType !== 'https'
+                "
+                label="远程端口"
+                path="remotePort"
               >
-                获取空闲端口
-              </NButton>
-            </NSpace>
-          </NFormItem>
-          <NFormItem
-            v-if="
-              editForm.proxyType === 'http' || editForm.proxyType === 'https'
-            "
-            label="绑定域名"
-            path="domain"
-          >
-            <NDynamicTags
-              v-model:value="domainTags"
-              :render-tag="renderDomainTag"
-              @update:value="handleDomainsUpdate"
-            />
-          </NFormItem>
+                <NSpace>
+                  <NInputNumber
+                    v-model:value="editForm.remotePort"
+                    :min="1"
+                    :max="65535"
+                    placeholder="请输入远程端口"
+                  />
+                  <NButton
+                    size="medium"
+                    :loading="gettingFreePort"
+                    @click="handleGetFreePortForEdit"
+                  >
+                    获取空闲端口
+                  </NButton>
+                </NSpace>
+              </NFormItem>
+              <NFormItem
+                v-if="
+                  editForm.proxyType === 'http' ||
+                  editForm.proxyType === 'https'
+                "
+                label="绑定域名"
+                path="domain"
+              >
+                <NDynamicTags
+                  v-model:value="domainTags"
+                  :render-tag="renderDomainTag"
+                  @update:value="handleDomainsUpdate"
+                />
+              </NFormItem>
+            </NForm>
+          </NCollapseItem>
 
-          <NCollapse>
-            <NCollapseItem title="高级配置" name="advanced">
-              <template #header>
-                <NText>高级配置</NText>
-                <NText depth="3" style="margin-left: 8px; font-size: 12px">
-                  (仅推荐技术用户使用)
-                </NText>
-              </template>
-              <NText depth="3" style="padding-bottom: 15px; display: block">
-                提示：仅推荐技术用户使用,
-                一般用户请勿随意填写。请确保您的配置正确, 否则隧道可能无法启动。
+          <NCollapseItem title="高级配置" name="advanced">
+            <template #header>
+              <NText>高级配置</NText>
+              <NText depth="3" style="margin-left: 8px; font-size: 12px">
+                (仅推荐技术用户使用)
               </NText>
+            </template>
+            <NText depth="3" style="padding-bottom: 15px; display: block">
+              提示：仅推荐技术用户使用,
+              一般用户请勿随意填写。请确保您的配置正确, 否则隧道可能无法启动。
+            </NText>
 
+            <NForm
+              ref="advancedFormRef"
+              :model="editForm"
+              :rules="rules"
+              label-placement="left"
+              label-width="120"
+              require-mark-placement="right-hanging"
+              size="medium"
+            >
               <NFormItem label="访问密钥" path="accessKey">
                 <NInput
                   v-model:value="editForm.accessKey"
@@ -532,6 +560,44 @@
                   placeholder="Proxy Protocol Version"
                 />
               </NFormItem>
+              <NFormItem label="每个IP最大入站速率" path="ipLimitIn">
+                <NSpace>
+                  <NInputNumber
+                    v-model:value="editForm.ipLimitIn"
+                    :min="0"
+                    placeholder="请输入速率值"
+                    style="width: 200px"
+                  />
+                  <NSelect
+                    v-model:value="editForm.ipLimitInUnit"
+                    :options="[
+                      { label: 'KB/s', value: 'KB' },
+                      { label: 'MB/s', value: 'MB' },
+                      { label: 'Mbps', value: 'Mbps' },
+                    ]"
+                    style="width: 100px"
+                  />
+                </NSpace>
+              </NFormItem>
+              <NFormItem label="每个IP最大出站速率" path="ipLimitOut">
+                <NSpace>
+                  <NInputNumber
+                    v-model:value="editForm.ipLimitOut"
+                    :min="0"
+                    placeholder="请输入速率值"
+                    style="width: 200px"
+                  />
+                  <NSelect
+                    v-model:value="editForm.ipLimitOutUnit"
+                    :options="[
+                      { label: 'KB/s', value: 'KB' },
+                      { label: 'MB/s', value: 'MB' },
+                      { label: 'Mbps', value: 'Mbps' },
+                    ]"
+                    style="width: 100px"
+                  />
+                </NSpace>
+              </NFormItem>
               <NFormItem label="其他选项">
                 <NSpace>
                   <NSwitch
@@ -550,9 +616,9 @@
                   </NSwitch>
                 </NSpace>
               </NFormItem>
-            </NCollapseItem>
-          </NCollapse>
-        </NForm>
+            </NForm>
+          </NCollapseItem>
+        </NCollapse>
         <template #action>
           <NSpace>
             <NButton size="small" @click="showEditModal = false">取消</NButton>
@@ -669,7 +735,8 @@ const nodeList = ref<Node[]>([]);
 const showModal = ref(false);
 const selectedProxy = ref<Proxy | null>(null);
 const showEditModal = ref(false);
-const editFormRef = ref<FormInst | null>(null);
+const basicFormRef = ref<FormInst | null>(null);
+const advancedFormRef = ref<FormInst | null>(null);
 const editForm = ref<any>({});
 const router = useRouter();
 const gettingFreePort = ref(false);
@@ -679,6 +746,7 @@ const showToggleModal = ref(false);
 const proxyToOperate = ref<Proxy | null>(null);
 const showDeleteModal = ref(false);
 const proxyToDelete = ref<Proxy | null>(null);
+const expandedNames = ref<string[]>(["basic"]);
 
 // -------------------- 校验规则 --------------------
 const rules: FormRules = {
@@ -847,6 +915,18 @@ const handleSelect = (key: string, proxy: Proxy) => {
   }
 };
 const handleEdit = (proxy: Proxy) => {
+  // 转换KB到合适的显示单位
+  const convertFromKB = (kbValue: number) => {
+    if (!kbValue || kbValue <= 0) return { value: 0, unit: "KB" };
+    if (kbValue >= 1024) {
+      return { value: Math.round((kbValue / 1024) * 100) / 100, unit: "MB" };
+    }
+    return { value: kbValue, unit: "KB" };
+  };
+
+  const ipLimitInConverted = convertFromKB(proxy.ipLimitIn || 0);
+  const ipLimitOutConverted = convertFromKB(proxy.ipLimitOut || 0);
+
   editForm.value = {
     proxyId: proxy.proxyId,
     proxyName: proxy.proxyName,
@@ -860,9 +940,13 @@ const handleEdit = (proxy: Proxy) => {
     headerXFromWhere: proxy.headerXFromWhere || "",
     use_encryption: proxy.useEncryption || false,
     use_compression: proxy.useCompression || false,
-    proxy_protocol_version: proxy.proxyProtocolVersion || "",
+    proxy_protocol_version: (proxy.proxyProtocolVersion || "").trim(),
     proxyType: proxy.proxyType,
     nodeId: proxy.nodeId,
+    ipLimitIn: ipLimitInConverted.value,
+    ipLimitInUnit: ipLimitInConverted.unit,
+    ipLimitOut: ipLimitOutConverted.value,
+    ipLimitOutUnit: ipLimitOutConverted.unit,
   };
   try {
     domainTags.value = proxy.domain ? JSON.parse(proxy.domain) : [];
@@ -872,35 +956,74 @@ const handleEdit = (proxy: Proxy) => {
   showEditModal.value = true;
 };
 const handleEditSubmit = () => {
-  editFormRef.value?.validate(async (errors) => {
-    if (!errors) {
-      loading.value = true;
-      try {
-        userApi.post(
-          "/proxy/update",
-          editForm.value,
-          accessHandle(),
-          (data) => {
-            if (data.code === 0) {
-              message.success("更新隧道成功");
-              showEditModal.value = false;
-              handleRefresh();
-            } else {
-              message.error(data.message || "更新隧道失败");
+  // 验证基本配置和高级配置
+  const validateBasic = basicFormRef.value?.validate() || Promise.resolve(null);
+  const validateAdvanced =
+    advancedFormRef.value?.validate() || Promise.resolve(null);
+
+  Promise.all([validateBasic, validateAdvanced]).then(
+    async ([basicErrors, advancedErrors]) => {
+      if (!basicErrors && !advancedErrors) {
+        loading.value = true;
+        try {
+          // 转换速率单位为KB
+          const convertToKB = (value: number, unit: string) => {
+            if (!value || value <= 0) return 0;
+            switch (unit) {
+              case "KB":
+                return value;
+              case "MB":
+                return value * 1024;
+              case "Mbps":
+                return Math.round(value * 125); // 1 Mbps = 125 KB/s
+              default:
+                return value;
             }
-          },
-          (msg) => message.error("更新隧道失败:" + msg || "更新隧道失败"),
-          () => {
-            loading.value = false;
-          },
-        );
-      } catch (e: any) {
-        message.error(e?.response?.data?.message || "更新隧道失败");
-      } finally {
-        loading.value = false;
+          };
+
+          const payload = {
+            ...editForm.value,
+            proxyProtocolVersion: (
+              editForm.value.proxy_protocol_version || ""
+            ).trim(),
+            ipLimitIn: convertToKB(
+              editForm.value.ipLimitIn,
+              editForm.value.ipLimitInUnit,
+            ),
+            ipLimitOut: convertToKB(
+              editForm.value.ipLimitOut,
+              editForm.value.ipLimitOutUnit,
+            ),
+          };
+          delete payload.proxy_protocol_version;
+          delete payload.ipLimitInUnit;
+          delete payload.ipLimitOutUnit;
+          userApi.post(
+            "/proxy/update",
+            payload,
+            accessHandle(),
+            (data) => {
+              if (data.code === 0) {
+                message.success("更新隧道成功");
+                showEditModal.value = false;
+                handleRefresh();
+              } else {
+                message.error(data.message || "更新隧道失败");
+              }
+            },
+            (msg) => message.error("更新隧道失败:" + msg || "更新隧道失败"),
+            () => {
+              loading.value = false;
+            },
+          );
+        } catch (e: any) {
+          message.error(e?.response?.data?.message || "更新隧道失败");
+        } finally {
+          loading.value = false;
+        }
       }
-    }
-  });
+    },
+  );
 };
 const handleDeleteConfirm = () => {
   if (!proxyToDelete.value) return;
@@ -1258,7 +1381,7 @@ const checkFrpcHas = async () => {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .tunnel-manager-card {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

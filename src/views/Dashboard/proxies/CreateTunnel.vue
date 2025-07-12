@@ -511,84 +511,94 @@
         footer: 'soft',
       }"
     >
-      <NForm
-        ref="formRef"
-        :model="formValue"
-        :rules="rules"
-        label-placement="left"
-        label-width="120"
-        require-mark-placement="right-hanging"
-      >
-        <NFormItem label="隧道名称" path="name">
-          <NInput v-model:value="formValue.name" placeholder="请输入隧道名称" />
-        </NFormItem>
+      <NCollapse v-model:expanded-names="expandedConfig" accordion>
+        <NCollapseItem title="基础配置" name="basic">
+          <template #header>
+            <NText>基础配置</NText>
+          </template>
+          <NForm
+            :model="formValue"
+            :rules="rules"
+            label-placement="left"
+            label-width="120"
+            require-mark-placement="right-hanging"
+          >
+            <NFormItem label="隧道名称" path="name">
+              <NInput
+                v-model:value="formValue.name"
+                placeholder="请输入隧道名称"
+              />
+            </NFormItem>
 
-        <NFormItem label="本地地址" path="localAddr">
-          <NInput
-            v-model:value="formValue.localAddr"
-            placeholder="请输入本地地址"
-          />
-        </NFormItem>
+            <NFormItem label="本地地址" path="localAddr">
+              <NInput
+                v-model:value="formValue.localAddr"
+                placeholder="请输入本地地址"
+              />
+            </NFormItem>
 
-        <NFormItem label="本地端口" path="localPort">
-          <NInputNumber
-            v-model:value="formValue.localPort"
-            :min="1"
-            :max="65535"
-            placeholder="请输入本地端口"
-          />
-        </NFormItem>
+            <NFormItem label="本地端口" path="localPort">
+              <NInputNumber
+                v-model:value="formValue.localPort"
+                :min="1"
+                :max="65535"
+                placeholder="请输入本地端口"
+              />
+            </NFormItem>
 
-        <NFormItem label="协议类型" path="type">
-          <NSelect
-            v-model:value="formValue.type"
-            :options="allowedProxyTypeOptions"
-            placeholder="请选择协议类型"
-          />
-        </NFormItem>
+            <NFormItem label="协议类型" path="type">
+              <NSelect
+                v-model:value="formValue.type"
+                :options="allowedProxyTypeOptions"
+                placeholder="请选择协议类型"
+              />
+            </NFormItem>
 
-        <NFormItem
-          v-if="formValue.type === 'http' || formValue.type === 'https'"
-          label="绑定域名"
-          path="domain"
-        >
-          <NDynamicTags
-            v-model:value="domainTags"
-            :render-tag="renderDomainTag"
-          />
-        </NFormItem>
-
-        <NFormItem v-else label="远程端口" path="remotePort">
-          <NSpace>
-            <NInputNumber
-              v-model:value="formValue.remotePort"
-              :min="selectedNode?.portRange?.min || 1"
-              :max="selectedNode?.portRange?.max || 65535"
-              placeholder="请输入远程端口"
-            />
-            <NButton
-              size="medium"
-              :loading="gettingFreePort"
-              @click="handleGetFreePort"
+            <NFormItem
+              v-if="formValue.type === 'http' || formValue.type === 'https'"
+              label="绑定域名"
+              path="domain"
             >
-              获取随机端口
-            </NButton>
-          </NSpace>
-        </NFormItem>
+              <NDynamicTags
+                v-model:value="domainTags"
+                :render-tag="renderDomainTag"
+              />
+            </NFormItem>
 
-        <NCollapse>
-          <NCollapseItem title="高级配置" name="advanced">
-            <template #header>
-              <NText>高级配置</NText>
-              <NText depth="3" style="margin-left: 8px; font-size: 12px">
-                (仅推荐技术用户使用)
-              </NText>
-            </template>
-            <NText depth="3" style="padding-bottom: 15px; display: block">
-              提示：仅推荐技术用户使用,
-              一般用户请勿随意填写。请确保您的配置正确, 否则隧道可能无法启动。
+            <NFormItem v-else label="远程端口" path="remotePort">
+              <NSpace>
+                <NInputNumber
+                  v-model:value="formValue.remotePort"
+                  :min="selectedNode?.portRange?.min || 1"
+                  :max="selectedNode?.portRange?.max || 65535"
+                  placeholder="请输入远程端口"
+                />
+                <NButton
+                  size="medium"
+                  :loading="gettingFreePort"
+                  @click="handleGetFreePort"
+                >
+                  获取随机端口
+                </NButton>
+              </NSpace>
+            </NFormItem>
+          </NForm>
+        </NCollapseItem>
+
+        <NCollapseItem title="高级配置" name="advanced">
+          <template #header>
+            <NText>高级配置</NText>
+            <NText depth="3" style="margin-left: 8px; font-size: 12px">
+              (仅推荐技术用户使用)
             </NText>
-
+          </template>
+          <NForm
+            :model="formValue"
+            :rules="rules"
+            label-placement="left"
+            label-width="120"
+            require-mark-placement="right-hanging"
+          >
             <NFormItem label="访问密钥" path="accessKey">
               <NInput
                 v-model:value="formValue.accessKey"
@@ -622,6 +632,44 @@
               />
             </NFormItem>
 
+            <NFormItem label="每个IP最大入站速率" path="ipLimitIn">
+              <NSpace>
+                <NInputNumber
+                  v-model:value="formValue.ipLimitIn"
+                  :min="0"
+                  placeholder="请输入速率值"
+                  style="width: 200px"
+                />
+                <NSelect
+                  v-model:value="formValue.ipLimitInUnit"
+                  :options="[
+                    { label: 'KB/s', value: 'KB' },
+                    { label: 'MB/s', value: 'MB' },
+                    { label: 'Mbps', value: 'Mbps' },
+                  ]"
+                  style="width: 100px"
+                />
+              </NSpace>
+            </NFormItem>
+            <NFormItem label="每个IP最大出站速率" path="ipLimitOut">
+              <NSpace>
+                <NInputNumber
+                  v-model:value="formValue.ipLimitOut"
+                  :min="0"
+                  placeholder="请输入速率值"
+                  style="width: 200px"
+                />
+                <NSelect
+                  v-model:value="formValue.ipLimitOutUnit"
+                  :options="[
+                    { label: 'KB/s', value: 'KB' },
+                    { label: 'MB/s', value: 'MB' },
+                    { label: 'Mbps', value: 'Mbps' },
+                  ]"
+                  style="width: 100px"
+                />
+              </NSpace>
+            </NFormItem>
             <NFormItem label="其他选项">
               <div style="display: flex; gap: 16px">
                 <NSwitch
@@ -640,9 +688,9 @@
                 </NSwitch>
               </div>
             </NFormItem>
-          </NCollapseItem>
-        </NCollapse>
-      </NForm>
+          </NForm>
+        </NCollapseItem>
+      </NCollapse>
       <template #footer>
         <div style="display: flex; justify-content: flex-end">
           <NButton @click="showConfigModal = false">取消</NButton>
@@ -701,15 +749,25 @@
             <span class="confirm-label">远程端口：</span>
             <span>{{ formValue.remotePort }}</span>
           </div>
+          <div v-if="formValue.ipLimitIn" class="confirm-item">
+            <span class="confirm-label">入站速率限制：</span>
+            <span
+              >{{ formValue.ipLimitIn }} {{ formValue.ipLimitInUnit }}/s</span
+            >
+          </div>
+          <div v-if="formValue.ipLimitOut" class="confirm-item">
+            <span class="confirm-label">出站速率限制：</span>
+            <span
+              >{{ formValue.ipLimitOut }} {{ formValue.ipLimitOutUnit }}/s</span
+            >
+          </div>
         </div>
         <p class="confirm-warning">
           请确认以上信息无误，点击确认后将创建隧道。
         </p>
       </div>
       <template #action>
-        <NButton size="medium" @click="showCreateConfirmModal = false"
-          >取消</NButton
-        >
+        <NButton size="medium" @click="handleCancelCreate">取消</NButton>
         <NButton
           size="medium"
           type="primary"
@@ -735,7 +793,6 @@ import {
   NIcon,
   useMessage,
   type FormRules,
-  type FormInst,
   NSwitch,
   NTag,
   NSpace,
@@ -757,7 +814,6 @@ import { accessHandle } from "../../../net/base.ts";
 
 const router = useRouter();
 const message = useMessage();
-const formRef = ref<FormInst | null>(null);
 const loading = ref(false);
 const nodeLoading = ref(false);
 const expandedRegion = ref(["cn"]);
@@ -770,6 +826,8 @@ const selectedProtocols = ref<string[]>([]);
 const showConfigModal = ref(false);
 const showCreateConfirmModal = ref(false);
 const selectedNodeId = ref<number | null>(null);
+// 配置弹窗折叠状态，默认展开基础配置
+const expandedConfig = ref(["basic"]);
 
 const formValue = ref({
   nodeId: null as number | null,
@@ -785,6 +843,10 @@ const formValue = ref({
   proxyProtocolVersion: "",
   useEncryption: false,
   useCompression: false,
+  ipLimitIn: null as number | null,
+  ipLimitInUnit: "KB",
+  ipLimitOut: null as number | null,
+  ipLimitOutUnit: "KB",
 });
 
 const protocolOptions = [
@@ -1114,16 +1176,71 @@ const renderDomainTag = (tag: string) => {
 
 // 显示创建确认弹窗
 const showCreateModal = () => {
-  formRef.value?.validate(async (errors) => {
-    if (!errors) {
-      showCreateConfirmModal.value = true;
-    }
-  });
+  // 由于表单被分成了两个部分，我们需要手动验证所有必填字段
+  const errors: any[] = [];
+
+  // 验证基础配置
+  if (!formValue.value.name) {
+    errors.push({ message: "请输入隧道名称" });
+  }
+  if (!formValue.value.localAddr) {
+    errors.push({ message: "请输入本地地址" });
+  }
+  if (!formValue.value.localPort) {
+    errors.push({ message: "请输入本地端口" });
+  }
+  if (!formValue.value.type) {
+    errors.push({ message: "请选择协议类型" });
+  }
+
+  // 验证域名（如果是HTTP/HTTPS协议）
+  if (
+    ["http", "https"].includes(formValue.value.type) &&
+    !domainTags.value.length
+  ) {
+    errors.push({ message: "请至少添加一个域名" });
+  }
+
+  // 验证远程端口（如果不是HTTP/HTTPS协议）
+  if (
+    !["http", "https"].includes(formValue.value.type) &&
+    !formValue.value.remotePort
+  ) {
+    errors.push({ message: "请输入远程端口" });
+  }
+
+  if (errors.length === 0) {
+    showConfigModal.value = false; // 先关闭配置弹窗
+    showCreateConfirmModal.value = true; // 再打开确认弹窗
+  } else {
+    message.error(errors[0].message);
+  }
+};
+
+// 取消创建确认弹窗，重新打开配置弹窗
+const handleCancelCreate = () => {
+  showCreateConfirmModal.value = false;
+  showConfigModal.value = true; // 重新打开配置弹窗
 };
 
 const handleCreate = async () => {
   try {
     loading.value = true;
+
+    // 转换速率单位为KB
+    const convertToKB = (value: number | null, unit: string) => {
+      if (!value || value <= 0) return 0;
+      switch (unit) {
+        case "KB":
+          return value;
+        case "MB":
+          return value * 1024;
+        case "Mbps":
+          return Math.round(value * 125); // 1 Mbps = 125 KB/s
+        default:
+          return value;
+      }
+    };
 
     const requestData = {
       nodeId: formValue.value.nodeId,
@@ -1141,12 +1258,19 @@ const handleCreate = async () => {
       proxyProtocolVersion: formValue.value.proxyProtocolVersion,
       useEncryption: formValue.value.useEncryption,
       useCompression: formValue.value.useCompression,
+      ipLimitIn: convertToKB(
+        formValue.value.ipLimitIn,
+        formValue.value.ipLimitInUnit,
+      ),
+      ipLimitOut: convertToKB(
+        formValue.value.ipLimitOut,
+        formValue.value.ipLimitOutUnit,
+      ),
     };
 
     userApi.post("/proxy/create", requestData, accessHandle(), (data) => {
       if (data.code === 0) {
         message.success("隧道创建成功");
-        formRef.value?.restoreValidation();
         // 关闭所有弹窗
         showCreateConfirmModal.value = false;
         showConfigModal.value = false;
