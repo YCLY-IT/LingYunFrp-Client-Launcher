@@ -38,16 +38,8 @@ jobs:
         with:
           name: macos-dmg
           path: src-tauri/target/release/bundle/dmg/*.dmg
-      - name: 打包绿色版 zip
-        run: |
-          cd src-tauri/target/release/bundle/macos
-          7z a LingYunFrp-Client-Launcher-macos-portable.zip 凌云FRP.app
-      - name: 上传绿色版 zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-portable-zip
-          path: src-tauri/target/release/bundle/macos/LingYunFrp-Client-Launcher-macos-portable.zip
-
+          retention-days: 1  # 产物保留1天
+     
   build-linux:
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
     runs-on: ubuntu-latest
@@ -87,15 +79,7 @@ jobs:
           path: |
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/appimage/*.AppImage
-      - name: 打包绿色版 zip
-        run: |
-          cd src-tauri/target/release
-          7z a LingYunFrp-Client-Launcher-linux-portable.zip lingyunfrp-client-launcher
-      - name: 上传绿色版 zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-portable-zip
-          path: src-tauri/target/release/LingYunFrp-Client-Launcher-linux-portable.zip
+          retention-days: 1  # 产物保留1天
 
   build-windows:
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
@@ -122,12 +106,4 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
-      - name: 打包绿色版 zip
-        run: |
-          cd src-tauri/target/release
-          7z a LingYunFrp-Client-Launcher-windows-portable.zip LingYunFrp-Client-Launcher.exe
-      - name: 上传绿色版 zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-portable-zip
-          path: src-tauri/target/release/LingYunFrp-Client-Launcher-windows-portable.zip
+          retention-days: 1  # 产物保留1天
