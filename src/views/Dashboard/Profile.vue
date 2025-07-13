@@ -96,6 +96,9 @@
             </div>
           </div>
         </n-card>
+        <div class="welcome-card-container">
+          <WelcomeCard />
+        </div>
       </div>
 
       <!-- 右侧账户详情区域 -->
@@ -481,6 +484,7 @@ import { userApi } from "../../net";
 import { accessHandle, OpenBrowser, removeToken } from "../../net/base";
 import { Cropper, CircleStencil } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
+import WelcomeCard from "../../components/WelcomeCard.vue";
 import md5 from "blueimp-md5";
 import router from "../../router";
 
@@ -921,25 +925,15 @@ const handleChangePassword = async () => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-    align-items: start;
+    align-items: start; // 保证顶部对齐
   }
 
-  @media (max-width: 768px) {
-    .content-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .left-column {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
+  .left-column,
   .right-column {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    align-self: flex-start;
   }
 
   .settings-card,
@@ -957,6 +951,10 @@ const handleChangePassword = async () => {
     }
   }
 
+  .welcome-card-container {
+    width: 100%;
+  }
+
   .settings-grid {
     display: flex;
     flex-direction: column;
@@ -967,7 +965,7 @@ const handleChangePassword = async () => {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 16px;
+    padding: 10px;
     border-radius: 8px;
     cursor: pointer;
     transition: $transition-all;

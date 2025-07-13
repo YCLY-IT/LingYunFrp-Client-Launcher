@@ -63,10 +63,20 @@
         </NCard>
       </div>
 
-      <!-- 通知卡片 -->
-      <NCard title="通知内容" class="notice-card">
-        <div class="markdown-content" v-html="renderedNotice" />
-      </NCard>
+      <div class="right-column">
+        <div class="notice-and-welcome">
+          <div class="welcome-card-container">
+            <WelcomeCard />
+          </div>
+          <NCard title="通知内容" class="notice-card">
+            <template #default>
+              <div class="notice-scroll">
+                <div v-html="renderedNotice" />
+              </div>
+            </template>
+          </NCard>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -80,6 +90,7 @@ import { useRouter } from "vue-router";
 import { userApi } from "../../net";
 import { accessHandle } from "../../net/base";
 import UserInfo from "../../components/UserInfo.vue";
+import WelcomeCard from "../../components/WelcomeCard.vue";
 import { Traffic } from "../../types/User";
 
 const router = useRouter();
@@ -187,4 +198,61 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 @use "../../assets/styles/home.scss";
+.left-column,
+.right-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.right-column {
+  // 让右侧整体和左侧一样高
+  height: 100%;
+}
+
+.notice-and-welcome {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.notice-card {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+}
+
+.notice-card :deep(.n-card__content) {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px 16px 16px;
+}
+
+.notice-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #e0e0e0 #fff;
+  max-height: 100%;
+}
+
+.welcome-card-container {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.card-container {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
 </style>
