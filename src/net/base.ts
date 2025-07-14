@@ -147,7 +147,7 @@ async function post(
   const postHeaders = {
     ...headers,
     ClientVersion: await getClientVersion(),
-    Client: "LingYunFrpClient",
+    Client: "LingYunFRPClient",
   };
   // 通过 Tauri 后端转发请求
   invoke("forward_request", {
@@ -196,7 +196,7 @@ async function get(
   const getHeaders = {
     ...headers,
     ClientVersion: await getClientVersion(),
-    Client: "LingYunFrpClient",
+    Client: "LingYunFRPClient",
   };
   invoke("forward_request", {
     url: url,
