@@ -46,7 +46,7 @@ const baseMenuOptions: MenuOption[] = [
   {
     label: "用户中心",
     icon: renderIcon(IdCardOutline),
-    key: "user-profile",
+    key: "user",
     link: "/dashboard/user/my-profile",
   },
   {
