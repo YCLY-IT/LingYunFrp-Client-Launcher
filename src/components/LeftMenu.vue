@@ -1,30 +1,77 @@
 <template>
-  <NMenu
-    :collapsed-width="64"
-    :collapsed-icon-size="24"
-    :options="menuOptions"
-    :value="selectedKey"
-    :icon-size="22"
-    @update:value="handleMenuSelect"
-    style="user-select: none"
-    :default-expanded-keys="defaultExpandedKeys"
-  />
+  <div class="left-menu-wrapper">
+    <div
+      class="menu-scroll-area"
+      :style="{ height: menuAreaHeight + 'px', overflow: 'hidden' }"
+    >
+      <NMenu
+        :collapsed-width="64"
+        :collapsed-icon-size="24"
+        :options="mainMenuOptions"
+        :value="selectedKey"
+        :icon-size="22"
+        @update:value="handleMenuSelect"
+        style="user-select: none"
+        :default-expanded-keys="defaultExpandedKeys"
+        :scrollbar-props="{ style: { display: 'none' } }"
+      />
+    </div>
+    <n-divider />
+    <div class="bottom-menu" style="margin-top: 10px">
+      <NMenu
+        :collapsed-width="64"
+        :collapsed-icon-size="24"
+        :options="bottomMenuOptions"
+        :value="selectedKey"
+        :icon-size="22"
+        @update:value="handleMenuSelect"
+        style="user-select: none"
+        :scrollbar-props="{ style: { display: 'none' } }"
+      />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { NMenu, useMessage, useDialog } from "naive-ui";
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { NMenu, NDivider, useMessage, useDialog } from "naive-ui";
 import { useRouter } from "vue-router";
 import { getMenuOptions, defaultExpandedKeys } from "../shared/menuOptions.ts";
 import type { MenuOption } from "../types/menu";
 import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
+import { window as tauriWindow } from "@tauri-apps/api";
 
 const emit = defineEmits(["select"]);
 const router = useRouter();
 const message = useMessage();
 const dialog = useDialog();
-const menuOptions = getMenuOptions();
+const allMenuOptions = getMenuOptions();
+const mainMenuOptions = allMenuOptions.filter(
+  (opt) =>
+    typeof opt.key === "string" && !["user", "settings"].includes(opt.key),
+);
+const bottomMenuOptions = allMenuOptions.filter(
+  (opt) =>
+    typeof opt.key === "string" && ["user", "settings"].includes(opt.key),
+);
+
+const menuAreaHeight = ref(0);
+
+const calcMenuHeight = async () => {
+  const currentWindow = tauriWindow.Window.getCurrent();
+  const size = await currentWindow.innerSize();
+  // 这里假设底部菜单+分割线高度为 110px，可根据实际情况微调
+  menuAreaHeight.value = size.height - 195;
+};
+
+onMounted(() => {
+  calcMenuHeight();
+  window.addEventListener("resize", calcMenuHeight);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", calcMenuHeight);
+});
 
 // 管理员权限检查函数
 const checkAdminPermission = async (): Promise<boolean> => {
@@ -80,7 +127,7 @@ const handleMenuSelect = async (key: string, _option: MenuOption) => {
     }
     return undefined;
   }
-  const opt = findOption(menuOptions, key);
+  const opt = findOption(allMenuOptions, key);
   if (!opt) return;
 
   if (opt.key === "network") {
@@ -99,3 +146,37 @@ const handleMenuSelect = async (key: string, _option: MenuOption) => {
 
 const selectedKey = ref("dashboardIndex");
 </script>
+
+<style scoped>
+.left-menu-wrapper {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.menu-scroll-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: hidden !important;
+}
+.menu-scroll-area::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+.menu-scroll-area::-webkit-scrollbar-thumb {
+  background: #e5e5e5;
+  border-radius: 3px;
+}
+.menu-scroll-area::-webkit-scrollbar-track {
+  background: #fff;
+}
+.bottom-menu {
+  flex-shrink: 0;
+  padding-bottom: 14px;
+}
+.n-divider {
+  flex-shrink: 0;
+  margin: 0 12px;
+}
+</style>

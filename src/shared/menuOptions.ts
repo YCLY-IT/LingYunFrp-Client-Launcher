@@ -3,7 +3,6 @@ import {
   HomeOutline,
   AddCircleOutline,
   AppsOutline,
-  IdCardOutline,
   SettingsOutline,
   ListOutline,
   WifiOutline,
@@ -45,8 +44,16 @@ const baseMenuOptions: MenuOption[] = [
   },
   {
     label: "用户中心",
-    icon: renderIcon(IdCardOutline),
-    key: "user-profile",
+    icon: () =>
+      h(NIcon, null, {
+        default: () =>
+          h("img", {
+            src: localStorage.getItem("avatar") || "",
+            style:
+              "width:27px;height:27px;border-radius:50%;margin-top: -2px; margin-left: -2px;",
+          }),
+      }),
+    key: "user",
     link: "/dashboard/user/my-profile",
   },
   {

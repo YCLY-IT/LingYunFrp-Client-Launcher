@@ -838,10 +838,18 @@ const handleChangeAvatar = () => {
   }
   loading.value = true;
   message.loading("正在上传头像...");
+  let url = "";
+  if (forms.avatar.avatarMode === "upload") {
+    url = "/user/update/avatar/uploads";
+  } else if (forms.avatar.avatarMode === "qq") {
+    url = "/user/update/avatar/qq";
+  } else if (forms.avatar.avatarMode === "cravatar") {
+    url = "/user/update/avatar/cravatar";
+  }
   userApi.post(
-    "/user/update/avatar",
+    url,
     params,
-    undefined,
+    accessHandle(),
     (data) => {
       if (data.code === 0) {
         localStorage.setItem("avatar", data.data);
