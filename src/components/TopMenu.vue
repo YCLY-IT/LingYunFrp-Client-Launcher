@@ -222,19 +222,6 @@ const options = [
     render: renderThemeOption,
   },
   {
-    type: "divider",
-    key: "d1",
-  },
-  {
-    label: "返回首页",
-    key: "home",
-    icon: renderIcon(HomeOutline),
-  },
-  {
-    type: "divider",
-    key: "d2",
-  },
-  {
     label: "个人资料",
     key: "profile",
     icon: renderIcon(PersonCircleOutline),

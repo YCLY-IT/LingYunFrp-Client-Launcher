@@ -12,9 +12,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { NMenu, useMessage, useDialog } from "naive-ui";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { getMenuOptions, defaultExpandedKeys } from "../shared/menuOptions.ts";
 import type { MenuOption } from "../types/menu";
 import { invoke } from "@tauri-apps/api/core";
@@ -24,7 +24,7 @@ const emit = defineEmits(["select"]);
 const router = useRouter();
 const message = useMessage();
 const dialog = useDialog();
-const menuOptions = getMenuOptions();
+const menuOptions: MenuOption[] = getMenuOptions();
 
 // 管理员权限检查函数
 const checkAdminPermission = async (): Promise<boolean> => {
@@ -98,4 +98,31 @@ const handleMenuSelect = async (key: string, _option: MenuOption) => {
 };
 
 const selectedKey = ref("dashboardIndex");
+
+const route = useRoute();
+
+watch(
+  () => route.path,
+  (newPath) => {
+    // 递归查找当前路由对应的菜单 key
+    function findKeyByLink(
+      options: MenuOption[],
+      link: string,
+    ): string | undefined {
+      for (const opt of options as MenuOption[]) {
+        if (opt.link === link) return opt.key as string;
+        if (opt.children) {
+          const found = findKeyByLink(opt.children as MenuOption[], link);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    }
+    const key = findKeyByLink(menuOptions, newPath);
+    if (key) {
+      selectedKey.value = key;
+    }
+  },
+  { immediate: true },
+);
 </script>

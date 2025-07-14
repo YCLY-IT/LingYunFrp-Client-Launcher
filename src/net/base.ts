@@ -201,7 +201,7 @@ async function get(
   invoke("forward_request", {
     url: url,
     method: "GET",
-    data: {}, // GET 请求通常不需要请求体，但为了保持接口一致，我们传入空对象
+    data: {},
     headers: getHeaders,
   })
     .then((data: any) => {
