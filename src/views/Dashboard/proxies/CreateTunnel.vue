@@ -13,7 +13,7 @@
         <NText depth="3">{{ countDown }}秒后自动关闭</NText>
       </div>
       <template #action>
-        <NButton size="small" @click="showRealnameModal = false">关闭</NButton>
+        <NButton size="small" @click="closeModal('realname')">关闭</NButton>
         <NButton size="small" type="primary" @click="goToRealname"
           >立即前往</NButton
         >
@@ -28,8 +28,13 @@
           v-model:value="searchQuery"
           placeholder="搜索节点..."
           clearable
-          :prefix="() => h(NIcon, null, { default: () => h(SearchOutline) })"
-        />
+        >
+          <template #prefix>
+            <NIcon>
+              <SearchOutline />
+            </NIcon>
+          </template>
+        </NInput>
 
         <div class="filter-row" style="margin-top: 5px">
           <div class="group-filter">
@@ -164,16 +169,34 @@
                             >UDP</NTag
                           >
                           <NTag
-                            v-if="supportsHttp(node)"
+                            v-if="supportsHttp(node) && supportsHttps(node)"
+                            type="success"
+                            size="small"
+                            >HTTP(S)</NTag
+                          >
+                          <NTag
+                            v-else-if="supportsHttp(node)"
                             type="success"
                             size="small"
                             >HTTP</NTag
                           >
                           <NTag
-                            v-if="supportsHttps(node)"
+                            v-else-if="supportsHttps(node)"
                             type="success"
                             size="small"
                             >HTTPS</NTag
+                          >
+                          <NTag
+                            v-if="supportsStcp(node)"
+                            type="success"
+                            size="small"
+                            >STCP</NTag
+                          >
+                          <NTag
+                            v-if="supportsXtcp(node)"
+                            type="success"
+                            size="small"
+                            >XTCP</NTag
                           >
                         </NSpace>
                       </div>
@@ -269,6 +292,18 @@
                           size="small"
                           >HTTPS</NTag
                         >
+                        <NTag
+                          v-if="supportsStcp(node)"
+                          type="success"
+                          size="small"
+                          >STCP</NTag
+                        >
+                        <NTag
+                          v-if="supportsXtcp(node)"
+                          type="success"
+                          size="small"
+                          >XTCP</NTag
+                        >
                       </div>
                     </div>
                     <NText depth="3" style="font-size: 13px; margin: 6px 0">{{
@@ -307,16 +342,34 @@
                             >UDP</NTag
                           >
                           <NTag
-                            v-if="supportsHttp(node)"
+                            v-if="supportsHttp(node) && supportsHttps(node)"
+                            type="success"
+                            size="small"
+                            >HTTP(S)</NTag
+                          >
+                          <NTag
+                            v-else-if="supportsHttp(node)"
                             type="success"
                             size="small"
                             >HTTP</NTag
                           >
                           <NTag
-                            v-if="supportsHttps(node)"
+                            v-else-if="supportsHttps(node)"
                             type="success"
                             size="small"
                             >HTTPS</NTag
+                          >
+                          <NTag
+                            v-if="supportsStcp(node)"
+                            type="success"
+                            size="small"
+                            >STCP</NTag
+                          >
+                          <NTag
+                            v-if="supportsXtcp(node)"
+                            type="success"
+                            size="small"
+                            >XTCP</NTag
                           >
                         </NSpace>
                       </div>
@@ -413,6 +466,18 @@
                           size="small"
                           >HTTPS</NTag
                         >
+                        <NTag
+                          v-if="supportsStcp(node)"
+                          type="success"
+                          size="small"
+                          >STCP</NTag
+                        >
+                        <NTag
+                          v-if="supportsXtcp(node)"
+                          type="success"
+                          size="small"
+                          >XTCP</NTag
+                        >
                       </div>
                     </div>
                     <NText depth="3" style="font-size: 13px; margin: 6px 0">{{
@@ -451,16 +516,34 @@
                             >UDP</NTag
                           >
                           <NTag
-                            v-if="supportsHttp(node)"
+                            v-if="supportsHttp(node) && supportsHttps(node)"
+                            type="success"
+                            size="small"
+                            >HTTP(S)</NTag
+                          >
+                          <NTag
+                            v-else-if="supportsHttp(node)"
                             type="success"
                             size="small"
                             >HTTP</NTag
                           >
                           <NTag
-                            v-if="supportsHttps(node)"
+                            v-else-if="supportsHttps(node)"
                             type="success"
                             size="small"
                             >HTTPS</NTag
+                          >
+                          <NTag
+                            v-if="supportsStcp(node)"
+                            type="success"
+                            size="small"
+                            >STCP</NTag
+                          >
+                          <NTag
+                            v-if="supportsXtcp(node)"
+                            type="success"
+                            size="small"
+                            >XTCP</NTag
                           >
                         </NSpace>
                       </div>
@@ -511,18 +594,19 @@
         footer: 'soft',
       }"
     >
-      <NCollapse v-model:expanded-names="expandedConfig" accordion>
-        <NCollapseItem title="基础配置" name="basic">
-          <template #header>
-            <NText>基础配置</NText>
-          </template>
-          <NForm
-            :model="formValue"
-            :rules="rules"
-            label-placement="left"
-            label-width="120"
-            require-mark-placement="right-hanging"
-          >
+      <NForm
+        ref="formRef"
+        :model="formValue"
+        :rules="rules"
+        label-placement="left"
+        label-width="120"
+        require-mark-placement="right-hanging"
+      >
+        <NCollapse
+          v-model:expanded-names="expandedAdvanced"
+          :on-update:expanded-names="handleCreateFormCollapseUpdate"
+        >
+          <NCollapseItem name="basic" title="基本设置">
             <NFormItem label="隧道名称" path="name">
               <NInput
                 v-model:value="formValue.name"
@@ -555,6 +639,17 @@
             </NFormItem>
 
             <NFormItem
+              v-if="['stcp', 'xtcp'].includes(formValue.type)"
+              label="访问密钥"
+              path="accessKey"
+            >
+              <NInput
+                v-model:value="formValue.accessKey"
+                placeholder="请输入访问密钥"
+              />
+            </NFormItem>
+
+            <NFormItem
               v-if="formValue.type === 'http' || formValue.type === 'https'"
               label="绑定域名"
               path="domain"
@@ -565,7 +660,11 @@
               />
             </NFormItem>
 
-            <NFormItem v-else label="远程端口" path="remotePort">
+            <NFormItem
+              v-if="['tcp', 'udp'].includes(formValue.type)"
+              label="远程端口"
+              path="remotePort"
+            >
               <NSpace>
                 <NInputNumber
                   v-model:value="formValue.remotePort"
@@ -582,24 +681,20 @@
                 </NButton>
               </NSpace>
             </NFormItem>
-          </NForm>
-        </NCollapseItem>
+          </NCollapseItem>
 
-        <NCollapseItem title="高级配置" name="advanced">
-          <template #header>
-            <NText>高级配置</NText>
-            <NText depth="3" style="margin-left: 8px; font-size: 12px">
-              (仅推荐技术用户使用)
-            </NText>
-          </template>
-          <NForm
-            :model="formValue"
-            :rules="rules"
-            label-placement="left"
-            label-width="120"
-            require-mark-placement="right-hanging"
-          >
-            <NFormItem label="访问密钥" path="accessKey">
+          <NCollapseItem title="高级配置" name="advanced">
+            <template #header-extra>
+              <NText depth="3" style="font-size: 12px; margin-left: 8px">
+                仅推荐技术用户使用
+              </NText>
+            </template>
+
+            <NFormItem
+              v-if="!['stcp', 'xtcp'].includes(formValue.type)"
+              label="访问密钥"
+              path="accessKey"
+            >
               <NInput
                 v-model:value="formValue.accessKey"
                 placeholder="请输入访问密钥"
@@ -632,43 +727,35 @@
               />
             </NFormItem>
 
-            <NFormItem label="每个IP最大入站速率" path="ipLimitIn">
-              <NSpace>
+            <NFormItem label="每个IP最大下载速率" path="ipLimitIn">
+              <div class="speed-input-group">
                 <NInputNumber
                   v-model:value="formValue.ipLimitIn"
                   :min="0"
-                  placeholder="请输入速率值"
-                  style="width: 200px"
+                  placeholder="请输入最大下载速率"
+                  style="flex: 1"
                 />
                 <NSelect
                   v-model:value="formValue.ipLimitInUnit"
-                  :options="[
-                    { label: 'KB/s', value: 'KB' },
-                    { label: 'MB/s', value: 'MB' },
-                    { label: 'Mbps', value: 'Mbps' },
-                  ]"
+                  :options="speedUnitOptions"
                   style="width: 100px"
                 />
-              </NSpace>
+              </div>
             </NFormItem>
-            <NFormItem label="每个IP最大出站速率" path="ipLimitOut">
-              <NSpace>
+            <NFormItem label="每个IP最大上传速率" path="ipLimitOut">
+              <div class="speed-input-group">
                 <NInputNumber
                   v-model:value="formValue.ipLimitOut"
                   :min="0"
-                  placeholder="请输入速率值"
-                  style="width: 200px"
+                  placeholder="请输入最大上传速率"
+                  style="flex: 1"
                 />
                 <NSelect
                   v-model:value="formValue.ipLimitOutUnit"
-                  :options="[
-                    { label: 'KB/s', value: 'KB' },
-                    { label: 'MB/s', value: 'MB' },
-                    { label: 'Mbps', value: 'Mbps' },
-                  ]"
+                  :options="speedUnitOptions"
                   style="width: 100px"
                 />
-              </NSpace>
+              </div>
             </NFormItem>
             <NFormItem label="其他选项">
               <div style="display: flex; gap: 16px">
@@ -688,12 +775,12 @@
                 </NSwitch>
               </div>
             </NFormItem>
-          </NForm>
-        </NCollapseItem>
-      </NCollapse>
+          </NCollapseItem>
+        </NCollapse>
+      </NForm>
       <template #footer>
         <div style="display: flex; justify-content: flex-end">
-          <NButton @click="showConfigModal = false">取消</NButton>
+          <NButton @click="closeModal('config')">取消</NButton>
           <NButton
             type="primary"
             :loading="loading"
@@ -745,21 +832,12 @@
             <span class="confirm-label">绑定域名：</span>
             <span>{{ domainTags.join(", ") }}</span>
           </div>
-          <div v-else class="confirm-item">
+          <div
+            v-if="['tcp', 'udp'].includes(formValue.type)"
+            class="confirm-item"
+          >
             <span class="confirm-label">远程端口：</span>
             <span>{{ formValue.remotePort }}</span>
-          </div>
-          <div v-if="formValue.ipLimitIn" class="confirm-item">
-            <span class="confirm-label">入站速率限制：</span>
-            <span
-              >{{ formValue.ipLimitIn }} {{ formValue.ipLimitInUnit }}/s</span
-            >
-          </div>
-          <div v-if="formValue.ipLimitOut" class="confirm-item">
-            <span class="confirm-label">出站速率限制：</span>
-            <span
-              >{{ formValue.ipLimitOut }} {{ formValue.ipLimitOutUnit }}/s</span
-            >
           </div>
         </div>
         <p class="confirm-warning">
@@ -767,7 +845,9 @@
         </p>
       </div>
       <template #action>
-        <NButton size="medium" @click="handleCancelCreate">取消</NButton>
+        <NButton size="medium" @click="closeModal('createConfirm')"
+          >取消</NButton
+        >
         <NButton
           size="medium"
           type="primary"
@@ -781,7 +861,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed, onMounted, watch } from "vue";
+import { ref, h, computed, onMounted, watch, nextTick } from "vue";
 import {
   NCard,
   NForm,
@@ -793,6 +873,7 @@ import {
   NIcon,
   useMessage,
   type FormRules,
+  type FormInst,
   NSwitch,
   NTag,
   NSpace,
@@ -814,20 +895,54 @@ import { accessHandle } from "../../../net/base.ts";
 
 const router = useRouter();
 const message = useMessage();
+const formRef = ref<FormInst | null>(null);
 const loading = ref(false);
 const nodeLoading = ref(false);
-const expandedRegion = ref(["cn"]);
-// 新增搜索和区域筛选
-const searchQuery = ref("");
-const selectedRegion = ref("all");
-const selectedGroup = ref("all");
-const selectedProtocols = ref<string[]>([]);
-// 新增弹窗状态
+
+// ========== 弹窗互斥逻辑 ========== //
+const modalStack = ref<string[]>([]);
+
+const showRealnameModal = ref(false);
 const showConfigModal = ref(false);
 const showCreateConfirmModal = ref(false);
+
+function setModalVisible(name: string, visible: boolean) {
+  if (name === "realname") showRealnameModal.value = visible;
+  if (name === "config") showConfigModal.value = visible;
+  if (name === "createConfirm") showCreateConfirmModal.value = visible;
+}
+
+function getCurrentOpenModal(): string | null {
+  if (showRealnameModal.value) return "realname";
+  if (showConfigModal.value) return "config";
+  if (showCreateConfirmModal.value) return "createConfirm";
+  return null;
+}
+
+function openModal(modalName: string) {
+  const currentModal = getCurrentOpenModal();
+  if (currentModal && currentModal !== modalName) {
+    modalStack.value.push(currentModal);
+    setModalVisible(currentModal, false);
+  }
+  setModalVisible(modalName, true);
+}
+
+function closeModal(modalName: string) {
+  setModalVisible(modalName, false);
+  nextTick(() => {
+    if (modalStack.value.length > 0) {
+      const prevModal = modalStack.value.pop();
+      if (prevModal) setModalVisible(prevModal, true);
+    }
+  });
+}
+// ========== 弹窗互斥逻辑 END ========== //
+
+const searchQuery = ref("");
+const selectedGroup = ref("all");
+const selectedProtocols = ref<string[]>([]);
 const selectedNodeId = ref<number | null>(null);
-// 配置弹窗折叠状态，默认展开基础配置
-const expandedConfig = ref(["basic"]);
 
 const formValue = ref({
   nodeId: null as number | null,
@@ -844,9 +959,9 @@ const formValue = ref({
   useEncryption: false,
   useCompression: false,
   ipLimitIn: null as number | null,
-  ipLimitInUnit: "KB",
+  ipLimitInUnit: "MB",
   ipLimitOut: null as number | null,
-  ipLimitOutUnit: "KB",
+  ipLimitOutUnit: "MB",
 });
 
 const protocolOptions = [
@@ -854,6 +969,14 @@ const protocolOptions = [
   { label: "UDP", value: "udp" },
   { label: "HTTP", value: "http" },
   { label: "HTTPS", value: "https" },
+  { label: "STCP", value: "stcp" },
+  { label: "XTCP", value: "xtcp" },
+];
+
+const speedUnitOptions = [
+  { label: "KB/s", value: "KB" },
+  { label: "MB/s", value: "MB" },
+  { label: "Mbps", value: "Mbps" },
 ];
 
 const nodeOptions = ref<
@@ -877,45 +1000,45 @@ const nodeOptions = ref<
     };
   }[]
 >([]);
-
 // 添加过滤节点的计算属性
 const filteredNodes = computed(() => {
-  return nodeOptions.value.filter((node) => {
-    // 区域筛选
-    if (
-      selectedRegion.value !== "all" &&
-      node.location !== selectedRegion.value
-    ) {
-      return false;
-    }
-    // 用户组多选筛选
-    if (!selectedGroup.value.includes("all")) {
-      const groupNames = node.allowGroups.map((g) => g.name);
-      if (!groupNames.some((name) => selectedGroup.value.includes(name))) {
-        return false;
+  return nodeOptions.value
+    .filter((node) => {
+      // 用户组多选筛选
+      if (!selectedGroup.value.includes("all")) {
+        const groupNames = node.allowGroups.map((g) => g.name);
+        if (!groupNames.some((name) => selectedGroup.value.includes(name))) {
+          return false;
+        }
       }
-    }
-    // 协议多选筛选
-    if (selectedProtocols.value.length > 0) {
-      if (
-        !selectedProtocols.value.some((protocol) =>
-          node.allowedProtocols.includes(protocol),
-        )
-      ) {
-        return false;
+      // 协议多选筛选
+      if (selectedProtocols.value.length > 0) {
+        if (
+          !selectedProtocols.value.some((protocol) =>
+            node.allowedProtocols.includes(protocol),
+          )
+        ) {
+          return false;
+        }
       }
-    }
-    // 搜索筛选
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase();
-      return (
-        node.name.toLowerCase().includes(query) ||
-        node.description.toLowerCase().includes(query) ||
-        node.id.toString().includes(query)
-      );
-    }
-    return true;
-  });
+      // 搜索筛选
+      if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        return (
+          node.name.toLowerCase().includes(query) ||
+          node.description.toLowerCase().includes(query) ||
+          node.id.toString().includes(query)
+        );
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      // 在线优先，ID升序
+      if (a.isOnline !== b.isOnline) {
+        return a.isOnline ? -1 : 1;
+      }
+      return a.id - b.id;
+    });
 });
 
 // 添加协议支持检查函数
@@ -934,7 +1057,15 @@ const supportsHttp = (node: any) => {
 const supportsHttps = (node: any) => {
   return node.allowedProtocols.includes("https");
 };
-const groupList = ref<{ label: string; value: string }[]>([]);
+
+const supportsStcp = (node: any) => {
+  return node.allowedProtocols.includes("stcp");
+};
+
+const supportsXtcp = (node: any) => {
+  return node.allowedProtocols.includes("xtcp");
+};
+
 const rules: FormRules = {
   nodeId: {
     required: true,
@@ -964,7 +1095,9 @@ const rules: FormRules = {
     message: "请输入远程端口",
     trigger: "blur",
     validator: (_rule, value) => {
-      if (["http", "https"].includes(formValue.value.type || "")) {
+      if (
+        ["http", "https", "stcp", "xtcp"].includes(formValue.value.type || "")
+      ) {
         return true;
       }
       if (typeof value !== "number" || value < 1 || value > 65535) {
@@ -983,6 +1116,15 @@ const rules: FormRules = {
     message: "请输入隧道名称",
     trigger: "blur",
   },
+  accessKey: {
+    validator: (_rule, value) => {
+      if (["stcp", "xtcp"].includes(formValue.value.type) && !value) {
+        return new Error("使用 STCP/XTCP 协议时，访问密钥为必填项");
+      }
+      return true;
+    },
+    trigger: ["blur", "change"],
+  },
   domain: {
     validator: (_rule, _value) => {
       if (formValue.value.type === "http" || formValue.value.type === "https") {
@@ -997,6 +1139,7 @@ const rules: FormRules = {
 };
 
 const groupNameMap = ref<Record<string, string>>({});
+const groupList = ref<{ label: string; value: string }[]>([]);
 
 const fetchUserGroups = async () => {
   return new Promise((resolve) => {
@@ -1005,7 +1148,6 @@ const fetchUserGroups = async () => {
       accessHandle(),
       (data) => {
         if (data.code === 0) {
-          // 处理两种不同的响应格式
           const groups =
             typeof data.data.groups === "string"
               ? JSON.parse(data.data.groups)
@@ -1018,7 +1160,6 @@ const fetchUserGroups = async () => {
             },
             {} as Record<string, string>,
           );
-          // 生成下拉用的 groupList
           groupList.value = groups
             .filter(
               (group: any) =>
@@ -1051,17 +1192,20 @@ const fetchNodes = async () => {
     accessHandle(),
     (data) => {
       if (data.code === 0) {
-        nodeOptions.value = data.data.map((node: any) => {
-          const [minPort, maxPort] = node.allowPort.split("-").map(Number);
-          const allowedProtocols = node.allowType
+        const nodes = Array.isArray(data.data) ? data.data : [];
+        nodeOptions.value = nodes.map((node: any) => {
+          const [minPort, maxPort] = (node.allowPort || "0-0")
+            .split("-")
+            .map(Number);
+          const allowedProtocols = (node.allowType || "")
             .split(";")
-            .map((type: string) => type.trim());
+            .map((type: string) => type.trim())
+            .filter((p: string) => p);
 
-          // 确保allowGroup分割正确
-          const allowGroups = node.allowGroup
+          const allowGroups = (node.allowGroup || "")
             .split(";")
             .map((group: string) => group.trim())
-            .filter((group: string) => group) // 过滤空值
+            .filter((group: string) => group)
             .map((group: string) => ({
               name: group,
               friendlyName: groupNameMap.value[group] || group,
@@ -1087,11 +1231,13 @@ const fetchNodes = async () => {
             },
           };
         });
+      } else {
+        message.error(data.message || "获取节点列表失败");
       }
       nodeLoading.value = false;
-      // ... existing error handling ...
     },
-    () => {
+    (err) => {
+      message.error(err || "获取节点列表失败");
       nodeLoading.value = false;
     },
   );
@@ -1108,37 +1254,6 @@ const selectedNode = ref<{
     max: number;
   };
 } | null>(null);
-
-// 修改为点击节点时打开配置弹窗
-const handleNodeSelect = (node: any) => {
-  if (!node.isOnline) {
-    message.error("该节点当前处于离线状态，无法选择");
-    return;
-  }
-
-  if (node.isDisabled) {
-    message.error("该节点已被禁用，无法选择");
-    return;
-  }
-
-  selectedNodeId.value = node.value;
-  selectedNode.value = {
-    id: node.id,
-    name: node.name,
-    hostname: node.hostname,
-    allowedProtocols: node.allowedProtocols,
-    allowGroups: node.allowGroups,
-    portRange: node.portRange,
-  };
-
-  // 设置表单默认值
-  formValue.value.nodeId = node.value;
-  formValue.value.type = node.allowedProtocols[0] || "";
-  formValue.value.remotePort = null;
-
-  // 打开配置弹窗
-  showConfigModal.value = true;
-};
 
 const allowedProxyTypeOptions = computed(() => {
   if (!selectedNode.value) return protocolOptions;
@@ -1174,74 +1289,59 @@ const renderDomainTag = (tag: string) => {
   );
 };
 
-// 显示创建确认弹窗
-const showCreateModal = () => {
-  // 由于表单被分成了两个部分，我们需要手动验证所有必填字段
-  const errors: any[] = [];
+const countDown = ref(10);
+let timer: number | null = null;
 
-  // 验证基础配置
-  if (!formValue.value.name) {
-    errors.push({ message: "请输入隧道名称" });
-  }
-  if (!formValue.value.localAddr) {
-    errors.push({ message: "请输入本地地址" });
-  }
-  if (!formValue.value.localPort) {
-    errors.push({ message: "请输入本地端口" });
-  }
-  if (!formValue.value.type) {
-    errors.push({ message: "请选择协议类型" });
-  }
-
-  // 验证域名（如果是HTTP/HTTPS协议）
-  if (
-    ["http", "https"].includes(formValue.value.type) &&
-    !domainTags.value.length
-  ) {
-    errors.push({ message: "请至少添加一个域名" });
-  }
-
-  // 验证远程端口（如果不是HTTP/HTTPS协议）
-  if (
-    !["http", "https"].includes(formValue.value.type) &&
-    !formValue.value.remotePort
-  ) {
-    errors.push({ message: "请输入远程端口" });
-  }
-
-  if (errors.length === 0) {
-    showConfigModal.value = false; // 先关闭配置弹窗
-    showCreateConfirmModal.value = true; // 再打开确认弹窗
-  } else {
-    message.error(errors[0].message);
-  }
+const goToRealname = () => {
+  router.push("/dashboard/profile");
 };
 
-// 取消创建确认弹窗，重新打开配置弹窗
-const handleCancelCreate = () => {
-  showCreateConfirmModal.value = false;
-  showConfigModal.value = true; // 重新打开配置弹窗
+const handleNodeSelect = (node: any) => {
+  if (node.isDisabled) {
+    message.error("该节点已被禁用，无法选择");
+    return;
+  }
+  selectedNodeId.value = node.value;
+  selectedNode.value = {
+    id: node.id,
+    name: node.name,
+    hostname: node.hostname,
+    allowedProtocols: node.allowedProtocols,
+    allowGroups: node.allowGroups,
+    portRange: node.portRange,
+  };
+  // 设置表单默认值
+  formValue.value.nodeId = node.value;
+  formValue.value.type = node.allowedProtocols[0] || "";
+  formValue.value.remotePort = null;
+  openModal("config");
+};
+
+const showCreateModal = () => {
+  formRef.value?.validate(async (errors) => {
+    if (!errors) {
+      openModal("createConfirm");
+    }
+  });
+};
+
+const convertSpeedToKB = (value: number | null, unit: string): number => {
+  if (!value || value <= 0) return 0;
+  switch (unit) {
+    case "KB":
+      return value;
+    case "MB":
+      return value * 1024;
+    case "Mbps":
+      return value * 125; // 1 Mbps = 125 KB/s
+    default:
+      return value;
+  }
 };
 
 const handleCreate = async () => {
+  loading.value = true;
   try {
-    loading.value = true;
-
-    // 转换速率单位为KB
-    const convertToKB = (value: number | null, unit: string) => {
-      if (!value || value <= 0) return 0;
-      switch (unit) {
-        case "KB":
-          return value;
-        case "MB":
-          return value * 1024;
-        case "Mbps":
-          return Math.round(value * 125); // 1 Mbps = 125 KB/s
-        default:
-          return value;
-      }
-    };
-
     const requestData = {
       nodeId: formValue.value.nodeId,
       proxyName: formValue.value.name,
@@ -1258,50 +1358,47 @@ const handleCreate = async () => {
       proxyProtocolVersion: formValue.value.proxyProtocolVersion,
       useEncryption: formValue.value.useEncryption,
       useCompression: formValue.value.useCompression,
-      ipLimitIn: convertToKB(
+      ipLimitIn: convertSpeedToKB(
         formValue.value.ipLimitIn,
         formValue.value.ipLimitInUnit,
       ),
-      ipLimitOut: convertToKB(
+      ipLimitOut: convertSpeedToKB(
         formValue.value.ipLimitOut,
         formValue.value.ipLimitOutUnit,
       ),
     };
 
-    userApi.post("/proxy/create", requestData, accessHandle(), (data) => {
-      if (data.code === 0) {
-        message.success("隧道创建成功");
-        // 关闭所有弹窗
-        showCreateConfirmModal.value = false;
-        showConfigModal.value = false;
-        // 重置选中状态
-        selectedNodeId.value = null;
-        // 可以在这里添加创建成功后的跳转逻辑
-        // router.push('/dashboard/tunnels')
-      } else {
-        message.error(data.message || "创建失败");
-      }
-    });
+    userApi.post(
+      "/proxy/create",
+      requestData,
+      accessHandle(),
+      (data) => {
+        if (data.code === 0) {
+          message.success("隧道创建成功");
+          formRef.value?.restoreValidation();
+          closeModal("createConfirm");
+          closeModal("config");
+          selectedNodeId.value = null;
+        } else {
+          message.error(data.message || "创建失败");
+        }
+        loading.value = false;
+      },
+      (err) => {
+        message.error(err || "创建失败");
+        loading.value = false;
+      },
+    );
   } catch (error) {
     const errorMsg = error || "服务器连接异常";
     message.error(`创建失败: ${errorMsg}`);
-  } finally {
     loading.value = false;
   }
 };
 
-const showRealnameModal = ref(false);
-const countDown = ref(10);
-let timer: number | null = null;
-
-const goToRealname = () => {
-  router.push("/dashboard/profile");
-};
-
-// 修改初始化顺序
 const init = async () => {
-  await fetchUserGroups(); // 确保先获取用户组信息
-  fetchNodes(); // 移除 setTimeout 直接调用
+  await fetchUserGroups();
+  fetchNodes();
 };
 
 onMounted(() => {
@@ -1313,7 +1410,6 @@ const gettingFreePort = ref(false);
 const handleGetFreePort = async () => {
   if (!selectedNode.value) return;
 
-  // 随机端口
   const min = selectedNode.value.portRange.min || 1024;
   const max = selectedNode.value.portRange.max || 65535;
   formValue.value.remotePort =
@@ -1326,6 +1422,17 @@ watch(showRealnameModal, (newVal) => {
     timer = null;
   }
 });
+
+const expandedRegion = ref(["cn"]);
+const expandedAdvanced = ref<string[]>(["basic"]);
+
+const handleCreateFormCollapseUpdate = (names: string[]) => {
+  if (names.length > 1) {
+    expandedAdvanced.value = [names[names.length - 1]];
+  } else {
+    expandedAdvanced.value = names;
+  }
+};
 </script>
 
 <style lang="scss" scoped>
@@ -1432,6 +1539,12 @@ watch(showRealnameModal, (newVal) => {
 .confirm-warning {
   font-size: 14px;
   margin-top: 12px;
+}
+
+.speed-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 /* 添加响应式布局 */
