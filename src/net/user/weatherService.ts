@@ -149,6 +149,7 @@ class WeatherService {
                 Storm: "暴风",
                 "Violent storm": "狂风",
                 Typhoon: "台风",
+                "Patchy rain nearby": "局部有雨",
               };
 
               // 获取天气描述，优先使用中文，如果没有则映射英文
@@ -208,10 +209,7 @@ class WeatherService {
   private async getCurrentIP(): Promise<string> {
     try {
       // 只保留可用的IP查询服务
-      const services = [
-        "https://api.ipify.org?format=json",
-        "https://ipinfo.io/json",
-      ];
+      const services = ["https://ipinfo.io/json"];
 
       for (const service of services) {
         try {
