@@ -671,8 +671,8 @@ pub async fn check_auto_start_status() -> Result<bool, String> {
 }
 
 #[tauri::command]
-pub async fn get_bing_wallpaper_base64() -> Result<String, String> {
-    let resp = reqwest::get("https://api.nxvav.cn/api/bing")
+pub async fn get_image_base64(url: String) -> Result<String, String> {
+    let resp = reqwest::get(url)
         .await
         .map_err(|e| format!("请求API失败: {}", e))?;
     let url = resp.url().to_string();

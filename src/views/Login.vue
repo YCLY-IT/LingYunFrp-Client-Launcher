@@ -113,15 +113,30 @@ const handleSubmit = async () => {
       formValue.value.username,
       formValue.value.password,
       formValue.value.remember,
-      (data: any) => {
+      async (data: any) => {
         localStorage.setItem("username", data.data.username);
         localStorage.setItem("nickname", data.data.nickname);
-        localStorage.setItem("avatar", data.data.avatar);
+        localStorage.setItem("avatarURL", data.data.avatar);
         localStorage.setItem("email", data.data.email);
+
         message.success(data.message);
+
+        // 立即跳转
         setTimeout(() => {
           router.push("/dashboard");
-        }, 1200);
+        }, 1000);
+
+        // 异步处理 base64，不阻塞跳转
+        invoke<string>("get_image_base64", { url: data.data.avatar })
+          .then((avatarBase64) => {
+            localStorage.setItem(
+              "avatar",
+              "data:image/jpeg;base64," + avatarBase64,
+            );
+          })
+          .catch(() => {
+            message.error("获取头像失败");
+          });
       },
       (data: any) => {
         message.error(data);
@@ -138,7 +153,9 @@ onMounted(async () => {
   const loginEl = document.querySelector(".login") as HTMLElement;
   if (loginEl) {
     try {
-      const base64 = await invoke<string>("get_bing_wallpaper_base64");
+      const base64 = await invoke<string>("get_image_base64", {
+        url: "https://api.nxvav.cn/api/bing",
+      });
       loginEl.style.backgroundImage = `url('data:image/jpeg;base64,${base64}')`;
       loginEl.style.backgroundSize = "cover";
       loginEl.style.backgroundPosition = "center";

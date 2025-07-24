@@ -135,6 +135,7 @@ import { CalendarOutline } from "@vicons/ionicons5";
 import { userApi } from "../net";
 import { accessHandle } from "../net/base.ts";
 import { CopyPlusIcon } from "lucide-vue-next";
+import { invoke } from "@tauri-apps/api/core";
 const emit = defineEmits<{
   (e: "update"): void;
 }>();
@@ -241,6 +242,16 @@ const fetchUserInfo = async () => {
         isSignAvailable.value = !data.data.sign;
       }
       loading.value = false;
+      invoke<string>("get_image_base64", { url: data.data.avatar })
+        .then((avatarBase64) => {
+          localStorage.setItem(
+            "avatar",
+            "data:image/jpeg;base64," + avatarBase64,
+          );
+        })
+        .catch(() => {
+          message.error("获取头像失败");
+        });
     });
   } catch (e) {
     console.log(e);

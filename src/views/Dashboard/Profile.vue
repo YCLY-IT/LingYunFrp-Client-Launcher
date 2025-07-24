@@ -487,6 +487,7 @@ import "vue-advanced-cropper/dist/style.css";
 import WelcomeCard from "../../components/WelcomeCard.vue";
 import md5 from "blueimp-md5";
 import router from "../../router";
+import { invoke } from "@tauri-apps/api/core";
 
 const userInfoRef = ref<InstanceType<typeof userInfo>>();
 // 消息提示
@@ -855,6 +856,16 @@ const handleChangeAvatar = () => {
         localStorage.setItem("avatar", data.data);
         message.success("头像上传成功");
         modals.changeAvatar = false;
+        invoke<string>("get_image_base64", { url: data.data })
+          .then((avatarBase64) => {
+            localStorage.setItem(
+              "avatar",
+              "data:image/jpeg;base64," + avatarBase64,
+            );
+          })
+          .catch(() => {
+            message.error("获取头像失败");
+          });
         setTimeout(() => {
           window.location.reload();
         }, 1000);

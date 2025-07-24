@@ -142,7 +142,6 @@ import {
   SunnyOutline,
   MoonOutline,
   MenuOutline,
-  HomeOutline,
   CloseOutline,
   ScanOutline,
   RemoveOutline,

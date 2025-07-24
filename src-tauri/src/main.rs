@@ -50,7 +50,7 @@ use commands::{
     get_api_url,
     is_admin,
     check_auto_start_status,
-    get_bing_wallpaper_base64,
+    get_image_base64,
 };
 #[cfg(target_os = "windows")]
 use windows::core::PCWSTR;
@@ -101,7 +101,7 @@ fn main() {
         is_tap_driver_installed,
         is_admin,
         check_auto_start_status,
-        get_bing_wallpaper_base64,
+        get_image_base64,
     ])
     .setup(|app| {
         // 确保应用数据目录存在
