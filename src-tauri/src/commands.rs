@@ -2,14 +2,11 @@ use tauri::Manager;
 use tauri::Runtime;
 use tauri::Emitter;
 use tauri::command;
-use std::collections::HashMap;
 use std::sync::Mutex;
-use std::io::BufRead;
 use crate::config;
-use base64::engine::general_purpose::STANDARD;
-use base64::Engine;
 use tauri::path::BaseDirectory;
 use tauri_plugin_notification::NotificationExt;
+use std::path::Path;
 
 #[tauri::command]
 pub fn close_window(window: tauri::Window) {
@@ -144,69 +141,6 @@ pub async fn open_app_data_dir(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
-pub async fn download_frpc(app: tauri::AppHandle) -> Result<(), String> {
-    // 根据操作系统确定可执行文件名
-    let executable_name = if cfg!(target_os = "windows") {
-        "frpc.exe"
-    } else {
-        "frpc"
-    };
-    
-    let app_data_dir = app.path().app_data_dir().map_err(|_| "无法获取应用数据目录")?;
-    let frpc_path = app_data_dir.join(executable_name);
-    if frpc_path.exists() {
-        return Err(format!("{}已存在", executable_name));
-    }
-    let info = get_system_info();
-    let mut parts = info.split_whitespace();
-    let system = parts.next().unwrap_or("unknown");
-    let arch = parts.next().unwrap_or("unknown");
-    
-    let version = config::version();
-
-    // 拼接下载链接
-    let frpc_url = format!(
-        "{}{}{}{}{}{}{}",
-        config::api_url(),
-        "/frp/updates/latest?software=Frpc&system=",
-        system,
-        "&arch=",
-        arch,
-        "&version=",
-        version
-    );
-
-    // 下载文件
-    let response = reqwest::get(&frpc_url)
-        .await
-        .map_err(|e| format!("下载失败: {}", e))?;
-    let status = response.status();
-    let resp_text = response.text().await.map_err(|e| format!("读取响应失败: {}", e))?;
-    if !status.is_success() {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&resp_text) {
-            if let Some(msg) = json.get("message").and_then(|m| m.as_str()) {
-                return Err(msg.to_string());
-            }
-        }
-        return Err(format!("下载失败，状态码: {}", status));
-    }
-    let json: serde_json::Value = serde_json::from_str(&resp_text).map_err(|e| format!("解析JSON失败: {}", e))?;
-    let download_url = json["data"]["latest_info"]["download_url"]
-        .as_str()
-        .ok_or("未找到下载链接")?;
-
-    // 再次请求下载文件
-    let file_response = reqwest::get(download_url)
-        .await
-        .map_err(|e| format!("下载文件失败: {}", e))?;
-    let bytes = file_response.bytes().await.map_err(|e| format!("读取内容失败: {}", e))?;
-
-    // 写入文件
-    std::fs::write(&frpc_path, &bytes).map_err(|e| format!("写入文件失败: {}", e))?;
-
-    Ok(())
-}
 
 #[tauri::command]
 pub async fn toggle_auto_start(enable: bool) -> Result<(), String> {
@@ -302,131 +236,75 @@ pub fn kill_all_processes() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        let _output = std::process::Command::new("taskkill")
-            .arg("/F")
-            .arg("/IM")
-            .arg("frpc.exe")
-            .creation_flags(0x08000000) // CREATE_NO_WINDOW
-            .output()
-            .map_err(|e| format!("终止进程失败: {}", e))?;
+        
+        // 分别终止 frpc.exe 和 natter.exe
+        let processes = vec!["frpc.exe", "natter.exe"];
+        
+        for process in processes {
+            let output = std::process::Command::new("taskkill")
+                .arg("/F")
+                .arg("/IM")
+                .arg(process)
+                .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                .output();
+            
+            // 忽略错误，因为进程可能不存在
+            if let Ok(output) = output {
+                if !output.status.success() {
+                    // 检查是否是因为进程不存在而失败
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    if !stderr.contains("找不到") && !stderr.contains("not found") {
+                        eprintln!("终止进程 {} 失败: {}", process, stderr);
+                    }
+                }
+            }
+        }
     }
     #[cfg(target_os = "macos")]
     {
-        let _output = std::process::Command::new("killall")
-            .arg("frpc")
-            .output()
-            .map_err(|e| format!("终止进程失败: {}", e))?;
+        let processes = vec!["frpc", "natter"];
+        
+        for process in processes {
+            let output = std::process::Command::new("killall")
+                .arg(process)
+                .output();
+            
+            // 忽略错误，因为进程可能不存在
+            if let Ok(output) = output {
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    if !stderr.contains("No matching processes") {
+                        eprintln!("终止进程 {} 失败: {}", process, stderr);
+                    }
+                }
+            }
+        }
     }
     #[cfg(target_os = "linux")]
     {
-        let _output = std::process::Command::new("pkill")
-            .arg("-f")
-            .arg("frpc")
-            .output()
-            .map_err(|e| format!("终止进程失败: {}", e))?;
+        let processes = vec!["frpc", "natter"];
+        
+        for process in processes {
+            let output = std::process::Command::new("pkill")
+                .arg("-f")
+                .arg(process)
+                .output();
+            
+            // 忽略错误，因为进程可能不存在
+            if let Ok(output) = output {
+                if !output.status.success() {
+                    // pkill 返回 1 表示没有找到匹配的进程，这是正常的
+                    if output.status.code() != Some(1) {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        eprintln!("终止进程 {} 失败: {}", process, stderr);
+                    }
+                }
+            }
+        }
     }
     Ok(())
 }
 
-#[tauri::command]
-pub async fn start_proxy(
-    app: tauri::AppHandle,
-    proxy_id: u32,
-    token: String,
-) -> Result<bool, String> {
-    // 根据操作系统确定可执行文件名
-    let executable_name = if cfg!(target_os = "windows") {
-        "frpc.exe"
-    } else {
-        "frpc"
-    };
-    
-    let app_data_dir = app.path().app_data_dir().map_err(|_| "无法获取应用数据目录")?;
-    let frpc_path = app_data_dir.join(executable_name);
-    if !frpc_path.exists() {
-        return Err(format!("{} 不存在", executable_name));
-    }
-    let mut command = std::process::Command::new(&frpc_path);
-    command
-        .arg("-t").arg(token)
-        .arg("-p").arg(proxy_id.to_string());
-
-    // 这里判断开发环境，追加 -u <api_url>
-    if cfg!(debug_assertions) {
-        let api_url = config::api_url();
-        command.arg("-u").arg(api_url);
-    }
-
-    command
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped());
-    let mut child = command.spawn().map_err(|e| format!("启动隧道失败: {}", e))?;
-    let app_handle = app.clone();
-    let stdout = child.stdout.take().unwrap();
-    let stderr = child.stderr.take().unwrap();
-    std::thread::spawn(move || {
-        let reader = std::io::BufReader::new(stdout);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                let _ = app_handle.emit(
-                    "tunnel-event",
-                    serde_json::json!({
-                        "type": "log",
-                        "tunnelId": proxy_id,
-                        "message": line
-                    }),
-                );
-            }
-        }
-    });
-    let app_handle_err = app.clone();
-    std::thread::spawn(move || {
-        let reader = std::io::BufReader::new(stderr);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                let _ = app_handle_err.emit(
-                    "tunnel-event", 
-                    serde_json::json!({
-                        "type": "error",
-                        "tunnelId": proxy_id,
-                        "message": line
-                    }),
-                );
-            }
-        }
-    });
-    let _ = app.emit(
-        "tunnel-event",
-        serde_json::json!({
-            "type": "start",
-            "tunnelId": proxy_id,
-            "message": format!("隧道 #{} 启动进程", proxy_id)
-        }),
-    );
-    let _ = app.emit(
-        "log",
-        serde_json::json!({
-            "message": format!("[FRPC] 启动进程 PID: {}", child.id())
-        }),
-    );
-    app.state::<Mutex<HashMap<u32, std::process::Child>>>()
-        .lock()
-        .unwrap()
-        .insert(proxy_id, child);
-    Ok(true)
-}
-
-#[tauri::command]
-pub async fn stop_proxy(app: tauri::AppHandle, proxy_id: u32) -> Result<bool, String> {
-    let processes = app.state::<Mutex<HashMap<u32, std::process::Child>>>();
-    let mut processes = processes.lock().unwrap();
-    if let Some(mut child) = processes.remove(&proxy_id) {
-        child.kill().map_err(|e| format!("停止隧道失败: {}", e))?;
-        Ok(true)
-    } else {
-        Err("未找到对应的隧道进程".to_string())
-    }
-}
 
 #[tauri::command]
 pub async fn get_frpc_cli_version(app: tauri::AppHandle) -> Result<String, String> {
@@ -517,74 +395,6 @@ pub fn open_url(url: String) {
 }
 
 #[tauri::command]
-pub async fn forward_request(
-    url: String,
-    method: String,
-    data: serde_json::Value,
-    headers: serde_json::Value,
-) -> Result<serde_json::Value, String> {
-    let client = reqwest::Client::new();
-    let api_url = if url.starts_with("http://") || url.starts_with("https://") {
-        url
-    } else {
-        config::api_url().to_string() + url.trim_start_matches('/')
-    };
-
-    // 检查是否为文件上传
-    let is_file_upload = data.get("file").is_some();
-
-    let mut request_builder = match method.to_uppercase().as_str() {
-        "POST" => client.post(&api_url),
-        "GET" => client.get(&api_url),
-        _ => return Err("不支持的请求方法".to_string()),
-    };
-
-    if let Some(headers_map) = headers.as_object() {
-        for (key, value) in headers_map {
-            if let Some(value_str) = value.as_str() {
-                request_builder = request_builder.header(key, value_str);
-            }
-        }
-    }
-
-    let response = if method.to_uppercase() == "POST" && is_file_upload {
-        // 处理 multipart/form-data 文件上传
-        let mut form = reqwest::multipart::Form::new();
-        if let Some(file_base64) = data.get("file").and_then(|v| v.as_str()) {
-            // 解码 base64
-            let file_bytes = match STANDARD.decode(file_base64) {
-                Ok(bytes) => bytes,
-                Err(e) => return Err(format!("文件base64解码失败: {}", e)),
-            };
-            form = form.part(
-                "avatar",
-                reqwest::multipart::Part::bytes(file_bytes)
-                    .file_name("avatar.jpg")
-                    .mime_str("image/jpeg").unwrap(),
-            );
-        }
-        // 你可以根据需要添加更多字段
-        request_builder.multipart(form).send().await
-    } else if method.to_uppercase() == "POST" {
-        request_builder.form(&data).send().await
-    } else {
-        request_builder.send().await
-    }.map_err(|e| e.to_string())?;
-
-    let resp_text = response.text().await.map_err(|e| e.to_string())?;
-    let cleaned_text = resp_text
-        .trim_start_matches('\u{FEFF}')
-        .trim()
-        .lines()
-        .filter(|line| !line.trim().is_empty()) 
-        .collect::<Vec<&str>>() 
-        .join("");
-    let response_json = serde_json::from_str(&cleaned_text)
-        .map_err(|e| format!("JSON解析错误: {} - 原始文本: {}", e, cleaned_text))?;
-    Ok(response_json)
-}
-
-#[tauri::command]
 pub fn get_now_mode() -> bool {
     config::debug()
 }
@@ -615,19 +425,6 @@ pub fn get_system_info() -> String {
 #[tauri::command]
 pub fn get_api_url() -> String {
     config::api_url().to_string()
-}
-
-#[tauri::command]
-pub fn is_admin() -> Result<bool, String> {
-    #[cfg(target_os = "windows")]
-    {
-        Ok(is_elevated::is_elevated())
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        use nix::unistd::Uid;
-        Ok(Uid::effective().is_root())
-    }
 }
 
 #[tauri::command]
@@ -670,20 +467,49 @@ pub async fn check_auto_start_status() -> Result<bool, String> {
     }
 }
 
+
+
+/// 检查软件数据目录中是否存在指定文件
+fn check_software_exists(app: &tauri::AppHandle, software_name: &str) -> Result<String, String> {
+    // 根据操作系统确定可执行文件名
+    let executable_name = if cfg!(target_os = "windows") {
+        if !software_name.ends_with(".exe") {
+            format!("{}.exe", software_name)
+        } else {
+            software_name.to_string()
+        }
+    } else {
+        software_name.to_string()
+    };
+    
+    // 首先检查应用数据目录
+    if let Ok(app_data_dir) = app.path().app_data_dir() {
+        let software_path = app_data_dir.join(&executable_name);
+        if Path::new(&software_path).exists() {
+            return Ok(software_path.to_string_lossy().to_string());
+        }
+    }
+    
+    // 然后检查当前可执行文件所在目录
+    if let Ok(exe_dir) = std::env::current_exe() {
+        if let Some(parent_dir) = exe_dir.parent() {
+            let software_path = parent_dir.join(&executable_name);
+            if Path::new(&software_path).exists() {
+                return Ok(software_path.to_string_lossy().to_string());
+            }
+        }
+    }
+    
+    Err(format!("软件文件不存在: {}", executable_name))
+}
+
+/// 检查软件文件是否存在
 #[tauri::command]
-pub async fn get_image_base64(url: String) -> Result<String, String> {
-    let resp = reqwest::get(url)
-        .await
-        .map_err(|e| format!("请求API失败: {}", e))?;
-    let url = resp.url().to_string();
-
-    let img_resp = reqwest::get(&url)
-        .await
-        .map_err(|e| format!("请求图片失败: {}", e))?;
-    let bytes = img_resp.bytes().await.map_err(|e| format!("读取图片失败: {}", e))?;
-    let base64_str = base64::engine::general_purpose::STANDARD.encode(&bytes);
-    Ok(base64_str)
-} 
-
-
-
+pub fn check_software_file(app: tauri::AppHandle, software_name: Option<String>) -> Result<(bool, String), String> {
+    let software_name = software_name.unwrap_or_else(|| "frpc".to_string());
+    
+    match check_software_exists(&app, &software_name) {
+        Ok(path) => Ok((true, path)),
+        Err(error) => Ok((false, error))
+    }
+}

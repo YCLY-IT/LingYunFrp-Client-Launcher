@@ -39,9 +39,10 @@ const baseMenuOptions: MenuOption[] = [
     ],
   },
   {
-    label: "虚拟网络",
+    label: "NAT穿透",
     icon: renderIcon(WifiOutline),
     key: "network",
+    link: "/dashboard/network",
   },
   {
     label: "用户中心",

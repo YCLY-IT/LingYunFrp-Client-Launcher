@@ -8,21 +8,30 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_single_instance::init as single_instance_init;
-use tauri::Listener;
 mod config;
 mod commands;
-mod virtual_net;
+mod request;
+mod tunnel;
+mod nat;
 
+use nat::{
+    nat_start,
+    nat_stop,
+    nat_get_address,
+    get_active_nat,
+    check_natter_exists,
+    download_natter,
+};
 
-use virtual_net::{
-    create_virtual_network,
-    join_virtual_network,
-    leave_virtual_network,
-    get_current_virtual_network,
-    start_virtual_network,
-    stop_virtual_network,
-    auto_connect_peers,
-    is_tap_driver_installed,
+use request::{
+    forward_request,
+    download_frpc,
+    get_image_base64,
+};
+
+use tunnel::{
+    start_proxy,
+    stop_proxy,
 };
 
 use commands::{
@@ -35,25 +44,18 @@ use commands::{
     get_app_data_dir,
     open_app_data_dir,
     get_frpc_cli_version,
-    download_frpc,
     toggle_auto_start,
     kill_all_processes,
     get_client_version,
-    start_proxy,
-    stop_proxy,
     quit_window,
     open_url,
     api_url,
-    forward_request,
     get_now_mode,
     get_system_info,
     get_api_url,
-    is_admin,
     check_auto_start_status,
-    get_image_base64,
+    check_software_file,
 };
-#[cfg(target_os = "windows")]
-use windows::core::PCWSTR;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
@@ -91,17 +93,15 @@ fn main() {
         get_now_mode,
         get_system_info,
         get_api_url,
-        create_virtual_network,
-        join_virtual_network,
-        leave_virtual_network,
-        get_current_virtual_network,
-        start_virtual_network,
-        stop_virtual_network,
-        auto_connect_peers,
-        is_tap_driver_installed,
-        is_admin,
         check_auto_start_status,
         get_image_base64,
+        nat_start,
+        nat_stop,
+        nat_get_address,
+        check_software_file,
+        get_active_nat,
+        check_natter_exists,
+        download_natter,
     ])
     .setup(|app| {
         // 确保应用数据目录存在
@@ -163,20 +163,6 @@ fn main() {
         
         #[cfg(target_os = "windows")]
         window.set_ignore_cursor_events(false).unwrap();
-
-        // 监听主窗口事件
-        if let Some(main_window) = app.app_handle().get_webview_window("main") {
-            main_window.listen("request_admin", |_event| {
-                #[cfg(target_os = "windows")]
-                {
-                    run_as_admin();
-                }
-                #[cfg(any(target_os = "macos", target_os = "linux"))]
-                {
-                    run_as_admin();
-                }
-            });
-        }
 
         Ok(())
     })
@@ -280,59 +266,5 @@ fn create_tray_menu(app: &tauri::App, _auto_start_enabled: bool) -> Result<TrayI
     Ok(tray)
 }
 
-
-
-
-
-
-
-#[cfg(target_os = "windows")]
-fn run_as_admin() {
-    use std::ffi::OsStr;
-    use std::iter::once;
-    use std::os::windows::ffi::OsStrExt;
-    use windows::Win32::UI::Shell::{ShellExecuteW};
-    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
-
-    let exe = std::env::current_exe().unwrap();
-    let exe_wide: Vec<u16> = OsStr::new(exe.to_str().unwrap()).encode_wide().chain(once(0)).collect();
-    let params = "--elevated";
-    let params_wide: Vec<u16> = OsStr::new(params).encode_wide().chain(once(0)).collect();
-
-    unsafe {
-        ShellExecuteW(
-            None,
-            PCWSTR::from_raw(wide_null("runas").as_ptr()),
-            PCWSTR::from_raw(exe_wide.as_ptr()),
-            PCWSTR::from_raw(params_wide.as_ptr()),
-            PCWSTR::null(),
-            SW_SHOWNORMAL,
-        );
-    }
-    std::process::exit(0);
-}
-
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-fn run_as_admin() {
-    std::thread::spawn(|| {
-        use std::env;
-        use std::process::Command;
-        if nix::unistd::Uid::effective().is_root() {
-            return;
-        }
-        let exe = env::current_exe().unwrap();
-        let args: Vec<String> = env::args().skip(1).collect();
-        let mut cmd = Command::new("sudo");
-        cmd.arg(exe);
-        for arg in args { cmd.arg(arg); }
-        let _status = cmd.status().expect("无法请求 sudo 权限");
-        std::process::exit(0);
-    });
-}
-#[cfg(target_os = "windows")]
-fn wide_null(s: &str) -> Vec<u16> {
-    use std::os::windows::ffi::OsStrExt;
-    std::ffi::OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
-}
 
 
