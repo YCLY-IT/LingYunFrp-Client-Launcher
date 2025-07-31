@@ -17,7 +17,31 @@ export interface LocationInfo {
   adcode?: string;
 }
 
+// 缓存接口
+interface CacheItem<T> {
+  data: T;
+  timestamp: number;
+  expiresIn: number; // 缓存过期时间（毫秒）
+}
+
 class WeatherService {
+  private locationCache: Map<string, CacheItem<LocationInfo>> = new Map();
+  private weatherCache: Map<string, CacheItem<WeatherInfo>> = new Map();
+  private ipCache: CacheItem<string> | null = null;
+
+  // 缓存配置
+  private readonly LOCATION_CACHE_DURATION = 30 * 60 * 1000; // 位置信息缓存30分钟
+  private readonly WEATHER_CACHE_DURATION = 10 * 60 * 1000; // 天气信息缓存10分钟
+  private readonly IP_CACHE_DURATION = 60 * 60 * 1000; // IP信息缓存1小时
+
+  /**
+   * 检查缓存是否有效
+   */
+  private isCacheValid<T>(cacheItem: CacheItem<T> | null): boolean {
+    if (!cacheItem) return false;
+    return Date.now() - cacheItem.timestamp < cacheItem.expiresIn;
+  }
+
   /**
    * 获取IP地址和位置信息
    */
@@ -26,18 +50,34 @@ class WeatherService {
       // 如果没有提供IP，使用当前访问者的IP
       const targetIp = ip || (await this.getCurrentIP());
 
+      // 检查缓存
+      const cachedLocation = this.locationCache.get(targetIp);
+      if (this.isCacheValid(cachedLocation)) {
+        console.log(`使用缓存的位置信息: ${targetIp}`);
+        return cachedLocation!.data;
+      }
+
       // 如果是本地IP，直接返回默认位置
       if (
         targetIp === "127.0.0.1" ||
         targetIp.startsWith("192.168.") ||
         targetIp.startsWith("10.")
       ) {
-        return {
+        const defaultLocation: LocationInfo = {
           ip: targetIp,
           province: "北京市",
           city: "北京市",
           adcode: "beijing",
         };
+
+        // 缓存默认位置信息
+        this.locationCache.set(targetIp, {
+          data: defaultLocation,
+          timestamp: Date.now(),
+          expiresIn: this.LOCATION_CACHE_DURATION,
+        });
+
+        return defaultLocation;
       }
 
       // 使用ip-api.com获取位置信息（免费且无需密钥）
@@ -47,12 +87,21 @@ class WeatherService {
           {},
           (data: any) => {
             if (data.status === "success") {
-              resolve({
+              const locationInfo: LocationInfo = {
                 ip: targetIp,
                 province: data.regionName || "未知",
                 city: data.city || "未知",
                 adcode: data.city || "", // 使用城市名作为标识
+              };
+
+              // 缓存位置信息
+              this.locationCache.set(targetIp, {
+                data: locationInfo,
+                timestamp: Date.now(),
+                expiresIn: this.LOCATION_CACHE_DURATION,
               });
+
+              resolve(locationInfo);
             } else {
               reject(new Error("位置信息获取失败"));
             }
@@ -67,11 +116,22 @@ class WeatherService {
       });
     } catch (error) {
       console.error("获取位置信息失败:", error);
-      return {
+      const fallbackLocation: LocationInfo = {
         ip: ip || "未知",
         province: "未知",
         city: "未知",
       };
+
+      // 缓存错误结果，避免频繁重试
+      if (ip) {
+        this.locationCache.set(ip, {
+          data: fallbackLocation,
+          timestamp: Date.now(),
+          expiresIn: 5 * 60 * 1000, // 错误结果缓存5分钟
+        });
+      }
+
+      return fallbackLocation;
     }
   }
 
@@ -80,6 +140,13 @@ class WeatherService {
    */
   async getWeatherInfo(location: string): Promise<WeatherInfo> {
     try {
+      // 检查缓存
+      const cachedWeather = this.weatherCache.get(location);
+      if (this.isCacheValid(cachedWeather)) {
+        console.log(`使用缓存的天气信息: ${location}`);
+        return cachedWeather!.data;
+      }
+
       // 使用wttr.in API获取天气信息（免费且无需密钥）
       return new Promise<WeatherInfo>((resolve, reject) => {
         get(
@@ -163,7 +230,7 @@ class WeatherService {
                 weatherDesc = weatherMap[weatherDesc] || weatherDesc;
               }
 
-              resolve({
+              const weatherInfo: WeatherInfo = {
                 weather: weatherDesc,
                 temp: current.temp_C || "--",
                 humidity: current.humidity || "--",
@@ -176,7 +243,16 @@ class WeatherService {
                   : "--",
                 reporttime:
                   current.observation_time || new Date().toLocaleString(),
+              };
+
+              // 缓存天气信息
+              this.weatherCache.set(location, {
+                data: weatherInfo,
+                timestamp: Date.now(),
+                expiresIn: this.WEATHER_CACHE_DURATION,
               });
+
+              resolve(weatherInfo);
             } else {
               reject(new Error("天气数据为空"));
             }
@@ -192,7 +268,7 @@ class WeatherService {
     } catch (error) {
       console.error("获取天气信息失败:", error);
       // 返回默认天气信息
-      return {
+      const defaultWeather: WeatherInfo = {
         weather: "晴",
         temp: "25",
         humidity: "60",
@@ -200,6 +276,15 @@ class WeatherService {
         windpower: "3",
         reporttime: new Date().toLocaleString(),
       };
+
+      // 缓存错误结果，避免频繁重试
+      this.weatherCache.set(location, {
+        data: defaultWeather,
+        timestamp: Date.now(),
+        expiresIn: 5 * 60 * 1000, // 错误结果缓存5分钟
+      });
+
+      return defaultWeather;
     }
   }
 
@@ -208,6 +293,12 @@ class WeatherService {
    */
   private async getCurrentIP(): Promise<string> {
     try {
+      // 检查IP缓存
+      if (this.isCacheValid(this.ipCache)) {
+        console.log("使用缓存的IP地址");
+        return this.ipCache!.data;
+      }
+
       // 只保留可用的IP查询服务
       const services = ["https://ipinfo.io/json"];
 
@@ -232,6 +323,14 @@ class WeatherService {
               },
             );
           });
+
+          // 缓存IP地址
+          this.ipCache = {
+            data: ip,
+            timestamp: Date.now(),
+            expiresIn: this.IP_CACHE_DURATION,
+          };
+
           return ip;
         } catch (error) {
           console.warn(`IP查询服务 ${service} 失败:`, error);
@@ -241,10 +340,28 @@ class WeatherService {
 
       // 如果所有服务都失败，返回本地IP
       console.warn("所有IP查询服务都失败，使用本地IP");
-      return "127.0.0.1";
+      const localIP = "127.0.0.1";
+
+      // 缓存本地IP
+      this.ipCache = {
+        data: localIP,
+        timestamp: Date.now(),
+        expiresIn: this.IP_CACHE_DURATION,
+      };
+
+      return localIP;
     } catch (error) {
       console.error("获取当前IP失败:", error);
-      return "127.0.0.1";
+      const localIP = "127.0.0.1";
+
+      // 缓存错误结果
+      this.ipCache = {
+        data: localIP,
+        timestamp: Date.now(),
+        expiresIn: 5 * 60 * 1000, // 错误结果缓存5分钟
+      };
+
+      return localIP;
     }
   }
 
@@ -273,6 +390,57 @@ class WeatherService {
     }
 
     return { location, weather };
+  }
+
+  /**
+   * 清除所有缓存
+   */
+  clearCache(): void {
+    this.locationCache.clear();
+    this.weatherCache.clear();
+    this.ipCache = null;
+    console.log("已清除所有缓存");
+  }
+
+  /**
+   * 清除指定IP的位置缓存
+   */
+  clearLocationCache(ip?: string): void {
+    if (ip) {
+      this.locationCache.delete(ip);
+      console.log(`已清除IP ${ip} 的位置缓存`);
+    } else {
+      this.locationCache.clear();
+      console.log("已清除所有位置缓存");
+    }
+  }
+
+  /**
+   * 清除指定城市的天气缓存
+   */
+  clearWeatherCache(city?: string): void {
+    if (city) {
+      this.weatherCache.delete(city);
+      console.log(`已清除城市 ${city} 的天气缓存`);
+    } else {
+      this.weatherCache.clear();
+      console.log("已清除所有天气缓存");
+    }
+  }
+
+  /**
+   * 获取缓存统计信息
+   */
+  getCacheStats(): {
+    locationCacheSize: number;
+    weatherCacheSize: number;
+    hasIpCache: boolean;
+  } {
+    return {
+      locationCacheSize: this.locationCache.size,
+      weatherCacheSize: this.weatherCache.size,
+      hasIpCache: this.ipCache !== null,
+    };
   }
 }
 
