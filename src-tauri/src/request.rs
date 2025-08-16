@@ -2,7 +2,6 @@ use serde_json;
 use reqwest;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use crate::config;
-use crate::commands::get_system_info;
 use tauri::Manager;
 
 #[tauri::command]
@@ -73,71 +72,6 @@ pub async fn forward_request(
     Ok(response_json)
 }
 
-
-#[tauri::command]
-pub async fn download_frpc(app: tauri::AppHandle) -> Result<(), String> {
-    // 根据操作系统确定可执行文件名
-    let executable_name = if cfg!(target_os = "windows") {
-        "frpc.exe"
-    } else {
-        "frpc"
-    };
-    
-    let app_data_dir = app.path().app_data_dir().map_err(|_| "无法获取应用数据目录")?;
-    let frpc_path = app_data_dir.join(executable_name);
-    if frpc_path.exists() {
-        return Err(format!("{}已存在", executable_name));
-    }
-    let info = get_system_info();
-    let mut parts = info.split_whitespace();
-    let system = parts.next().unwrap_or("unknown");
-    let arch = parts.next().unwrap_or("unknown");
-    
-    let version = config::version();
-
-    // 拼接下载链接
-    let frpc_url = format!(
-        "{}{}{}{}{}{}{}",
-        config::api_url(),
-        "/frp/updates/latest?software=Frpc&system=",
-        system,
-        "&arch=",
-        arch,
-        "&version=",
-        version
-    );
-
-    // 下载文件
-    let response = reqwest::get(&frpc_url)
-        .await
-        .map_err(|e| format!("下载失败: {}", e))?;
-    let status = response.status();
-    let resp_text = response.text().await.map_err(|e| format!("读取响应失败: {}", e))?;
-    if !status.is_success() {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&resp_text) {
-            if let Some(msg) = json.get("message").and_then(|m| m.as_str()) {
-                return Err(msg.to_string());
-            }
-        }
-        return Err(format!("下载失败，状态码: {}", status));
-    }
-    let json: serde_json::Value = serde_json::from_str(&resp_text).map_err(|e| format!("解析JSON失败: {}", e))?;
-    let download_url = json["data"]["latest_info"]["download_url"]
-        .as_str()
-        .ok_or("未找到下载链接")?;
-
-    // 再次请求下载文件
-    let file_response = reqwest::get(download_url)
-        .await
-        .map_err(|e| format!("下载文件失败: {}", e))?;
-    let bytes = file_response.bytes().await.map_err(|e| format!("读取内容失败: {}", e))?;
-
-    // 写入文件
-    std::fs::write(&frpc_path, &bytes).map_err(|e| format!("写入文件失败: {}", e))?;
-
-    Ok(())
-}
-
 #[tauri::command]
 pub async fn get_image_base64(url: String) -> Result<String, String> {
     let resp = reqwest::get(url)
@@ -152,3 +86,77 @@ pub async fn get_image_base64(url: String) -> Result<String, String> {
     let base64_str = base64::engine::general_purpose::STANDARD.encode(&bytes);
     Ok(base64_str)
 } 
+
+use tauri::{Emitter, Runtime};
+use tokio::io::AsyncWriteExt;
+use reqwest::Client;
+use futures::StreamExt;
+
+#[derive(Clone, serde::Serialize)]
+pub struct DownloadProgress {
+    pub url: String,
+    pub bytes_downloaded: u64,
+    pub total_bytes: Option<u64>,
+}
+
+#[tauri::command]
+pub async fn download_file<R: Runtime>(
+    app: tauri::AppHandle<R>,
+    url: String,
+    file_name: String,
+) -> Result<(), String> {
+    // 使用 Tauri 提供的 app_data_dir
+    let save_path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join(&file_name);
+
+    // 确保目录已创建
+    if let Some(parent) = save_path.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    let client = Client::new();
+    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+
+    let total = res.content_length();
+    let mut stream = res.bytes_stream();
+    let mut file = tokio::fs::File::create(&save_path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let mut downloaded: u64 = 0;
+    // 每 64 KB 汇报一次，避免过于频繁
+    const REPORT_INTERVAL: u64 = 512 * 1024;
+    let emit_name = format!("download-progress-{}", file_name.trim_end_matches(".exe"));
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| e.to_string())?;
+        file.write_all(&chunk).await.map_err(|e| e.to_string())?;
+
+        downloaded += chunk.len() as u64;
+        if downloaded % REPORT_INTERVAL < chunk.len() as u64 {
+            let _ = app.emit(
+                &emit_name,
+                DownloadProgress {
+                    url: url.clone(),
+                    bytes_downloaded: downloaded,
+                    total_bytes: total,
+                },
+            );
+        }
+    }
+
+    // 下载完成后再发送一次确保 100 %
+    let _ = app.emit(
+        &emit_name,
+        DownloadProgress {
+            url: url.clone(),
+            bytes_downloaded: downloaded,
+            total_bytes: total,
+        },
+    );
+
+    Ok(())
+}

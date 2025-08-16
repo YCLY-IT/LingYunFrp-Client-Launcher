@@ -250,7 +250,7 @@ const fetchUserInfo = async () => {
           );
         })
         .catch(() => {
-          message.error("获取头像失败");
+          console.log("获取头像失败");
         });
     });
   } catch (e) {

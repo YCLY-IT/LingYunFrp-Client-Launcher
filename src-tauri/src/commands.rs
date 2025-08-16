@@ -513,3 +513,41 @@ pub fn check_software_file(app: tauri::AppHandle, software_name: Option<String>)
         Err(error) => Ok((false, error))
     }
 }
+
+#[command]
+pub async fn delete_file<R: Runtime>(
+    app: tauri::AppHandle<R>,
+    file_name: String,
+) -> Result<bool, String> {
+    // 解析到 app_data_dir
+    let mut path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join(&file_name);
+
+    // 标准化路径，防止 “../../../etc/passwd” 之类攻击
+    path = path.canonicalize().map_err(|_| "文件不存在".to_string())?;
+
+    // 必须仍在 app_data_dir 之内
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .canonicalize()
+        .map_err(|_| "无法获取应用目录")?;
+    if !path.starts_with(&app_data_dir) {
+        return Err("非法路径".to_string());
+    }
+
+    // 确认是普通文件再删除
+    if !path.is_file() {
+        return Err("路径不是文件".to_string());
+    }
+
+    tokio::fs::remove_file(&path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(true)
+}

@@ -1301,6 +1301,10 @@ const handleNodeSelect = (node: any) => {
     message.error("该节点已被禁用，无法选择");
     return;
   }
+  if (!node.isOnline) {
+    message.error("该节点已离线，请选择其他节点");
+    return;
+  }
   selectedNodeId.value = node.value;
   selectedNode.value = {
     id: node.id,

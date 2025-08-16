@@ -21,8 +21,8 @@ import {
 } from "naive-ui";
 import { onBeforeRouteLeave } from "vue-router";
 import { invoke } from "@tauri-apps/api/core";
-import { userApi } from "../../net";
-import { accessHandle } from "../../net/base";
+import { checkUpdate } from "../../utils/update";
+import { listen } from "@tauri-apps/api/event";
 
 const message = useMessage();
 const dialog = useDialog();
@@ -35,6 +35,14 @@ const autoStart = ref(false);
 const autoRestoreTunnels = ref(true);
 const deepLinkEnabled = ref(false);
 const activeNames = ref<string[]>(["2"]);
+const downloadProgress = ref(0);
+const downloadedBytes = ref(0);
+const totalBytes = ref(0);
+
+const clientVersion = await invoke<string>("get_client_version");
+const systemInfo = await invoke<string>("get_system_info");
+let system = systemInfo.split(" ")[0];
+let arch = systemInfo.split(" ")[1];
 
 const getCurrentVersion = async () => {
   try {
@@ -46,56 +54,31 @@ const getCurrentVersion = async () => {
   }
 };
 
-// 版本号比较函数，返回1表示a>b，0表示相等，-1表示a<b
-function compareVersion(a: string, b: string): number {
-  const aParts = a.split(".").map(Number);
-  const bParts = b.split(".").map(Number);
-  const len = Math.max(aParts.length, bParts.length);
-  for (let i = 0; i < len; i++) {
-    const aNum = aParts[i] || 0;
-    const bNum = bParts[i] || 0;
-    if (aNum > bNum) return 1;
-    if (aNum < bNum) return -1;
-  }
-  return 0;
-}
-
-const checkUpdate = async () => {
+const checkAppUpdate = async () => {
   checking.value = true;
   try {
-    const clientVersion = await invoke<string>("get_client_version");
-    const systemInfo = await invoke<string>("get_system_info");
-    let system = systemInfo.split(" ")[0];
-    let arch = systemInfo.split(" ")[1];
-    userApi.get(
-      `/frp/updates/latest?software=LingYunFrpClient&system=${system}&arch=${arch}&version=${clientVersion}`,
-      accessHandle(),
-      (data: any) => {
-        const latestVersion = data.data.latest_info.version;
-        // 检查 currentVersion 是否为合法版本号
-        if (!/^\d+\.\d+\.\d+/.test(currentVersion.value)) {
-          message.warning("当前版本号异常，无法比较");
-          return;
-        }
-        if (compareVersion(latestVersion, currentVersion.value) === 1) {
-          (window as any).$notification?.success({
-            title: "更新提示",
-            description: data.data.latest_info.release_notes,
-            duration: 3000,
-          });
-        } else {
-          message.success("当前已是最新版本");
-        }
-      },
-      () => {
-        message.warning("当前没有新版本");
-      },
-      (messageText) => {
-        message.error(messageText);
-      },
+    const result = await checkUpdate(
+      "LingYunFrpClient",
+      system,
+      arch,
+      clientVersion,
+      clientVersion,
     );
+    if (!result) {
+      message.error("检查时出现了一些问题");
+      return;
+    }
+    if (result.success) {
+      (window as any).$notification?.success({
+        title: "更新提示",
+        description: result.message,
+        duration: 3000,
+      });
+    } else {
+      message.success(result.message);
+    }
   } catch (e) {
-    message.error("检查更新失败，请稍后重试");
+    message.error(e);
   } finally {
     checking.value = false;
   }
@@ -157,18 +140,70 @@ onMounted(async () => {
   getCurrentVersion();
 });
 
-const downloadFrpc = async () => {
-  activeNames.value = ["1"];
+async function downloadAndReplaceFrpc(url: string, system: string) {
+  const fileName = system === "windows" ? "frpc.exe" : "frpc";
+  try {
+    await invoke("delete_file", { fileName });
+  } catch (e) {
+    console.error(e);
+  }
+
   downloading.value = true;
   try {
-    await invoke("download_frpc");
-    message.success("下载成功");
+    await invoke("download_file", { url, fileName });
+    message.success("更新成功");
   } catch (e) {
     message.error(`下载失败: ${e}`);
   } finally {
     downloading.value = false;
   }
-};
+}
+
+async function checkHasFrpcAndUpdate() {
+  try {
+    const result = await invoke<string>("get_frpc_cli_version");
+    const frpcInfo = JSON.parse(result);
+
+    if (!frpcInfo?.version || typeof frpcInfo.version !== "string") {
+      throw new Error("无效的版本信息格式");
+    }
+
+    const updateInfo = await checkUpdate(
+      "Frpc",
+      system,
+      arch,
+      frpcInfo.version,
+      currentVersion.value,
+    );
+    if (!updateInfo.success) {
+      message.success("当前已是最新版本");
+      return;
+    }
+
+    const dialogInstance = dialog.info({
+      title: "提示",
+      content: `检测到新版本 ${updateInfo.version}，是否更新？`,
+      positiveText: "更新",
+      negativeText: "取消",
+      onPositiveClick: () => {
+        dialogInstance.destroy();
+        downloadAndReplaceFrpc(updateInfo.url, system);
+      },
+    });
+  } catch {
+    // 无法解析本地版本
+    const updateInfo = await checkUpdate(
+      "Frpc",
+      system,
+      arch,
+      clientVersion,
+      currentVersion.value,
+    );
+    if (updateInfo.success) {
+      await downloadAndReplaceFrpc(updateInfo.url, system);
+    }
+  }
+}
 
 const getFrpcVersion = async () => {
   try {
@@ -278,6 +313,22 @@ onMounted(async () => {
     console.error("获取应用数据目录失败:", e);
     message.error(`获取应用数据目录失败: ${e}`);
   }
+  try {
+    await listen("download-progress-frpc", (e: any) => {
+      const { bytes_downloaded, total_bytes } = e.payload;
+
+      // 1) 原始字节
+      downloadedBytes.value = bytes_downloaded;
+      totalBytes.value = total_bytes;
+
+      // 2) 百分比（保留整数）
+      downloadProgress.value = total_bytes
+        ? Math.round((bytes_downloaded / total_bytes) * 100)
+        : 0;
+    });
+  } catch (e) {
+    console.error("监听下载进度失败:", e);
+  }
 });
 
 const restoreUpdateNotification = () => {
@@ -319,7 +370,7 @@ const disableUpdateNotification = () => {
                 <n-space vertical>
                   <n-text>当前版本：Beta v{{ currentVersion }}</n-text>
                   <n-space>
-                    <n-button @click="checkUpdate" :loading="checking">
+                    <n-button @click="checkAppUpdate()" :loading="checking">
                       {{ checking ? "检查中..." : "检查更新" }}
                     </n-button>
                     <n-button @click="openAppDataDir">
@@ -348,7 +399,7 @@ const disableUpdateNotification = () => {
                 </template>
                 <n-space>
                   <n-button
-                    @click="downloadFrpc"
+                    @click="checkHasFrpcAndUpdate"
                     :loading="downloading"
                     :disabled="downloading"
                   >
@@ -442,5 +493,24 @@ const disableUpdateNotification = () => {
         </n-drawer-content>
       </n-drawer>
     </n-scrollbar>
+    <n-modal
+      v-model:show="downloading"
+      title="下载进度"
+      preset="card"
+      style="width: 400px"
+      :closable="false"
+      :mask-closable="false"
+    >
+      <n-progress
+        type="line"
+        :percentage="downloadProgress"
+        :show-indicator="true"
+      />
+      <div style="margin-top: 10px">
+        已下载: {{ downloadedBytes }} / {{ totalBytes }} 字节 ({{
+          downloadProgress
+        }}%)
+      </div>
+    </n-modal>
   </div>
 </template>

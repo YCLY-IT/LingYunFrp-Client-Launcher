@@ -3,8 +3,6 @@ use crate::commands::check_software_file;
 use regex::Regex;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::commands::get_system_info;
-use crate::config;
 
 use tokio::process::{Command as TokioCommand};
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -302,78 +300,4 @@ pub async fn check_natter_exists(app: tauri::AppHandle) -> bool {
         _ => return false,
     };
     true
-}
-
-#[tauri::command]
-pub async fn download_natter(app: tauri::AppHandle) -> Result<(), String> {
-    // 检查程序是否已存在
-    let (exists, natter_path) = check_software_file(app.clone(), Some("natter".to_string()))
-        .map_err(|e| format!("检查失败: {}", e))?;
-    
-    if exists {
-        return Err("natter软件文件已存在".to_string());
-    }
-    
-    use std::path::Path;
-    if Path::new(&natter_path).exists() {
-        return Err("natter软件文件已存在".to_string());
-    }
-    
-    let info = get_system_info();
-    let mut parts = info.split_whitespace();
-    let system = parts.next().unwrap_or("unknown");
-    let arch = parts.next().unwrap_or("unknown");
-    let version = config::version();
-    
-    // 拼接下载链接
-    let natter_url = format!(
-        "{}/frp/updates/latest?software=Natter&system={}&arch={}&version={}",
-        config::api_url(),
-        system,
-        arch,
-        version
-    );
-    
-    // 下载文件
-    let response = reqwest::get(&natter_url)
-        .await
-        .map_err(|e| format!("下载失败: {}", e))?;
-    let status = response.status();
-    let resp_text = response.text().await.map_err(|e| format!("读取响应失败: {}", e))?;
-    if !status.is_success() {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&resp_text) {
-            if let Some(msg) = json.get("message").and_then(|m| m.as_str()) {
-                return Err(msg.to_string());
-            }
-        }
-        return Err(format!("下载失败，状态码: {}", status));
-    }
-    let json: serde_json::Value = serde_json::from_str(&resp_text).map_err(|e| format!("解析JSON失败: {}", e))?;
-    let download_url = json["data"]["latest_info"]["download_url"]
-        .as_str()
-        .ok_or("未找到下载链接")?;
-    
-    // 再次请求下载文件
-    let file_response = reqwest::get(download_url)
-        .await
-        .map_err(|e| format!("下载文件失败: {}", e))?;
-    let total_size = file_response.content_length().unwrap_or(0) as usize;
-    let mut downloaded: usize = 0;
-    let mut source = file_response.bytes_stream();
-    let mut content: Vec<u8> = Vec::new();
-    
-    while let Some(item) = futures::StreamExt::next(&mut source).await {
-        let chunk = item.map_err(|e| format!("读取 chunk 失败: {}", e))?;
-        content.extend_from_slice(&chunk);
-        downloaded += chunk.len();
-        let progress = if total_size > 0 { (downloaded as f64 / total_size as f64 * 100.0) as u32 } else { 0 };
-        if let Err(e) = app.emit("natter-download-progress", json!({"progress": progress, "downloaded": downloaded, "total": total_size})) {
-            println!("发送进度失败: {}", e);
-        }
-    }
-    
-    // 写入文件
-    std::fs::write(natter_path.as_str(), &content).map_err(|e| format!("写入文件失败: {}", e))?;
-    
-    Ok(())
 }

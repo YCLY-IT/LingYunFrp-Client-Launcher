@@ -20,13 +20,12 @@ use nat::{
     nat_get_address,
     get_active_nat,
     check_natter_exists,
-    download_natter,
 };
 
 use request::{
     forward_request,
-    download_frpc,
     get_image_base64,
+    download_file
 };
 
 use tunnel::{
@@ -55,6 +54,7 @@ use commands::{
     get_api_url,
     check_auto_start_status,
     check_software_file,
+    delete_file
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -80,7 +80,6 @@ fn main() {
         get_app_data_dir,
         open_app_data_dir,
         get_frpc_cli_version,
-        download_frpc,
         toggle_auto_start,
         kill_all_processes,
         get_client_version,
@@ -101,7 +100,8 @@ fn main() {
         check_software_file,
         get_active_nat,
         check_natter_exists,
-        download_natter,
+        download_file,
+        delete_file
     ])
     .setup(|app| {
         // 确保应用数据目录存在

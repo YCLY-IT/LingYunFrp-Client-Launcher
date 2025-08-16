@@ -606,6 +606,11 @@ const localIp = ref("127.0.0.1");
 const localPort = ref<number | null>(null);
 const networkRemark = ref("");
 
+const clientVersion = await invoke<string>("get_client_version");
+const systemInfo = await invoke<string>("get_system_info");
+let system = systemInfo.split(" ")[0];
+let arch = systemInfo.split(" ")[1];
+
 // 状态
 const creating = ref(false);
 const leaving = ref(false);
@@ -1115,9 +1120,27 @@ const checkHasNatter = async () => {
       negativeText: "返回上一页",
       onPositiveClick: async () => {
         dialogInstance.destroy(); // 立即关闭警告对话
+        const updateInfo = await checkUpdate(
+          "Frpc",
+          system,
+          arch,
+          clientVersion,
+          "0.0.0",
+        );
+        if (!updateInfo.success) {
+          message.warning("获取版本失败");
+          return;
+        }
+        let fileName = "natter.exe";
+        if (system !== "windows") {
+          fileName = "natter";
+        }
         downloading.value = true;
         try {
-          await invoke("download_natter");
+          await invoke("download_file", {
+            url: updateInfo.url,
+            fileName,
+          });
           message.success("natter下载成功");
           downloading.value = false;
         } catch (error) {
@@ -1137,6 +1160,7 @@ const checkHasNatter = async () => {
 
 // 组件挂载时初始化
 import { NModal, NProgress } from "naive-ui";
+import { checkUpdate } from "../../utils/update";
 const downloading = ref(false);
 const downloadProgress = ref(0);
 const downloadedBytes = ref(0);
@@ -1195,12 +1219,14 @@ onMounted(async () => {
   try {
     console.log("开始监听natter下载进度事件");
     const unlistenProgress = await listen(
-      "natter-download-progress",
-      (event: any) => {
-        const { progress, downloaded, total } = event.payload;
-        downloadProgress.value = progress;
-        downloadedBytes.value = downloaded;
-        totalBytes.value = total;
+      "download-progress-natter",
+      (e: any) => {
+        const { bytes_downloaded, total_bytes } = e.payload;
+        downloadedBytes.value = bytes_downloaded;
+        totalBytes.value = total_bytes;
+        downloadProgress.value = total_bytes
+          ? Math.round((bytes_downloaded / total_bytes) * 100)
+          : 0;
       },
     );
     cleanupFunctions.value.push(unlistenProgress);
