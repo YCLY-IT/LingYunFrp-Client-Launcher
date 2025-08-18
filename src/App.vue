@@ -17,6 +17,9 @@
 
 <script setup lang="ts">
 import { ref, computed, provide, onMounted, h } from "vue";
+import { initLogService } from "./utils/log.ts";
+
+initLogService();
 import {
   NConfigProvider,
   NMessageProvider,
@@ -220,6 +223,14 @@ onMounted(async () => {
   } catch (error) {
     console.error("监听日志失败:", error);
   }
+  try {
+    const globalLogUnlisten = await listen("tunnel-event", (event: any) => {
+      appendLogTunnel(event.payload.message);
+    });
+    cleanupFunctions.value.push(globalLogUnlisten);
+  } catch (error) {
+    console.error("监听日志失败:", error);
+  }
 
   // 标记应用已准备就绪
   isAppReady.value = true;
@@ -252,7 +263,7 @@ const checkFrpcHas = async () => {
             message: `frpc.exe不存在，请到系统设置下载frpc.exe`,
           },
         });
-        appendLog("frpc.exe不存在，请到系统设置中下载frpc.exe");
+        appendLog(`frpc.exe不存在，请到系统设置下载frpc.exe`);
       }, 500);
     }
   } catch (error) {
@@ -263,6 +274,12 @@ const checkFrpcHas = async () => {
 const appendLog = (message: string) => {
   const timestamp = new Date().toLocaleTimeString();
   const logMessage = `[${timestamp}] [系统] ${message}\n`;
+  const savedLogs = localStorage.getItem("frpcLogs") || "";
+  localStorage.setItem("frpcLogs", savedLogs + "\n\n" + logMessage);
+};
+const appendLogTunnel = (message: string) => {
+  const timestamp = new Date().toLocaleTimeString();
+  const logMessage = `[${timestamp}] [隧道] ${message}\n`;
   const savedLogs = localStorage.getItem("frpcLogs") || "";
   localStorage.setItem("frpcLogs", savedLogs + "\n\n" + logMessage);
 };

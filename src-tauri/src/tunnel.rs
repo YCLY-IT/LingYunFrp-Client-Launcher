@@ -5,6 +5,8 @@ use crate::config;
 use tauri::Emitter;
 use tauri::Manager;
 use std::io::{BufRead};
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 #[tauri::command]
 pub async fn start_proxy(
@@ -28,6 +30,9 @@ pub async fn start_proxy(
     command
         .arg("-t").arg(token)
         .arg("-p").arg(proxy_id.to_string());
+
+    #[cfg(target_os = "windows")]
+    command.creation_flags(0x08000000);
 
     // 这里判断开发环境，追加 -u <api_url>
     if cfg!(debug_assertions) {
@@ -84,7 +89,7 @@ pub async fn start_proxy(
     let _ = app.emit(
         "log",
         serde_json::json!({
-            "message": format!("[FRPC] 启动进程 PID: {}", child.id())
+            "message": format!("[FRPC] 启动 (隧道#{}) 进程 PID: {}",proxy_id, child.id())
         }),
     );
     app.state::<Mutex<HashMap<u32, std::process::Child>>>()
@@ -100,6 +105,12 @@ pub async fn stop_proxy(app: tauri::AppHandle, proxy_id: u32) -> Result<bool, St
     let mut processes = processes.lock().unwrap();
     if let Some(mut child) = processes.remove(&proxy_id) {
         child.kill().map_err(|e| format!("停止隧道失败: {}", e))?;
+        // 向前端发送停止事件
+        let _ = app.emit("log", 
+            serde_json::json!({
+                "message": format!("[FRPC] 停止进程 PID: {}", child.id())
+            })
+        );
         Ok(true)
     } else {
         Err("未找到对应的隧道进程".to_string())

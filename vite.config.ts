@@ -22,7 +22,6 @@ export default defineConfig({
             if (id.includes("@vueuse")) return "vueuse";
             if (id.includes("axios")) return "axios";
             if (id.includes("highlight.js")) return "highlightjs";
-            if (id.includes("dayjs")) return "dayjs";
             if (id.includes("numbro")) return "numbro";
             if (id.includes("@tauri-apps")) return "tauri";
             if (id.includes("/node_modules/vue")) return "vue-core";
