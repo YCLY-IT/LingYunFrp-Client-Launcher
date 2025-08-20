@@ -1,7 +1,8 @@
 import { Window } from "../types";
 import { invoke } from "@tauri-apps/api/core";
+import { loadAppVersion } from "../utils/localInfo";
 async function getClientVersion() {
-  return await invoke<string>("get_client_version");
+  return await loadAppVersion();
 }
 
 class DialogDeduplicator {

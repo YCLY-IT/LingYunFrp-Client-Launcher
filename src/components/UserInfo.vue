@@ -235,7 +235,6 @@ const fetchUserInfo = async () => {
         userInfo.value = data.data;
         localStorage.setItem("group", userInfo.value.group);
         localStorage.setItem("token", userInfo.value.token);
-        localStorage.setItem("avatar", userInfo.value.avatar);
         localStorage.setItem("username", userInfo.value.username);
         localStorage.setItem("nickname", userInfo.value.nickname);
         localStorage.setItem("token", userInfo.value.token);

@@ -23,6 +23,7 @@ import { onBeforeRouteLeave } from "vue-router";
 import { invoke } from "@tauri-apps/api/core";
 import { checkUpdate } from "../../utils/update";
 import { listen } from "@tauri-apps/api/event";
+import { loadAppSystemInfo, loadAppVersion } from "../../utils/localInfo";
 
 const message = useMessage();
 const dialog = useDialog();
@@ -38,15 +39,16 @@ const activeNames = ref<string[]>(["2"]);
 const downloadProgress = ref(0);
 const downloadedBytes = ref(0);
 const totalBytes = ref(0);
+const BOOT_SETTINGS_KEY = "boot_settings";
 
-const clientVersion = await invoke<string>("get_client_version");
-const systemInfo = await invoke<string>("get_system_info");
+const clientVersion = await loadAppVersion();
+const systemInfo = await loadAppSystemInfo();
 let system = systemInfo.split(" ")[0];
 let arch = systemInfo.split(" ")[1];
 
 const getCurrentVersion = async () => {
   try {
-    const version = (await invoke("get_client_version")) as string;
+    const version = (await loadAppVersion()) as string;
     currentVersion.value = version;
   } catch (e) {
     currentVersion.value = "获取失败";
@@ -88,6 +90,7 @@ const toggleAutoStart = async () => {
   try {
     await invoke("toggle_auto_start", { enable: autoStart.value });
     message.success(`${autoStart.value ? "启用" : "禁用"}开机自启动成功`);
+    saveBootSettings();
     if (autoStart.value && !autoRestoreTunnels.value) {
       setTimeout(() => {
         message.info(
@@ -108,6 +111,7 @@ const toggleAutoStart = async () => {
 const toggleAutoRestoreTunnels = (value: boolean) => {
   autoRestoreTunnels.value = value;
   message.success(`${value ? "启用" : "禁用"}开机恢复隧道成功`);
+  saveBootSettings();
   if (!value && autoStart.value) {
     setTimeout(() => {
       message.warning(
@@ -305,7 +309,27 @@ const getExpectedFrpcInfo = async () => {
   }
 };
 
+const saveBootSettings = () => {
+  localStorage.setItem(
+    BOOT_SETTINGS_KEY,
+    JSON.stringify({
+      autoStart: autoStart.value,
+      autoRestoreTunnels: autoRestoreTunnels.value,
+    }),
+  );
+};
+
 onMounted(async () => {
+  try {
+    const str = localStorage.getItem(BOOT_SETTINGS_KEY);
+    if (str) {
+      const cfg = JSON.parse(str);
+      autoStart.value = Boolean(cfg.autoStart);
+      autoRestoreTunnels.value = Boolean(cfg.autoRestoreTunnels);
+    }
+  } catch {
+    /* 忽略解析错误 */
+  }
   try {
     appDataDir.value = (await invoke("get_app_data_dir")) as string;
     await getExpectedFrpcInfo();

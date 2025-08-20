@@ -176,8 +176,12 @@
                     </NButton>
                   </NDropdown>
                   <NSwitch
-                    :disabled="!getNodeStatus(proxy.nodeId)"
-                    :loading
+                    :disabled="
+                      !getNodeStatus(proxy.nodeId) ||
+                      proxy.isBanned ||
+                      proxy.isDisabled
+                    "
+                    :loading="starProxyLoading"
                     :value="proxy.isOnline"
                     @click="handleStarProxy(proxy)"
                     size="medium"
@@ -747,6 +751,9 @@ const proxyToOperate = ref<Proxy | null>(null);
 const showDeleteModal = ref(false);
 const proxyToDelete = ref<Proxy | null>(null);
 const expandedNames = ref<string[]>(["basic"]);
+const starProxyLoading = ref(false);
+const BOOT_SETTINGS_KEY = "boot_settings";
+const RUNNING_TUNNELS_KEY = "running_tunnel_ids";
 
 // -------------------- 校验规则 --------------------
 const rules: FormRules = {
@@ -864,8 +871,14 @@ const fetchProxies = async () => {
       "/proxy/list",
       accessHandle(),
       (data) => {
-        if (data.code === 0) proxies.value = data.data;
-        else message.error(data.message || "获取隧道列表失败");
+        if (data.code === 0) {
+          // 按 proxyId 升序排序
+          proxies.value = (data.data || []).sort(
+            (a, b) => a.proxyId - b.proxyId,
+          );
+        } else {
+          message.error(data.message || "获取隧道列表失败");
+        }
       },
       (msg) => message.error(msg || "获取隧道列表失败"),
       (err) => message.error(err.message || "获取隧道列表失败"),
@@ -878,8 +891,8 @@ const fetchProxies = async () => {
 };
 const fetchNodesAndProxies = async () => {
   loading.value = true;
-  await fetchNodes();
-  await fetchProxies();
+  fetchNodes();
+  fetchProxies();
 };
 
 // -------------------- Token 获取 --------------------
@@ -1185,13 +1198,14 @@ const handleStarProxy = async (proxy: Proxy) => {
   if (!getNodeStatus(proxy.nodeId)) return message.error("节点离线");
   if (proxy.isDisabled)
     return message.error("此隧道已被禁用，请先启用后再操作");
-  loading.value = true;
+  starProxyLoading.value = true;
   try {
     if (!proxy.isOnline) {
       const success = await invoke("start_proxy", {
         proxyId: proxy.proxyId,
         token: token.value,
       });
+      proxy.isOnline = true;
       if (success) message.info("正在尝试启动隧道");
       setTimeout(() => {
         handleRefresh();
@@ -1202,12 +1216,14 @@ const handleStarProxy = async (proxy: Proxy) => {
             duration: 3000,
             content: `隧道已启动，端口为 ${latest.remotePort}`,
           });
+          addRunningId(proxy.proxyId);
         } else {
           message.error("隧道启动失败，请检查配置或网络连接");
         }
       }, 1000);
     } else {
       const success = await invoke("stop_proxy", { proxyId: proxy.proxyId });
+      removeRunningId(proxy.proxyId);
       if (success) {
         proxy.isOnline = false;
         message.success("隧道停止成功");
@@ -1217,10 +1233,10 @@ const handleStarProxy = async (proxy: Proxy) => {
     message.error(`操作失败: ${e}`);
     console.error("隧道操作失败:", e);
   } finally {
-    loading.value = false;
     setTimeout(() => {
       handleRefresh();
-    }, 500);
+      starProxyLoading.value = false;
+    }, 300);
   }
 };
 
@@ -1365,11 +1381,78 @@ watch(
 );
 
 onMounted(async () => {
-  await fetchNodesAndProxies();
-  await fetchToken();
+  fetchNodesAndProxies();
+  fetchToken();
+  setTimeout(() => {
+    checkStartTunnel();
+  }, 500);
   checkFrpcHas();
 });
 
+async function checkStartTunnel() {
+  const str = localStorage.getItem(BOOT_SETTINGS_KEY);
+  if (str) {
+    const cfg = JSON.parse(str);
+    if (cfg.autoStart && cfg.autoRestoreTunnels) {
+      const str = localStorage.getItem(RUNNING_TUNNELS_KEY);
+      if (!str) return;
+
+      let ids: number[] = [];
+      try {
+        ids = JSON.parse(str);
+      } catch {
+        return;
+      }
+      if (!Array.isArray(ids)) return;
+
+      await invoke("emit_event", {
+        event: "log",
+        payload: {
+          message: `检测到您打开了"开机时恢复上一次运行的隧道", 正在自动打开隧道`,
+        },
+      });
+
+      // 逐个启动
+      for (const id of ids) {
+        const proxy = proxies.value.find((p) => p.proxyId === id);
+        console.log("proxy", proxy);
+        if (proxy && !proxy.isOnline) {
+          await handleStarProxy(proxy);
+        }
+      }
+    }
+  }
+}
+
+function addRunningId(id: number) {
+  const raw = localStorage.getItem(RUNNING_TUNNELS_KEY);
+  let ids: number[] = [];
+  try {
+    ids = JSON.parse(raw || "[]");
+  } catch {
+    /* ignore */
+  }
+  if (!Array.isArray(ids)) ids = [];
+
+  if (!ids.includes(id)) {
+    ids.push(id);
+    localStorage.setItem(RUNNING_TUNNELS_KEY, JSON.stringify(ids));
+  }
+}
+
+function removeRunningId(id: number) {
+  const raw = localStorage.getItem(RUNNING_TUNNELS_KEY);
+  let ids: number[] = [];
+  try {
+    ids = JSON.parse(raw || "[]");
+  } catch {
+    /* ignore */
+  }
+  if (!Array.isArray(ids)) return;
+
+  const next = ids.filter((tid) => tid !== id);
+  localStorage.setItem(RUNNING_TUNNELS_KEY, JSON.stringify(next));
+}
 // 检查frpc
 const checkFrpcHas = async () => {
   try {

@@ -31,6 +31,7 @@ import {
 import { themeOverrides } from "./constants/theme";
 import AppContent from "./components/AppContent.vue";
 import { invoke } from "@tauri-apps/api/core";
+import { loadAppVersion, loadAppSystemInfo } from "./utils/localInfo";
 import { listen } from "@tauri-apps/api/event";
 import { userApi } from "./net";
 import { accessHandle } from "./net/base";
@@ -89,8 +90,8 @@ const checkForUpdates = async () => {
 
   try {
     updateCheckInProgress.value = true;
-    const clientVersion = await invoke<string>("get_client_version");
-    const systemInfo = await invoke<string>("get_system_info");
+    const clientVersion = await loadAppVersion();
+    const systemInfo = await loadAppSystemInfo();
     let system = systemInfo.split(" ")[0];
     let arch = systemInfo.split(" ")[1];
     console.log(`客户端版本: ${clientVersion}, 系统: ${system}, 架构: ${arch}`);

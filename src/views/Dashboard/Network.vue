@@ -576,6 +576,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import router from "../../router";
+import { loadAppSystemInfo, loadAppVersion } from "../../utils/localInfo";
 
 // 定义网络项类型
 interface NetworkItem {
@@ -606,8 +607,8 @@ const localIp = ref("127.0.0.1");
 const localPort = ref<number | null>(null);
 const networkRemark = ref("");
 
-const clientVersion = await invoke<string>("get_client_version");
-const systemInfo = await invoke<string>("get_system_info");
+const clientVersion = await loadAppVersion();
+const systemInfo = await loadAppSystemInfo();
 let system = systemInfo.split(" ")[0];
 let arch = systemInfo.split(" ")[1];
 
