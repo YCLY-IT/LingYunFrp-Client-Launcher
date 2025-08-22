@@ -2,12 +2,14 @@
 
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 use tauri::Manager;
+use tauri::Emitter;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{TrayIcon, TrayIconBuilder};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_single_instance::init as single_instance_init;
+use tauri_plugin_deep_link::DeepLinkExt;
 mod config;
 mod commands;
 mod request;
@@ -47,7 +49,6 @@ use commands::{
     kill_all_processes,
     get_client_version,
     quit_window,
-    open_url,
     api_url,
     get_now_mode,
     get_system_info,
@@ -64,11 +65,18 @@ fn main() {
     .manage(Mutex::new(false)) // 添加退出状态标志
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_opener::init())
-    .plugin(single_instance_init(|app, _argv, _cwd| {
+    .plugin(tauri_plugin_deep_link::init())
+    .plugin(single_instance_init(|app, argv, _cwd| {
         // 第二实例启动时，激活主窗口
-        let window = app.get_webview_window("main").unwrap();
-        let _ = window.show();
-        let _ = window.set_focus();
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+        if let Some(url) = argv.iter().find(|s| s.starts_with("lyfrp://")) {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.emit("deep-link", vec![url.clone()]);
+            }
+        }
     }))
     .invoke_handler(tauri::generate_handler![
         close_window,
@@ -86,7 +94,6 @@ fn main() {
         start_proxy,
         stop_proxy,
         quit_window,
-        open_url,
         api_url,
         forward_request,
         get_now_mode,
@@ -163,6 +170,14 @@ fn main() {
         
         #[cfg(target_os = "windows")]
         window.set_ignore_cursor_events(false).unwrap();
+
+        #[cfg(any(windows, target_os = "linux"))]
+        app.deep_link().register_all().unwrap();
+        
+
+        // 运行时注册自定义 scheme（仅桌面端可用）
+        #[cfg(desktop)]
+        app.deep_link().register("lyfrp").unwrap();
 
         Ok(())
     })

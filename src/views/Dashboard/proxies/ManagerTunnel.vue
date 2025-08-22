@@ -1393,7 +1393,7 @@ async function checkStartTunnel() {
   const str = localStorage.getItem(BOOT_SETTINGS_KEY);
   if (str) {
     const cfg = JSON.parse(str);
-    if (cfg.autoStart && cfg.autoRestoreTunnels) {
+    if (cfg.autoRestoreTunnels) {
       const str = localStorage.getItem(RUNNING_TUNNELS_KEY);
       if (!str) return;
 
@@ -1404,21 +1404,32 @@ async function checkStartTunnel() {
         return;
       }
       if (!Array.isArray(ids)) return;
-
-      await invoke("emit_event", {
-        event: "log",
-        payload: {
-          message: `检测到您打开了"开机时恢复上一次运行的隧道", 正在自动打开隧道`,
-        },
-      });
-
+      var temp = 0;
       // 逐个启动
       for (const id of ids) {
         const proxy = proxies.value.find((p) => p.proxyId === id);
-        console.log("proxy", proxy);
+        const node = nodeList.value.find((n) => n.nodeId === proxy?.nodeId);
+        if (
+          node.isDisabled ||
+          node.status === false ||
+          proxy.isDisabled ||
+          proxy.isBanned
+        )
+          continue;
         if (proxy && !proxy.isOnline) {
           await handleStarProxy(proxy);
+          temp++;
+          await handleStarProxy(proxy);
         }
+      }
+      if (temp > 0) {
+        invoke("emit_event", {
+          event: "log",
+          payload: {
+            level: "info",
+            message: `已尝试启动${temp}个代理`,
+          },
+        });
       }
     }
   }

@@ -1,6 +1,7 @@
 import { Window } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { loadAppVersion } from "../utils/localInfo";
+import { openUrl } from "@tauri-apps/plugin-opener";
 async function getClientVersion() {
   return await loadAppVersion();
 }
@@ -244,7 +245,7 @@ function unauthorized() {
 
 async function OpenBrowser(url: string) {
   // 外部浏览器打开
-  await invoke("open_url", { url: url })
+  await openUrl(url)
     .then(() => {
       console.log("打开浏览器成功");
     })

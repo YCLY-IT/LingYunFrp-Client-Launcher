@@ -4,6 +4,7 @@ import App from "./App.vue";
 import router from "./router";
 
 import { invoke } from "@tauri-apps/api/core";
+import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
 async function getIsDebug() {
   return await invoke<boolean>("get_now_mode");
 }
@@ -38,4 +39,7 @@ router.isReady().then(() => {
       initialLoading.remove();
     }, 300);
   }
+});
+await onOpenUrl((event) => {
+  console.log(event);
 });

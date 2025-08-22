@@ -34,7 +34,6 @@ const currentVersion = ref("获取中...");
 const checking = ref(false);
 const autoStart = ref(false);
 const autoRestoreTunnels = ref(true);
-const deepLinkEnabled = ref(false);
 const activeNames = ref<string[]>(["2"]);
 const downloadProgress = ref(0);
 const downloadedBytes = ref(0);
@@ -91,18 +90,6 @@ const toggleAutoStart = async () => {
     await invoke("toggle_auto_start", { enable: autoStart.value });
     message.success(`${autoStart.value ? "启用" : "禁用"}开机自启动成功`);
     saveBootSettings();
-    if (autoStart.value && !autoRestoreTunnels.value) {
-      setTimeout(() => {
-        message.info(
-          '提示：如需开机自动启动隧道，请同时开启"开机时恢复上次运行的隧道"选项',
-        );
-      }, 500);
-    }
-    if (autoStart.value && deepLinkEnabled.value) {
-      setTimeout(() => {
-        message.warning('注意，通过"快速启动"功能启动的隧道无法开机自启动');
-      }, 200);
-    }
   } catch (e) {
     message.error(`设置开机自启动失败: ${e}`);
   }
@@ -114,9 +101,7 @@ const toggleAutoRestoreTunnels = (value: boolean) => {
   saveBootSettings();
   if (!value && autoStart.value) {
     setTimeout(() => {
-      message.warning(
-        "已禁用开机恢复隧道，程序将在开机时启动但不会自动启动隧道",
-      );
+      message.warning("已禁用恢复隧道，程序将在启动后不会自动启动隧道");
     }, 500);
   }
 };
@@ -459,12 +444,12 @@ const disableUpdateNotification = () => {
                     />
                     <span>开机自启动</span>
                   </n-space>
-                  <n-space style="display: flex" v-if="autoStart">
+                  <n-space style="display: flex">
                     <n-switch
                       v-model:value="autoRestoreTunnels"
                       @update:value="toggleAutoRestoreTunnels"
                     />
-                    <span>开机时恢复上次运行的隧道</span>
+                    <span>打开上次未关闭的隧道</span>
                   </n-space>
                 </n-space>
               </n-collapse-item>

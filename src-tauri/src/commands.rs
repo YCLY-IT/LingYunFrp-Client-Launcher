@@ -387,12 +387,6 @@ pub async fn get_client_version() -> String {
     config::version().to_string()
 }
 
-#[tauri::command]
-pub fn open_url(url: String) {
-    if let Err(e) = open::that(&url) {
-        eprintln!("打开浏览器失败: {}", e);
-    }
-}
 
 #[tauri::command]
 pub fn get_now_mode() -> bool {
