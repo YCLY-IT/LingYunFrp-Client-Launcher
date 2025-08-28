@@ -32,7 +32,6 @@ import { themeOverrides } from "./constants/theme";
 import AppContent from "./components/AppContent.vue";
 import { invoke } from "@tauri-apps/api/core";
 import { loadAppVersion, loadAppSystemInfo } from "./utils/localInfo";
-import { listen } from "@tauri-apps/api/event";
 import { userApi } from "./net";
 import { accessHandle } from "./net/base";
 import CustomContextMenu from "./components/CustomContextMenu.vue";
@@ -51,7 +50,6 @@ const theme = computed(() => (isDarkMode.value ? darkTheme : null));
 prefersDark.addEventListener("change", (e) => {
   isDarkMode.value = e.matches;
 });
-const cleanupFunctions = ref<(() => void)[]>([]);
 
 // 更新检查相关
 const updateCheckInProgress = ref(false);
@@ -169,10 +167,10 @@ const checkForUpdates = async () => {
           await invoke("emit_event", {
             event: "log",
             payload: {
+              type: "info",
               message: `新版本 ${data.data.latest_info.version} 可用`,
             },
           });
-          appendLog(`新版本 ${data.data.latest_info.version} 可用`);
         }, 50);
 
         // 更新最后检查时间
@@ -216,23 +214,6 @@ onMounted(async () => {
   localStorage.setItem("frpcLogs", "");
   await checkFrpcHas();
 
-  try {
-    const globalLogUnlisten = await listen("log", (event: any) => {
-      appendLog(event.payload.message);
-    });
-    cleanupFunctions.value.push(globalLogUnlisten);
-  } catch (error) {
-    console.error("监听日志失败:", error);
-  }
-  try {
-    const globalLogUnlisten = await listen("tunnel-event", (event: any) => {
-      appendLogTunnel(event.payload.message);
-    });
-    cleanupFunctions.value.push(globalLogUnlisten);
-  } catch (error) {
-    console.error("监听日志失败:", error);
-  }
-
   // 标记应用已准备就绪
   isAppReady.value = true;
 
@@ -261,28 +242,15 @@ const checkFrpcHas = async () => {
         await invoke("emit_event", {
           event: "log",
           payload: {
+            level: "warning",
             message: `frpc.exe不存在，请到系统设置下载frpc.exe`,
           },
         });
-        appendLog(`frpc.exe不存在，请到系统设置下载frpc.exe`);
       }, 500);
     }
   } catch (error) {
     console.error("检查frpc.exe失败:", error);
   }
-};
-
-const appendLog = (message: string) => {
-  const timestamp = new Date().toLocaleTimeString();
-  const logMessage = `[${timestamp}] [系统] ${message}\n`;
-  const savedLogs = localStorage.getItem("frpcLogs") || "";
-  localStorage.setItem("frpcLogs", savedLogs + "\n\n" + logMessage);
-};
-const appendLogTunnel = (message: string) => {
-  const timestamp = new Date().toLocaleTimeString();
-  const logMessage = `[${timestamp}] [隧道] ${message}\n`;
-  const savedLogs = localStorage.getItem("frpcLogs") || "";
-  localStorage.setItem("frpcLogs", savedLogs + "\n\n" + logMessage);
 };
 </script>
 

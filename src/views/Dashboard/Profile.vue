@@ -1100,7 +1100,6 @@ const handleChangePassword = async () => {
 
   .account-info-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
     border-radius: 8px;
     padding: 16px;

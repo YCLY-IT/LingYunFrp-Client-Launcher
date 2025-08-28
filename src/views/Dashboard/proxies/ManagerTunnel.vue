@@ -263,7 +263,7 @@
               class="tunnel-table"
             />
 
-            <div v-else class="empty-state">
+            <div v-else v-if="viewMode === 'list'" class="empty-state">
               <NEmpty description="暂无隧道" size="large">
                 <template #extra>
                   <NButton
@@ -924,7 +924,7 @@ const filteredProxies = computed(() => {
       getNodeLabel(proxy.nodeId).toLowerCase().includes(search),
   );
 });
-// 新增：分页后的数据
+
 const pagedProxies = computed(() => {
   const start = (page.value - 1) * pageSize.value;
   const end = start + pageSize.value;
@@ -945,7 +945,6 @@ const toggleModalContent = computed(() =>
     : "",
 );
 
-// -------------------- 节点相关 --------------------
 const getNodeLabel = (nodeId: number) => {
   const node = nodeOptions.value.find((n) => n.value === nodeId);
   return node ? `#${nodeId} - ${node.label}` : `#${nodeId}`;
@@ -1008,7 +1007,6 @@ const fetchNodesAndProxies = async () => {
   fetchProxies();
 };
 
-// -------------------- Token 获取 --------------------
 const fetchToken = async () => {
   try {
     token.value = localStorage.getItem("token") || "";
@@ -1017,7 +1015,6 @@ const fetchToken = async () => {
   }
 };
 
-// -------------------- 事件处理 --------------------
 const handleRefresh = () => {
   fetchProxies();
 };
@@ -1590,7 +1587,16 @@ function removeRunningId(id: number) {
 const checkFrpcHas = async () => {
   try {
     const hasFrpc = await invoke<boolean>("check_frpc_exists");
-    if (!hasFrpc) message.warning("未检测到frpc.exe，请确保已正确安装客户端");
+    if (!hasFrpc) {
+      message.warning("未检测到frpc.exe，请确保已正确安装客户端");
+      await invoke("emit_event", {
+        event: "log",
+        payload: {
+          level: "warning",
+          message: "未检测到frpc.exe，请确保已正确安装客户端",
+        },
+      });
+    }
   } catch (e) {
     console.error("检查frpc.exe失败:", e);
   }

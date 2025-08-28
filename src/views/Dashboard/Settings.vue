@@ -211,14 +211,14 @@ const getFrpcVersion = async () => {
     if (!frpcInfo?.version || typeof frpcInfo.version !== "string") {
       throw new Error("无效的版本信息格式");
     }
-    if (frpcInfo.version === "未知") {
-      logs.value += `${new Date().toLocaleTimeString()} [系统] 未找到Frpc\n`;
-      message.warning("Frpc可执行文件不存在，请配置或下载");
-      return;
-    }
     logs.value += `${new Date().toLocaleTimeString()} [系统] 检测到Frpc版本: ${frpcInfo.version}\n`;
     message.success(`当前版本: ${frpcInfo.version}`);
   } catch (e) {
+    if (e.includes("系统找不到指定的文件")) {
+      logs.value += `${new Date().toLocaleTimeString()} [系统] 您并未下载FRPC,可点击旁边的"自动下载/更新Frpc"按钮\n`;
+      message.warning("Frpc可执行文件不存在，请配置或下载");
+      return;
+    }
     logs.value += `${new Date().toLocaleTimeString()} [系统] 获取Frpc版本失败: ${e}\n`;
     message.error(`获取版本失败: ${e}`);
   }

@@ -207,7 +207,6 @@ onMounted(() => {
 }
 
 .right-column {
-  // 让右侧整体和左侧一样高
   height: 100%;
 }
 
