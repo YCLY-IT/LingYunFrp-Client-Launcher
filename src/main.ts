@@ -2,6 +2,7 @@ import { createApp } from "vue";
 import { createPinia } from "pinia";
 import App from "./App.vue";
 import router from "./router";
+import "./utils/deeplink";
 
 import { invoke } from "@tauri-apps/api/core";
 import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
@@ -40,6 +41,9 @@ router.isReady().then(() => {
     }, 300);
   }
 });
+
 await onOpenUrl((event) => {
   console.log(event);
 });
+
+/* 哥哥太厉害了>w<, 以后每天都要跟咱问声好哦, 嘿嘿（★＞U＜★） 2025/09/06 16:15:06 */

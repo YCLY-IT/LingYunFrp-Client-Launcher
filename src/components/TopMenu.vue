@@ -45,10 +45,11 @@
       </div>
       <div
         class="right"
-        style="transform: translateX(-35px); text-align: center"
+        style="transform: translateX(-30px); text-align: center"
       >
-        <div class="the-right" style="margin-right: 15px">
+        <div class="the-right" style="margin-right: 5px">
           <NDropdown
+            style="margin-top: 12px"
             :options="options"
             @select="handleUserMenuSelect"
             trigger="hover"
@@ -65,25 +66,25 @@
             </NButton>
           </NDropdown>
         </div>
-        <div class="theme-switch" style="margin-top: 6px">
+        <div class="theme-switch">
           <!-- 客户端关闭按钮、全屏、刷新和最小化按钮 -->
           <NButton text @click="handleToRefresh">
-            <NIcon size="28" style="margin-right: 15px">
+            <NIcon size="20">
               <RefreshOutline />
             </NIcon>
           </NButton>
-          <NButton text @click="handleToMinimize">
-            <NIcon size="28" style="margin-right: 22px">
+          <NButton text @click="handleToMinimize" style="margin-right: 2px">
+            <NIcon size="20">
               <RemoveOutline />
             </NIcon>
           </NButton>
-          <NButton text style="margin-right: 12px" @click="handleToMaximize">
-            <NIcon size="27">
+          <NButton text style="margin-right: 2px" @click="handleToMaximize">
+            <NIcon size="20">
               <ScanOutline />
             </NIcon>
           </NButton>
           <NButton text @click="ToClose = true">
-            <NIcon size="28">
+            <NIcon size="20">
               <CloseOutline />
             </NIcon>
           </NButton>
@@ -370,12 +371,13 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .avatar {
-  width: 32px;
-  height: 32px;
+  --size: 36px;
+  width: var(--size);
+  height: var(--size);
   border-radius: 50%;
-  transform: translateY(-6px) translateX(-12px);
+  transform: translateY(-8px) translateX(-12px);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -383,10 +385,10 @@ onUnmounted(() => {
 }
 .nikename {
   margin-left: 3px;
-  max-width: 70px; /* 新增：限制最大宽度 */
-  white-space: nowrap; /* 新增：防止换行 */
-  overflow: hidden; /* 新增：隐藏溢出内容 */
-  text-overflow: ellipsis; /* 新增：显示省略号 */
+  max-width: 70px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .avatar img {
@@ -394,9 +396,7 @@ onUnmounted(() => {
   height: 100%;
   object-fit: cover;
 }
-</style>
 
-<style scoped>
 .header-content {
   /* 确保拖动区域有足够的面积 */
   height: 100%;
@@ -405,7 +405,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  -webkit-app-region: drag; /* 添加这一行 */
+  -webkit-app-region: drag;
 }
 
 /* 确保按钮等可交互元素不被拖动区域覆盖 */
@@ -413,5 +413,37 @@ onUnmounted(() => {
 .n-popover,
 .n-dropdown {
   -webkit-app-region: no-drag;
+}
+
+.theme-switch {
+  gap: 2px;
+
+  /* 每个按钮统一尺寸 */
+  .n-button {
+    --size: 36px;
+    width: var(--size);
+    height: var(--size);
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    transition: background 0.15s;
+    border-radius: 10px;
+    & > span {
+      color: inherit;
+    }
+
+    /* 默认悬停：浅灰 */
+    &:hover:not(:last-of-type) {
+      background: rgba(128, 128, 128, 0.15);
+      border-radius: 10px;
+    }
+
+    /* 最后一个按钮 = 关闭按钮，悬停红色 */
+    &:last-of-type:hover {
+      border-radius: 10px;
+      background: #e81123;
+    }
+  }
 }
 </style>

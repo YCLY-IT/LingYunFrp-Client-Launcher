@@ -14,15 +14,13 @@ export default defineConfig({
     target: "es2022",
     rollupOptions: {
       output: {
-        manualChunks(id: any) {
+        manualChunks(id: string) {
           if (id.includes("node_modules")) {
             if (id.includes("naive-ui")) return;
             if (id.includes("vue-router")) return "vue-router";
             if (id.includes("pinia")) return "pinia";
             if (id.includes("@vueuse")) return "vueuse";
-            if (id.includes("axios")) return "axios";
             if (id.includes("highlight.js")) return "highlightjs";
-            if (id.includes("numbro")) return "numbro";
             if (id.includes("@tauri-apps")) return "tauri";
             if (id.includes("/node_modules/vue")) return "vue-core";
             return "vendor";
@@ -71,5 +69,8 @@ export default defineConfig({
       // 3. tell vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
     },
+  },
+  esbuild: {
+    target: "es2022",
   },
 });
