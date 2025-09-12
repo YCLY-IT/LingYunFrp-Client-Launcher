@@ -158,7 +158,6 @@ import LeftMenu from "./LeftMenu.vue";
 import { userApi } from "../net";
 import { accessHandle, removeToken } from "../net/base.ts";
 import { invoke } from "@tauri-apps/api/core";
-import { emitTo } from "@tauri-apps/api/event";
 import type { MenuOption } from "../types/menu";
 
 const router = useRouter();
@@ -268,46 +267,6 @@ const handleUserMenuSelect = (key: string) => {
       break;
   }
 };
-
-// 管理员权限检查函数
-const checkAdminPermission = async (): Promise<boolean> => {
-  try {
-    const isAdmin = await invoke<boolean>("is_admin");
-    return isAdmin;
-  } catch (e) {
-    console.error("管理员权限检测失败:", e);
-    return false;
-  }
-};
-
-// 处理虚拟网络菜单点击
-const handleNetworkMenuClick = async (): Promise<boolean> => {
-  const isAdmin = await checkAdminPermission();
-  if (!isAdmin) {
-    dialog.warning({
-      title: "需要管理员权限",
-      content: "虚拟网络功能需要以管理员权限运行，是否以管理员权限重启？",
-      positiveText: "以管理员权限重启",
-      negativeText: "取消",
-      onPositiveClick: async () => {
-        try {
-          await emitTo("main", "request_admin");
-        } catch (e) {
-          message.error("重启失败，请手动以管理员权限运行");
-        }
-      },
-      onNegativeClick: () => {
-        // 用户取消，不做任何操作
-      },
-    });
-    return false; // 阻止默认导航
-  }
-
-  // 有管理员权限，正常导航
-  router.push("/dashboard/network");
-  return true;
-};
-
 const handleMenuSelect = async (_: any, item: MenuOption) => {
   // 检查是否有自定义的 onClick 处理函数
   if (item.onClick) {
@@ -315,12 +274,6 @@ const handleMenuSelect = async (_: any, item: MenuOption) => {
       const result = await item.onClick();
       if (result === false) {
         // 如果返回 false，表示阻止默认导航
-        return;
-      }
-    } else if (item.onClick === "check-admin-and-navigate") {
-      // 处理虚拟网络菜单的特殊逻辑
-      const result = await handleNetworkMenuClick();
-      if (result === false) {
         return;
       }
     }
