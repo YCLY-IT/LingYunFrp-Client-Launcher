@@ -40,14 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ref,
-  reactive,
-  onMounted,
-  onBeforeUnmount,
-  computed,
-  inject,
-} from "vue";
+import { ref, reactive, onMounted, onBeforeUnmount, computed } from "vue";
 import { useThemeStore } from "../stores/theme";
 
 interface MenuItem {

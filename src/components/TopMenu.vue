@@ -153,7 +153,7 @@
 
 <script setup lang="ts">
 import packageData from "../../package.json";
-import { h, ref, inject, computed, Ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import {
   NLayoutHeader,
