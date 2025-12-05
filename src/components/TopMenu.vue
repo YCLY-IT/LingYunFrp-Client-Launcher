@@ -48,6 +48,29 @@
         style="transform: translateX(-30px); text-align: center"
       >
         <div class="the-right" style="margin-right: 5px">
+          <n-button
+            quaternary
+            style="font-size: 18px; transform: translateX(-30px)"
+            @click="ThemeSwitcherDrawer('right')"
+          >
+            <n-icon
+              :component="SettingsOutline"
+              style="cursor: pointer"
+            ></n-icon>
+          </n-button>
+          <n-button
+            quaternary
+            circle
+            size="small"
+            @click="toggleTheme"
+            class="theme-toggle-btn"
+            style="transform: translateX(-30px)"
+          >
+            <NIcon
+              size="20"
+              :component="themeStore.theme === 'dark' ? Sunny : Moon"
+            />
+          </n-button>
           <NDropdown
             style="margin-top: 12px"
             :options="options"
@@ -116,6 +139,16 @@
       >
     </template>
   </NModal>
+  <n-drawer
+    v-model:show="themeSwitcherDrawer"
+    :placement="placement"
+    :default-width="320"
+    resizable
+  >
+    <n-drawer-content title="面板配置">
+      <ThemeSwitcher />
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
@@ -128,7 +161,6 @@ import {
   NButton,
   NDropdown,
   useDialog,
-  NSwitch,
   NPopover,
   NMenu,
   NDrawer,
@@ -136,19 +168,20 @@ import {
   NScrollbar,
   NModal,
   useMessage,
+  DrawerPlacement,
 } from "naive-ui";
 import {
   PersonCircleOutline,
   LogOutOutline,
-  SunnyOutline,
-  MoonOutline,
+  Sunny,
+  Moon,
+  SettingsOutline,
   MenuOutline,
   CloseOutline,
   ScanOutline,
   RemoveOutline,
   RefreshOutline,
 } from "@vicons/ionicons5";
-import { switchButtonRailStyle } from "../constants/theme.ts";
 import {
   getMenuOptions,
   renderIcon,
@@ -159,6 +192,7 @@ import { userApi } from "../net";
 import { accessHandle, removeToken } from "../net/base.ts";
 import { invoke } from "@tauri-apps/api/core";
 import type { MenuOption } from "../types/menu";
+import { useThemeStore } from "../stores/theme.ts";
 
 const router = useRouter();
 const route = useRoute();
@@ -172,54 +206,24 @@ const isMobile = ref(window.innerWidth <= 768);
 const nickname = ref("");
 const avatarUrl = ref("");
 
+const themeSwitcherDrawer = ref(false);
+const placement = ref<DrawerPlacement>("right");
+const themeStore = useThemeStore();
+const ThemeSwitcherDrawer = (place: DrawerPlacement) => {
+  themeSwitcherDrawer.value = true;
+  placement.value = place;
+};
+
+// 主题切换函数
+const toggleTheme = () => {
+  themeStore.theme = themeStore.theme === "dark" ? "light" : "dark";
+  themeStore.setTheme(themeStore.theme);
+};
+
 // 从 localStorage 获取头像链接
 avatarUrl.value = localStorage.getItem("avatar") || "";
 
-// 注入主题相关函数
-const { isDarkMode, toggleTheme } = inject("theme") as {
-  isDarkMode: Ref<boolean>;
-  toggleTheme: () => void;
-};
-
-// 渲染下拉菜单中的主题切换选项
-const renderThemeOption = () => {
-  return h(
-    "div",
-    {
-      style:
-        "display: flex; align-items: center; padding: 8px 12px; height: 20px;",
-    },
-    [
-      h(
-        "span",
-        {
-          style: "flex: 1; margin-right: 12px; font-size: 14px;",
-        },
-        "主题切换",
-      ),
-      h(
-        NSwitch,
-        {
-          value: isDarkMode.value,
-          "onUpdate:value": handleThemeChange,
-          railStyle: switchButtonRailStyle,
-          size: "small",
-        },
-        {
-          checked: () => h(NIcon, null, { default: () => h(MoonOutline) }),
-          unchecked: () => h(NIcon, null, { default: () => h(SunnyOutline) }),
-        },
-      ),
-    ],
-  );
-};
-
 const options = [
-  {
-    key: "theme",
-    type: "render",
-    render: renderThemeOption,
-  },
   {
     label: "个人资料",
     key: "profile",
@@ -231,12 +235,6 @@ const options = [
     icon: renderIcon(LogOutOutline),
   },
 ];
-
-// 处理主题切换
-const handleThemeChange = () => {
-  toggleTheme();
-  localStorage.setItem("theme", isDarkMode.value ? "dark" : "light");
-};
 
 function userLogout() {
   userApi.get("/user/logout", accessHandle(), () => {});
@@ -325,6 +323,17 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+.theme-toggle-btn {
+  transition: all 0.3s ease;
+  &:hover {
+    transform: rotate(30deg);
+    background-color: var(--n-color-hover);
+  }
+  .n-icon {
+    transition: all 0.3s ease;
+  }
+}
+
 .avatar {
   --size: 36px;
   width: var(--size);

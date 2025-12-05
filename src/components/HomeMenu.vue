@@ -35,7 +35,7 @@
             @click="toggleTheme"
             class="theme-toggle-btn no-drag"
           >
-            <NIcon size="24" :component="isDarkMode ? Sunny : Moon" />
+            <NIcon size="19" :component="isDarkMode ? Sunny : Moon" />
           </NButton>
           <n-button
             quaternary
@@ -44,7 +44,7 @@
             class="no-drag"
             @click="handleToRefresh"
           >
-            <NIcon size="25"><RefreshOutline /></NIcon>
+            <NIcon size="20"><RefreshOutline /></NIcon>
           </n-button>
           <NButton
             quaternary
@@ -53,7 +53,7 @@
             class="no-drag"
             @click="handleToMinimize"
           >
-            <NIcon size="28"><RemoveOutline /></NIcon>
+            <NIcon size="23"><RemoveOutline /></NIcon>
           </NButton>
           <NButton
             quaternary
@@ -62,7 +62,7 @@
             class="no-drag"
             @click="handleToMaximize"
           >
-            <NIcon size="25"><ScanOutline /></NIcon>
+            <NIcon size="20"><ScanOutline /></NIcon>
           </NButton>
           <NButton
             quaternary
@@ -71,7 +71,7 @@
             class="no-drag"
             @click="ToShow = true"
           >
-            <NIcon size="28"><CloseOutline /></NIcon>
+            <NIcon size="23"><CloseOutline /></NIcon>
           </NButton>
         </NSpace>
       </div>
@@ -148,7 +148,6 @@ const handleToCloseToPanel = async () => {
 
 .theme-toggle-btn {
   transition: all 0.3s ease;
-  margin-top: 1px;
   &:hover {
     transform: rotate(30deg);
     background-color: var(--n-color-hover);

@@ -48,6 +48,7 @@ import {
   computed,
   inject,
 } from "vue";
+import { useThemeStore } from "../stores/theme";
 
 interface MenuItem {
   label: string;
@@ -150,10 +151,8 @@ const visible = ref(false);
 const menuStyle = reactive({ left: "0px", top: "0px" });
 const subMenuStyle = reactive({ left: "100%", top: "0px" });
 const subMenuIndex = ref<number | null>(null);
-const themeContext = inject("theme") as { isDarkMode: { value: boolean } };
-const theme = computed(() =>
-  themeContext?.isDarkMode.value ? "dark" : "light",
-);
+const themeStore = useThemeStore();
+const theme = computed(() => (themeStore.theme === "dark" ? "dark" : "light"));
 
 function showMenu(x: number, y: number) {
   menuStyle.left = x + "px";

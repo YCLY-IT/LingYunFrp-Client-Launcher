@@ -81,10 +81,12 @@ import { userApi } from "../net";
 import { OpenBrowser, storeToken } from "../net/base";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { useThemeStore } from "../stores/theme";
 
 const router = useRouter();
 const message = useMessage();
 const dialog = useDialog();
+const themeStore = useThemeStore();
 const loading = ref(false);
 const formRef = ref<FormInst | null>(null);
 const formValue = ref({
@@ -172,6 +174,9 @@ onMounted(async () => {
     });
   });
 
+  if (themeStore.backgroundImage !== "") {
+    return;
+  }
   const loginEl = document.querySelector(".login") as HTMLElement;
   if (loginEl) {
     try {
