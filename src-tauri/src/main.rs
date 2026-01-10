@@ -14,14 +14,19 @@ mod config;
 mod commands;
 mod request;
 mod tunnel;
-mod nat;
+mod virtual_network;
 
-use nat::{
-    nat_start,
-    nat_stop,
-    nat_get_address,
-    get_active_nat,
-    check_natter_exists,
+use virtual_network::{
+    // nat_start,
+    // nat_stop,
+    // nat_get_address,
+    // get_active_nat,
+    // check_natter_exists,
+    check_easy_tire_exists,
+    start_easytire,
+    stop_easytire,
+    get_active_easytire,
+    check_easytire_process_running,
 };
 
 use request::{
@@ -55,7 +60,9 @@ use commands::{
     get_api_url,
     check_auto_start_status,
     check_software_file,
-    delete_file
+    delete_file,
+    auto_update,
+    install_and_restart
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -101,14 +108,21 @@ fn main() {
         get_api_url,
         check_auto_start_status,
         get_image_base64,
-        nat_start,
-        nat_stop,
-        nat_get_address,
+        // nat_start,
+        // nat_stop,
+        // nat_get_address,
         check_software_file,
-        get_active_nat,
-        check_natter_exists,
+        // get_active_nat,
+        // check_natter_exists,
+        check_easy_tire_exists,
+        start_easytire,
+        stop_easytire,
+        get_active_easytire,
+        check_easytire_process_running,
         download_file,
-        delete_file
+        delete_file,
+        auto_update,
+        install_and_restart
     ])
     .setup(|app| {
         // 确保应用数据目录存在
@@ -269,7 +283,7 @@ fn create_tray_menu(app: &tauri::App, _auto_start_enabled: bool) -> Result<TrayI
             }
             "quit" => {
                 *app.state::<Mutex<bool>>().lock().unwrap() = true;
-                if let Err(e) = kill_all_processes() {
+                if let Err(e) = kill_all_processes(vec!["frpc.exe".to_string(), "easytire-cli.exe".to_string()]) {
                     eprintln!("关闭进程失败: {}", e);
                 }
                 app.exit(0);

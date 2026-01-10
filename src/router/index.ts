@@ -1,6 +1,5 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import { unauthorized } from "../net/base.js";
-import { Window } from "../types";
 
 // 声明window类型
 declare const window: Window;

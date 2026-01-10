@@ -24,6 +24,7 @@ tauri-plugin-deep-link = "2.4.3"
 base64 = "0.22.1"
 regex = "1.11.2"
 futures = "0.3.31"
+zip = "2.2.2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55.0"

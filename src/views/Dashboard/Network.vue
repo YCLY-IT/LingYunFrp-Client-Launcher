@@ -1,8 +1,5 @@
 <template>
   <div class="network-container">
-    <n-alert type="info">
-      使用该功能前请您确保您的网络是NAT1，否则可能会出现穿透失败、不稳定等情况
-    </n-alert>
     <div class="main-content" style="margin-top: 15px">
       <n-tabs
         v-model:value="activeTab"
@@ -24,13 +21,6 @@
                     </div>
                     <div class="status-actions">
                       <n-button
-                        type="info"
-                        size="small"
-                        @click="loadCurrentNetworkWithReset"
-                      >
-                        刷新状态
-                      </n-button>
-                      <n-button
                         type="error"
                         size="small"
                         @click="leaveNetwork"
@@ -43,36 +33,29 @@
                 </template>
 
                 <div class="status-content">
-                  <!-- NAT打洞信息卡片 -->
-                  <n-card title="NAT打洞信息" class="info-card">
+                  <!-- 虚拟网络信息卡片 -->
+                  <n-card title="虚拟网络信息" class="info-card">
                     <div class="connection-info-grid">
                       <div class="info-item">
-                        <div class="info-label">公网地址</div>
+                        <div class="info-label">网络名称</div>
                         <div class="info-value">
-                          <span class="address-text"
-                            >{{ currentNetwork.config.publicIp }}:{{
-                              currentNetwork.config.publicPort
-                            }}</span
-                          >
-                          <n-button
-                            text
-                            size="tiny"
-                            @click="
-                              copyToClipboard(
-                                `${currentNetwork.config.publicIp}:${currentNetwork.config.publicPort}`,
-                              )
-                            "
-                          >
-                            <template #icon>
-                              <n-icon><CopyOutline /></n-icon>
-                            </template>
-                          </n-button>
+                          <span class="address-text">{{
+                            currentNetwork.config.name
+                          }}</span>
                         </div>
                       </div>
                       <div class="info-item">
-                        <div class="info-label">打洞状态</div>
+                        <div class="info-label">本地IP</div>
                         <div class="info-value">
-                          <n-tag type="success" size="small">已启动</n-tag>
+                          <span class="address-text">{{
+                            currentNetwork.config.localIp
+                          }}</span>
+                        </div>
+                      </div>
+                      <div class="info-item">
+                        <div class="info-label">连接状态</div>
+                        <div class="info-value">
+                          <n-tag type="success" size="small">已连接</n-tag>
                         </div>
                       </div>
                     </div>
@@ -81,7 +64,7 @@
                         <template #icon>
                           <n-icon><InformationCircleOutline /></n-icon>
                         </template>
-                        NAT打洞通道已建立，可通过公网地址访问本地服务
+                        虚拟网络已建立
                       </n-alert>
                     </div>
                   </n-card>
@@ -89,29 +72,6 @@
                   <!-- 通道信息卡片 -->
                   <n-card title="通道信息" class="channel-card">
                     <div class="channel-info">
-                      <div class="channel-item">
-                        <div class="channel-label">本地地址</div>
-                        <div class="channel-value">
-                          <span class="channel-id"
-                            >{{ currentNetwork.config.localIp }}:{{
-                              currentNetwork.config.localPort
-                            }}</span
-                          >
-                          <n-button
-                            text
-                            size="tiny"
-                            @click="
-                              copyToClipboard(
-                                `${currentNetwork.config.localIp}:${currentNetwork.config.localPort}`,
-                              )
-                            "
-                          >
-                            <template #icon>
-                              <n-icon><CopyOutline /></n-icon>
-                            </template>
-                          </n-button>
-                        </div>
-                      </div>
                       <div class="channel-item">
                         <div class="channel-label">创建时间</div>
                         <div class="channel-value">
@@ -176,9 +136,9 @@
 
             <!-- 没有活动网络时显示空状态 -->
             <div v-else>
-              <n-card title="当前NAT打洞状态" class="status-card">
+              <n-card title="当前虚拟网络状态" class="status-card">
                 <div class="empty-state">
-                  <n-empty description="暂无活动的NAT打洞通道">
+                  <n-empty description="暂无活动的虚拟网络">
                     <template #icon>
                       <n-icon size="48" color="#d9d9d9">
                         <WifiOutline />
@@ -204,28 +164,21 @@
                     :disabled="!!currentNetwork"
                   />
                 </n-form-item>
+                <n-form-item label="网络密钥">
+                  <n-input
+                    v-model:value="networkPassword"
+                    placeholder="请输入网络密钥"
+                    :maxlength="20"
+                    show-count
+                    :disabled="!!currentNetwork"
+                  />
+                </n-form-item>
                 <n-form-item label="本地IP">
                   <n-input
                     v-model:value="localIp"
                     placeholder="请输入本地IP地址"
                     :disabled="!!currentNetwork"
                   />
-                </n-form-item>
-                <n-form-item label="本地端口">
-                  <n-input-number
-                    v-model:value="localPort"
-                    :min="1"
-                    :max="65535"
-                    placeholder="请输入本地端口"
-                    :disabled="!!currentNetwork"
-                    style="width: 100%"
-                    clearable
-                  />
-                  <template #feedback>
-                    <span style="color: #666; font-size: 12px"
-                      >端口范围：1-65535</span
-                    >
-                  </template>
                 </n-form-item>
                 <n-form-item label="备注">
                   <n-input
@@ -265,7 +218,7 @@
             <n-card class="networks-card">
               <template #header>
                 <div class="card-header">
-                  <span class="card-title">我的NAT打洞通道</span>
+                  <span class="card-title">我的虚拟网络</span>
                   <n-button
                     type="primary"
                     size="small"
@@ -277,7 +230,7 @@
                 </div>
               </template>
               <div v-if="myNetworks.length === 0" class="empty-state">
-                <n-empty description="暂无创建的NAT打洞通道" size="small" />
+                <n-empty description="暂无创建的虚拟网络" size="small" />
               </div>
               <div v-else class="networks-container">
                 <div class="network-list">
@@ -319,7 +272,7 @@
                           <template #icon>
                             <n-icon><WifiOutline /></n-icon>
                           </template>
-                          {{ network.localIp }}:{{ network.localPort }}
+                          {{ network.localIp }}
                         </n-tag>
                       </div>
                       <div class="meta-row">
@@ -355,7 +308,7 @@
                   <div class="logs-title-section">
                     <h3>系统日志</h3>
                     <p class="logs-subtitle">
-                      查看NAT打洞通道的运行日志和操作记录
+                      查看虚拟网络的运行日志和操作记录
                     </p>
                   </div>
                   <div class="logs-actions">
@@ -498,27 +451,27 @@
     <n-card title="使用说明" class="help-card" style="margin-top: 20px">
       <div class="help-content">
         <div class="help-item">
-          <h4>🌐 如何创建NAT打洞通道？</h4>
-          <p>1. 输入通道名称</p>
-          <p>2. 设置本地IP地址（默认127.0.0.1）</p>
-          <p>3. 设置本地端口（1-65535）</p>
+          <h4>🌐 如何创建虚拟网络？</h4>
+          <p>1. 输入网络名称</p>
+          <p>2. 设置网络密钥</p>
+          <p>3. 设置本地IP地址（默认127.0.0.1）</p>
           <p>4. 可选择添加备注信息</p>
           <p>5. 点击"创建网络"按钮</p>
         </div>
         <div class="help-item">
-          <h4>📋 管理我的通道</h4>
-          <p>在"我的网络"标签页中可以查看和管理您创建的所有NAT打洞通道。</p>
+          <h4>📋 管理我的网络</h4>
+          <p>在"我的网络"标签页中可以查看和管理您创建的所有虚拟网络。</p>
         </div>
         <div class="help-item">
-          <h4>🔗 启动NAT打洞通道</h4>
+          <h4>🔗 启动虚拟网络</h4>
           <p>
-            创建通道后，在我的列表点击刚刚创建的通道，会弹出一个是否启动NAT打洞通道的弹窗，点击确定后会启动通道，点击取消则不启动。
+            创建网络后，在我的列表点击刚刚创建的网络，会弹出一个是否启动虚拟网络的弹窗，点击确定后会启动网络，点击取消则不启动。
           </p>
-          <p>启动通道后，本地服务可通过显示的地址访问</p>
+          <p>启动网络后，虚拟网络即可使用</p>
         </div>
         <div class="help-item">
           <h4>📊 查看系统日志</h4>
-          <p>在"日志"标签页中可以查看所有NAT打洞通道的操作记录和运行状态。</p>
+          <p>在"日志"标签页中可以查看所有虚拟网络的操作记录和运行状态。</p>
           <p>
             支持按类型和时间范围筛选，可以导出日志文件，便于问题排查和系统监控。
           </p>
@@ -564,7 +517,6 @@ import {
   useDialog,
   NTabs,
   NTabPane,
-  NInputNumber,
 } from "naive-ui";
 import {
   WifiOutline,
@@ -582,12 +534,9 @@ import { loadAppSystemInfo, loadAppVersion } from "../../utils/localInfo";
 interface NetworkItem {
   id: string;
   name: string;
-  status: string;
+  password: string;
   createTime: string;
   localIp: string;
-  localPort: number;
-  publicIp: string;
-  publicPort: number;
   remark?: string;
 }
 
@@ -603,8 +552,8 @@ const dialog = useDialog();
 
 // 表单数据
 const networkName = ref("");
-const localIp = ref("127.0.0.1");
-const localPort = ref<number | null>(null);
+const networkPassword = ref("");
+const localIp = ref("10.114.114.1");
 const networkRemark = ref("");
 
 const clientVersion = await loadAppVersion();
@@ -734,7 +683,7 @@ const loadNetworksFromLocal = (): NetworkItem[] => {
 // 生成网络ID
 const generateNetworkId = (): string => {
   return (
-    "NET" +
+    "LingYunFrp_NET" +
     Date.now().toString(36).toUpperCase() +
     Math.random().toString(36).substr(2, 5).toUpperCase()
   );
@@ -748,57 +697,42 @@ const createNetwork = () => {
     return;
   }
 
-  if (!localPort.value) {
-    message.warning("请输入本地端口");
-    addLog("warning", "创建失败：本地端口不能为空");
-    return;
-  }
-
   creating.value = true;
-  addLog("info", `开始创建NAT打洞通道: ${networkName.value.trim()}`);
+  addLog("info", `开始创建虚拟网络: ${networkName.value.trim()}`);
 
-  // 模拟创建过程
   setTimeout(() => {
     const newNetwork: NetworkItem = {
       id: generateNetworkId(),
       name: networkName.value.trim(),
-      status: "Active",
+      password: networkPassword.value.trim(),
       createTime: new Date().toLocaleString("zh-CN"),
       localIp: localIp.value,
-      localPort: localPort.value,
-      publicIp: null,
-      publicPort: 0,
       remark: networkRemark.value.trim() || undefined,
     };
 
-    // 添加到我的网络列表
     myNetworks.value.unshift(newNetwork);
 
-    // 保存到本地存储
     saveNetworksToLocal(myNetworks.value);
 
-    // 清空表单
     networkName.value = "";
-    localPort.value = null;
+    networkPassword.value = "";
+    localIp.value = "10.144.144.1";
     networkRemark.value = "";
 
     creating.value = false;
-    addLog("success", `NAT打洞通道 "${newNetwork.name}" 创建成功`);
+    addLog("success", `虚拟网络 "${newNetwork.name}" 创建成功`);
     message.success("网络创建成功！");
 
-    // 弹出启动提示
     dialog.info({
       title: "网络创建成功",
       content: "是否现在启动这个网络？",
       positiveText: "启动网络",
       negativeText: "稍后启动",
       onPositiveClick: () => {
-        // 启动网络并切换到当前连接
         startNetwork(newNetwork);
         activeTab.value = "status";
       },
       onNegativeClick: () => {
-        // 切换到我的网络标签页
         activeTab.value = "my-networks";
       },
     });
@@ -815,63 +749,28 @@ const leaveNetwork = async () => {
   const networkId = currentNetwork.value.config.networkId;
 
   try {
-    // 调用后端停止NAT通道
-    const result = await invoke("nat_stop", { networkId });
-    console.log("停止NAT通道结果:", result);
+    const result = await invoke("stop_easytire", { networkId });
+    console.log("停止虚拟网络结果:", result);
 
     if (result === true) {
       addLog(
         "success",
-        `NAT打洞通道 "${currentNetwork.value.config.name}" 已断开`,
+        `虚拟网络 "${currentNetwork.value.config.name}" 已断开`,
       );
       message.success("网络连接已断开");
 
-      // 清空当前网络
       currentNetwork.value = null;
 
-      // 切换到创建网络标签页
       activeTab.value = "create";
     } else {
       throw new Error("停止失败");
     }
   } catch (error) {
     console.error("断开网络连接失败:", error);
-    addLog("error", `断开NAT打洞通道失败: ${error}`);
+    addLog("error", `断开虚拟网络失败: ${error}`);
     message.error(`断开失败: ${error}`);
   } finally {
     leaving.value = false;
-  }
-};
-
-const loadCurrentNetworkWithReset = async () => {
-  if (!currentNetwork.value) {
-    message.warning("没有活动的网络连接");
-    return;
-  }
-
-  const networkId = currentNetwork.value.config.networkId;
-
-  try {
-    // 获取最新的公网地址
-    const address = (await invoke("nat_get_address", { networkId })) as string;
-    console.log("刷新获取到地址:", address);
-
-    if (address && address !== "等待中...") {
-      const [publicIp, publicPort] = address.split(":");
-      currentNetwork.value.config.publicIp = publicIp;
-      currentNetwork.value.config.publicPort = parseInt(publicPort);
-
-      // 更新日志
-      addLog("info", `刷新NAT通道状态，公网地址: ${address}`);
-      message.success("状态已刷新");
-    } else {
-      addLog("warning", "刷新状态：正在等待公网地址...");
-      message.info("正在等待公网地址...");
-    }
-  } catch (error) {
-    console.error("刷新网络状态失败:", error);
-    addLog("error", `刷新NAT通道状态失败: ${error}`);
-    message.error(`刷新失败: ${error}`);
   }
 };
 
@@ -899,11 +798,10 @@ const refreshMyNetworks = () => {
 };
 
 const joinMyNetwork = (network: NetworkItem) => {
-  // 弹出启动提示
   dialog.info({
-    title: "启动NAT打洞通道",
-    content: `是否启动NAT打洞通道 "${network.name}"？`,
-    positiveText: "启动通道",
+    title: "启动虚拟网络",
+    content: `是否启动虚拟网络 "${network.name}"？`,
+    positiveText: "启动网络",
     negativeText: "取消",
     onPositiveClick: () => {
       startNetwork(network);
@@ -912,72 +810,49 @@ const joinMyNetwork = (network: NetworkItem) => {
 };
 
 const startNetwork = async (network: NetworkItem) => {
-  // 启动NAT打洞通道
-
   try {
-    const result = await invoke("nat_start", {
-      network: {
-        name: network.name,
-        id: network.id,
-        local_ip: network.localIp,
-        local_port: network.localPort,
-      },
+    const result = await invoke("start_easytire", {
+      name: network.name,
+      password: network.password,
+      id: network.id,
+      localIp: network.localIp,
     });
     console.log(result);
 
-    // 检查返回结果
-    if (Array.isArray(result) && result[0] === true) {
-      const publicAddress = result[1] as string;
-      addLog("success", `NAT打洞通道 "${network.name}" 启动成功`);
-      addLog("info", `初始公网地址: ${publicAddress}`);
-      message.success(`NAT打洞通道 "${network.name}" 启动成功`);
+    if (Array.isArray(result) && result[0] === "true") {
+      addLog("success", `虚拟网络 "${network.name}" 启动成功`);
+      message.success(`虚拟网络 "${network.name}" 启动成功`);
 
-      const [publicIp, publicPort] = publicAddress.split(":");
-      network.publicIp = publicIp;
-      network.publicPort = parseInt(publicPort);
-
-      // 更新当前网络
       currentNetwork.value = {
         config: {
           name: network.name,
           networkId: network.id,
           localIp: network.localIp,
-          localPort: network.localPort,
-          publicIp: network.publicIp,
-          publicPort: network.publicPort,
           create_time: new Date().toLocaleString(),
         },
         status: "Active",
         nodes: {},
       };
-
-      // 启动地址轮询
-      // const pollInterval = startAddressPolling(network.id);
-
-      // 保存轮询间隔ID，用于停止
-      // (currentNetwork.value as any).pollInterval = pollInterval;
     } else {
       throw new Error("启动失败");
     }
   } catch (error) {
-    console.error("启动NAT打洞通道失败:", error);
-    addLog("error", `NAT打洞通道 "${network.name}" 启动失败: ${error}`);
+    console.error("启动虚拟网络失败:", error);
+    addLog("error", `虚拟网络 "${network.name}" 启动失败: ${error}`);
     message.error(`启动失败: ${error}`);
     return;
   }
 
-  // 自动切换到当前通道标签页
   activeTab.value = "status";
 
-  // 显示地址复制提示
   setTimeout(() => {
     dialog.info({
-      title: "NAT打洞通道已启动",
-      content: `正在获取公网地址...\n本地地址：${network.localIp}:${network.localPort}`,
+      title: "虚拟网络已启动",
+      content: `虚拟网络 "${network.name}" 已成功启动\n本地地址：${network.localIp}`,
       positiveText: "复制本地地址",
       negativeText: "关闭",
       onPositiveClick: () => {
-        copyToClipboard(network.localIp + ":" + network.localPort);
+        copyToClipboard(network.localIp);
         addLog("info", "本地地址已复制到剪贴板");
       },
     });
@@ -991,21 +866,19 @@ const copyNetworkId = (networkId: string) => {
 const deleteNetwork = (networkId: string) => {
   const network = myNetworks.value.find((n) => n.id === networkId);
   dialog.warning({
-    title: "删除NAT打洞通道",
-    content: `确定要删除NAT打洞通道 ${networkId} 吗？此操作不可恢复。`,
+    title: "删除虚拟网络",
+    content: `确定要删除虚拟网络 ${networkId} 吗？此操作不可恢复。`,
     positiveText: "确定删除",
     negativeText: "取消",
     onPositiveClick: () => {
-      // 从列表中移除
       myNetworks.value = myNetworks.value.filter(
         (network) => network.id !== networkId,
       );
 
-      // 保存到本地存储
       saveNetworksToLocal(myNetworks.value);
 
-      addLog("warning", `NAT打洞通道 "${network?.name || networkId}" 已删除`);
-      message.success(`NAT打洞通道 ${networkId} 已删除`);
+      addLog("warning", `虚拟网络 "${network?.name || networkId}" 已删除`);
+      message.success(`虚拟网络 ${networkId} 已删除`);
     },
   });
 };
@@ -1087,7 +960,7 @@ const exportLogs = () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `nat-tunnel-logs-${new Date().toISOString().split("T")[0]}.txt`;
+  a.download = `virtual-network-logs-${new Date().toISOString().split("T")[0]}.txt`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1107,22 +980,22 @@ const initLocalNetworks = () => {
   myNetworks.value = loadNetworksFromLocal();
 };
 
-const checkHasNatter = async () => {
+const checkHasEasyTire = async () => {
   try {
-    const result = (await invoke("check_natter_exists")) as boolean;
+    const result = (await invoke("check_easy_tire_exists")) as boolean;
     if (!result) {
-      throw new Error("natter未下载");
+      throw new Error("EasyTire未下载");
     }
   } catch (error) {
     let dialogInstance = dialog.warning({
-      title: "natter未下载",
-      content: "是否下载natter",
+      title: "EasyTire未下载",
+      content: "是否下载EasyTire",
       positiveText: "下载",
       negativeText: "返回上一页",
       onPositiveClick: async () => {
         dialogInstance.destroy(); // 立即关闭警告对话
         const updateInfo = await checkUpdate(
-          "Frpc",
+          "easytier",
           system,
           arch,
           clientVersion,
@@ -1132,22 +1005,19 @@ const checkHasNatter = async () => {
           message.warning("获取版本失败");
           return;
         }
-        let fileName = "natter.exe";
-        if (system !== "windows") {
-          fileName = "natter";
-        }
+        let fileName = "easytier.zip";
         downloading.value = true;
         try {
           await invoke("download_file", {
             url: updateInfo.url,
             fileName,
           });
-          message.success("natter下载成功");
+          message.success("easytier下载成功");
           downloading.value = false;
         } catch (error) {
-          message.error("natter下载失败");
+          message.error("easytier下载失败");
           downloading.value = false;
-          checkHasNatter(); // 失败时重新弹出警告
+          checkHasEasyTire(); // 失败时重新弹出警告
         }
       },
       onNegativeClick: () => {
@@ -1170,57 +1040,61 @@ const totalBytes = ref(0);
 onMounted(async () => {
   console.log("Network.vue 组件开始挂载");
   initLocalNetworks();
-  checkHasNatter();
-  // 添加初始日志
-  addLog("info", "NAT打洞管理系统已启动");
-  // 检查当前活动NAT通道
+  checkHasEasyTire();
+  addLog("info", "虚拟网络管理系统已启动");
+
   try {
-    const networkId = (await invoke("get_active_nat")) as string | null;
-    if (networkId) {
-      console.log("检测到活动通道:", networkId);
-      // 假设从 myNetworks 加载配置，或从后端获取
+    console.log("开始检查 easytier-core 进程状态...");
+    const processRunning = (await invoke(
+      "check_easytire_process_running",
+    )) as boolean;
+    console.log("进程运行状态:", processRunning);
+
+    const networkId = (await invoke("get_active_easytire")) as string | null;
+    console.log("记录的网络ID:", networkId);
+
+    if (processRunning && networkId) {
+      console.log("检测到活动网络:", networkId);
       const network = myNetworks.value.find((n) => n.id === networkId);
       if (network) {
-        startNetwork(network); // 或直接设置 currentNetwork 并刷新
+        currentNetwork.value = {
+          config: {
+            name: network.name,
+            networkId: network.id,
+            localIp: network.localIp,
+            create_time: new Date().toLocaleString(),
+          },
+          status: "Active",
+          nodes: {},
+        };
         activeTab.value = "status";
+        addLog("info", `已恢复虚拟网络 "${network.name}" 的状态`);
+      } else {
+        console.log("未找到对应的网络配置");
+        addLog("warning", "检测到进程运行，但未找到对应的网络配置");
       }
+    } else if (processRunning && !networkId) {
+      console.log("检测到 easytier-core 进程正在运行，但没有记录的网络ID");
+      addLog(
+        "warning",
+        "检测到 easytier-core 进程正在运行，但没有记录的网络ID",
+      );
+    } else if (!processRunning && networkId) {
+      console.log("检测到记录的网络ID，但进程未运行，清除状态");
+      await invoke("stop_easytire", { networkId });
+      addLog("warning", "检测到记录的网络ID，但进程未运行，已清除状态");
+    } else {
+      console.log("没有检测到活动的虚拟网络");
     }
   } catch (error) {
-    console.error("检查活动NAT失败:", error);
+    console.error("检查活动网络失败:", error);
+    addLog("error", `检查活动网络失败: ${error}`);
   }
 
-  // 监听NAT IP更新事件
-  try {
-    console.log("开始监听NAT IP更新事件");
-    const unlisten = await listen("nat-ip-update", (event: any) => {
-      const { network_id, public_address, timestamp } = event.payload;
-      console.log("收到NAT IP更新事件:", event.payload + timestamp);
-
-      // 更新日志
-      addLog("info", `NAT通道 ${network_id} 公网地址更新: ${public_address}`);
-
-      // 更新当前网络状态
-      if (
-        currentNetwork.value &&
-        currentNetwork.value.config.networkId === network_id
-      ) {
-        const [publicIp, publicPort] = public_address.split(":");
-        currentNetwork.value.config.publicIp = publicIp;
-        currentNetwork.value.config.publicPort = parseInt(publicPort);
-      }
-    });
-
-    // 保存清理函数
-    cleanupFunctions.value.push(unlisten);
-  } catch (error) {
-    console.error("监听NAT IP更新事件失败:", error);
-  }
-
-  // 监听natter下载进度事件
   try {
     console.log("开始监听natter下载进度事件");
     const unlistenProgress = await listen(
-      "download-progress-natter",
+      "download-progress-easytire",
       (e: any) => {
         const { bytes_downloaded, total_bytes } = e.payload;
         downloadedBytes.value = bytes_downloaded;
@@ -1232,15 +1106,11 @@ onMounted(async () => {
     );
     cleanupFunctions.value.push(unlistenProgress);
   } catch (error) {
-    console.error("监听natter下载进度事件失败:", error);
+    console.error("监听EasyTire下载进度事件失败:", error);
   }
 
   console.log("Network.vue 组件挂载完成");
 });
-
-// 移除轮询相关函数
-// const startAddressPolling = ...
-// const stopAddressPolling = ...
 
 // 组件卸载时清理资源
 onUnmounted(() => {

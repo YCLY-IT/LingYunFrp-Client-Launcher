@@ -8,18 +8,7 @@
     <div class="navbar-content">
       <div class="logo">
         <RouterLink to="/" class="logo-link">
-          <h2
-            style="
-              background: transparent;
-              -webkit-background-clip: text;
-              color: transparent;
-              background-image: linear-gradient(
-                -225deg,
-                #7de2fc 0%,
-                #b9b6e5 100%
-              );
-            "
-          >
+          <h2 :style="{ color: themeStore.primaryColor }">
             {{ packageData.title }}
           </h2>
         </RouterLink>
@@ -111,8 +100,10 @@ import {
   RefreshOutline,
 } from "@vicons/ionicons5";
 import { invoke } from "@tauri-apps/api/core";
+import { useThemeStore } from "../stores/theme";
 
 const ToShow = ref(false);
+const themeStore = useThemeStore();
 const { isDarkMode, toggleTheme } = inject("theme", {
   isDarkMode: ref(false),
   toggleTheme: () => {},

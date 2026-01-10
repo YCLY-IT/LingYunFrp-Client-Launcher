@@ -72,7 +72,6 @@ import {
   NCard,
   NIcon,
   type FormRules,
-  type FormInst,
   useMessage,
   useDialog,
 } from "naive-ui";
@@ -88,7 +87,6 @@ const message = useMessage();
 const dialog = useDialog();
 const themeStore = useThemeStore();
 const loading = ref(false);
-const formRef = ref<FormInst | null>(null);
 const formValue = ref({
   username: "",
   password: "",
@@ -164,6 +162,7 @@ onMounted(async () => {
     const url = new URL(event.payload[0]);
     const token = url.searchParams.get("token").replace("Bearer ", "");
     storeToken(token, true, new Date(Date.now() + 1000 * 60 * 60 * 24 * 7));
+    localStorage.setItem("isDeepLinkLogin", "true");
     dialog.success({
       title: "登录成功",
       content: "即将跳转",

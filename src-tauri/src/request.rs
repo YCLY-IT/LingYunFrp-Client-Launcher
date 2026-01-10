@@ -1,6 +1,7 @@
 use serde_json;
 use reqwest;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
+use crate::commands::extract_zip;
 use crate::config;
 use tauri::Manager;
 
@@ -104,6 +105,7 @@ pub async fn download_file<R: Runtime>(
     app: tauri::AppHandle<R>,
     url: String,
     file_name: String,
+    need_extract: bool,
 ) -> Result<(), String> {
     // 使用 Tauri 提供的 app_data_dir
     let save_path = app
@@ -157,6 +159,11 @@ pub async fn download_file<R: Runtime>(
             total_bytes: total,
         },
     );
+
+    if need_extract {
+        let extract_to = save_path.with_extension("");
+        extract_zip(app, save_path.to_string_lossy().to_string(), extract_to.to_string_lossy().to_string()).await?;
+    }
 
     Ok(())
 }

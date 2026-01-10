@@ -237,7 +237,9 @@ const options = [
 ];
 
 function userLogout() {
-  userApi.get("/user/logout", accessHandle(), () => {});
+  if (localStorage.getItem("isDeepLinkLogin") !== "true") {
+    userApi.get("/user/logout", accessHandle(), () => {});
+  }
   removeToken();
   router.push({ name: "login" });
 }

@@ -139,7 +139,7 @@ async function downloadAndReplaceFrpc(url: string, system: string) {
 
   downloading.value = true;
   try {
-    await invoke("download_file", { url, fileName });
+    await invoke("download_file", { url, fileName, needExtract: false });
     message.success("更新成功");
   } catch (e) {
     message.error(`下载失败: ${e}`);

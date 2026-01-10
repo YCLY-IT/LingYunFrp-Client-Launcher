@@ -2,6 +2,7 @@ use tauri::Manager;
 use tauri::Runtime;
 use tauri::Emitter;
 use tauri::command;
+use std::fs::File;
 use std::sync::Mutex;
 use crate::config;
 use tauri::path::BaseDirectory;
@@ -26,7 +27,7 @@ pub fn quit_window(window: tauri::Window, app: tauri::AppHandle, is_keep: bool) 
         });
         return;
     }
-    let _ = kill_all_processes();
+    let _ = kill_all_processes(vec!["frpc.exe".to_string(), "easytire-cli.exe".to_string()]);
     let _ = window.close();
     let app_clone = app.clone();
     let _ = window.emit("before-quit", ());
@@ -232,26 +233,21 @@ pub async fn toggle_auto_start(enable: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn kill_all_processes() -> Result<(), String> {
+pub fn kill_all_processes(processes: Vec<String>) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        
-        // 分别终止 frpc.exe 和 natter.exe
-        let processes = vec!["frpc.exe", "natter.exe"];
         
         for process in processes {
             let output = std::process::Command::new("taskkill")
                 .arg("/F")
                 .arg("/IM")
-                .arg(process)
-                .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                .arg(&process)
+                .creation_flags(0x08000000)
                 .output();
             
-            // 忽略错误，因为进程可能不存在
             if let Ok(output) = output {
                 if !output.status.success() {
-                    // 检查是否是因为进程不存在而失败
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     if !stderr.contains("找不到") && !stderr.contains("not found") {
                         eprintln!("终止进程 {} 失败: {}", process, stderr);
@@ -262,19 +258,17 @@ pub fn kill_all_processes() -> Result<(), String> {
     }
     #[cfg(target_os = "macos")]
     {
-        let processes = vec!["frpc", "natter"];
-        
         for process in processes {
+            let process_name = process.strip_suffix(".exe").unwrap_or(&process);
             let output = std::process::Command::new("killall")
-                .arg(process)
+                .arg(process_name)
                 .output();
             
-            // 忽略错误，因为进程可能不存在
             if let Ok(output) = output {
                 if !output.status.success() {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     if !stderr.contains("No matching processes") {
-                        eprintln!("终止进程 {} 失败: {}", process, stderr);
+                        eprintln!("终止进程 {} 失败: {}", process_name, stderr);
                     }
                 }
             }
@@ -282,21 +276,18 @@ pub fn kill_all_processes() -> Result<(), String> {
     }
     #[cfg(target_os = "linux")]
     {
-        let processes = vec!["frpc", "natter"];
-        
         for process in processes {
+            let process_name = process.strip_suffix(".exe").unwrap_or(&process);
             let output = std::process::Command::new("pkill")
                 .arg("-f")
-                .arg(process)
+                .arg(process_name)
                 .output();
             
-            // 忽略错误，因为进程可能不存在
             if let Ok(output) = output {
                 if !output.status.success() {
-                    // pkill 返回 1 表示没有找到匹配的进程，这是正常的
                     if output.status.code() != Some(1) {
                         let stderr = String::from_utf8_lossy(&output.stderr);
-                        eprintln!("终止进程 {} 失败: {}", process, stderr);
+                        eprintln!("终止进程 {} 失败: {}", process_name, stderr);
                     }
                 }
             }
@@ -544,4 +535,232 @@ pub async fn delete_file<R: Runtime>(
         .map_err(|e| e.to_string())?;
 
     Ok(true)
+}
+
+#[tauri::command]
+pub async fn auto_update<R: Runtime>(
+    app: tauri::AppHandle<R>,
+    download_url: String,
+    file_name: String,
+) -> Result<String, String> {
+    use tokio::io::AsyncWriteExt;
+    use reqwest::Client;
+    use futures::StreamExt;
+
+    let save_path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join(&file_name);
+
+    if let Some(parent) = save_path.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let _ = app.emit("update-download-start", serde_json::json!({
+        "url": download_url,
+        "file_name": file_name
+    }));
+
+    let client = Client::new();
+    let res = client.get(&download_url).send().await.map_err(|e| e.to_string())?;
+
+    let total = res.content_length();
+    let mut stream = res.bytes_stream();
+    let mut file = tokio::fs::File::create(&save_path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let mut downloaded: u64 = 0;
+    const REPORT_INTERVAL: u64 = 512 * 1024;
+
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| e.to_string())?;
+        file.write_all(&chunk).await.map_err(|e| e.to_string())?;
+
+        downloaded += chunk.len() as u64;
+        if downloaded % REPORT_INTERVAL < chunk.len() as u64 {
+            let _ = app.emit("update-download-progress", serde_json::json!({
+                "downloaded": downloaded,
+                "total": total,
+                "percentage": if let Some(total) = total {
+                    (downloaded as f64 / total as f64 * 100.0) as u32
+                } else {
+                    0
+                }
+            }));
+        }
+    }
+
+    let _ = app.emit("update-download-complete", serde_json::json!({
+        "file_path": save_path.to_string_lossy().to_string()
+    }));
+
+    Ok(save_path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn install_and_restart<R: Runtime>(
+    app: tauri::AppHandle<R>,
+    installer_path: String,
+) -> Result<(), String> {
+    use std::process::Command;
+
+    let _ = app.emit("update-install-start", serde_json::json!({}));
+
+    #[cfg(target_os = "windows")]
+    {
+        let installer_path = std::path::Path::new(&installer_path);
+        
+        let current_exe = std::env::current_exe()
+            .map_err(|e| format!("获取当前程序路径失败: {}", e))?;
+        
+        let install_dir = current_exe.parent()
+            .ok_or("无法获取安装目录")?;
+        
+        let mut cmd = Command::new(installer_path);
+        cmd.arg("/S");
+        cmd.arg(format!("/D={}", install_dir.to_string_lossy()));
+        
+        let _ = cmd.spawn()
+            .map_err(|e| format!("启动安装程序失败: {}", e))?;
+        
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        
+        app.exit(0);
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use std::fs;
+        
+        let installer_path = std::path::Path::new(&installer_path);
+        
+        let current_exe = std::env::current_exe()
+            .map_err(|e| format!("获取当前程序路径失败: {}", e))?;
+        
+        let applications_dir = std::path::Path::new("/Applications");
+        
+        let output = Command::new("hdiutil")
+            .arg("attach")
+            .arg(installer_path)
+            .output()
+            .map_err(|e| format!("挂载 DMG 失败: {}", e))?;
+        
+        if !output.status.success() {
+            return Err(format!("挂载 DMG 失败: {}", String::from_utf8_lossy(&output.stderr)));
+        }
+        
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        
+        let mount_point = std::path::Path::new("/Volumes");
+        if let Ok(entries) = fs::read_dir(mount_point) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|s| s.to_str()) == Some("app") {
+                    let app_name = path.file_name().unwrap();
+                    let dest_path = applications_dir.join(app_name);
+                    
+                    if dest_path.exists() {
+                        let _ = Command::new("rm")
+                            .arg("-rf")
+                            .arg(&dest_path)
+                            .output();
+                    }
+                    
+                    let _ = Command::new("cp")
+                        .arg("-R")
+                        .arg(&path)
+                        .arg(applications_dir)
+                        .output();
+                    
+                    break;
+                }
+            }
+        }
+        
+        let _ = Command::new("hdiutil")
+            .arg("detach")
+            .arg("/Volumes")
+            .output();
+        
+        let current_app_name = current_exe
+            .parent()
+            .and_then(|p| p.parent())
+            .and_then(|p| p.file_name())
+            .ok_or("无法获取应用名称")?;
+        
+        let new_app_path = applications_dir.join(current_app_name);
+        
+        let _ = Command::new("open")
+            .arg(&new_app_path)
+            .spawn();
+        
+        app.exit(0);
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::fs;
+        
+        let installer_path = std::path::Path::new(&installer_path);
+        
+        let current_exe = std::env::current_exe()
+            .map_err(|e| format!("获取当前程序路径失败: {}", e))?;
+        
+        if installer_path.extension().and_then(|s| s.to_str()) == Some("AppImage") {
+            let _ = fs::copy(installer_path, &current_exe)
+                .map_err(|e| format!("复制 AppImage 失败: {}", e))?;
+            
+            let _ = Command::new("chmod")
+                .arg("+x")
+                .arg(&current_exe)
+                .output();
+            
+            let _ = Command::new(&current_exe)
+                .spawn();
+            
+            app.exit(0);
+        } else if installer_path.extension().and_then(|s| s.to_str()) == Some("deb") {
+            let output = Command::new("pkexec")
+                .arg("dpkg")
+                .arg("-i")
+                .arg(installer_path)
+                .output()
+                .map_err(|e| format!("安装 deb 包失败: {}", e))?;
+            
+            if !output.status.success() {
+                return Err(format!("安装 deb 包失败: {}", String::from_utf8_lossy(&output.stderr)));
+            }
+            
+            let _ = Command::new(&current_exe)
+                .spawn();
+            
+            app.exit(0);
+        } else {
+            return Err("不支持的安装包格式".to_string());
+        }
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    {
+        return Err("当前平台不支持自动更新".to_string());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn extract_zip<R: Runtime>(
+    _app: tauri::AppHandle<R>,
+    zip_path: String,
+    extract_to: String,
+) -> Result<(), String> {
+    let file = File::open(&zip_path).map_err(|e| e.to_string())?;
+    let mut zip = zip::ZipArchive::new(file)
+        .map_err(|e| e.to_string())?;
+    zip.extract(extract_to).map_err(|e| e.to_string())?;
+    Ok(())
 }
