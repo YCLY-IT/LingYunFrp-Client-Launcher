@@ -71,7 +71,33 @@
           <NCard title="通知内容" class="notice-card">
             <template #default>
               <div class="notice-scroll">
-                <div v-html="renderedNotice" />
+                <NCollapse v-if="notices.length > 0" accordion>
+                  <template
+                    v-for="(notice, _index) in notices"
+                    :key="notice.id"
+                  >
+                    <NCollapseItem :title="notice.title" :name="notice.id">
+                      <template #header-extra>
+                        <div
+                          style="display: flex; align-items: center; gap: 8px"
+                        >
+                          <span v-if="notice.top" class="top-badge">置顶</span>
+                          <span
+                            class="notice-time"
+                            :style="{ color: themeStore.$state.primaryColor }"
+                            >{{ formatTime(notice.created_at) }}</span
+                          >
+                        </div>
+                      </template>
+                      <div
+                        class="notice-content"
+                        v-html="renderNoticeContent(notice.message)"
+                      />
+                    </NCollapseItem>
+                    <NDivider style="margin: 8px 0" />
+                  </template>
+                </NCollapse>
+                <div v-else class="no-notice">暂无通知</div>
               </div>
             </template>
           </NCard>
@@ -91,11 +117,13 @@ import { userApi } from "../../net";
 import { accessHandle } from "../../net/base";
 import UserInfo from "../../components/UserInfo.vue";
 import WelcomeCard from "../../components/WelcomeCard.vue";
-import { Traffic } from "../../types/User";
+import { Broadcast, Traffic } from "../../types/User";
+import { useThemeStore } from "../../stores/theme";
 
 const router = useRouter();
-const notices = ref("");
+const notices = ref<Broadcast[]>([]);
 const nickname = localStorage.getItem("nickname") || "";
+const themeStore = useThemeStore();
 
 // 用户信息引用
 const userInfoRef = ref<{
@@ -144,15 +172,29 @@ const goToRealname = () => {
 };
 
 // 渲染通知
-const renderedNotice = computed(() => {
-  if (!notices.value) return "";
+const renderNoticeContent = (message: string) => {
   try {
-    const html = marked.parse(notices.value) as string;
+    const html = marked.parse(message) as string;
     return DOMPurify.sanitize(html);
   } catch {
-    return "";
+    return message;
   }
-});
+};
+
+// 格式化时间
+const formatTime = (timeStr: string) => {
+  const date = new Date(timeStr);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor(diff / (1000 * 60));
+
+  if (days > 0) return `${days}天前`;
+  if (hours > 0) return `${hours}小时前`;
+  if (minutes > 0) return `${minutes}分钟前`;
+  return "刚刚";
+};
 
 const handleUserUpdate = () => {
   getUserTraffic();
@@ -163,7 +205,11 @@ const handleUserUpdate = () => {
 const fetchNotice = async (): Promise<void> => {
   userApi.get("/user/info/broadcast", accessHandle(), (data) => {
     if (data.code === 0) {
-      notices.value = data.data[0].broadcast;
+      notices.value = data.data.sort((a: Broadcast, b: Broadcast) => {
+        if (a.top && !b.top) return -1;
+        if (!a.top && b.top) return 1;
+        return 0;
+      });
     }
   });
 };
@@ -241,6 +287,69 @@ onMounted(() => {
   scrollbar-width: thin;
   scrollbar-color: #e0e0e0 #fff;
   max-height: 100%;
+}
+
+.notice-scroll :deep(.n-collapse) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notice-scroll :deep(.n-collapse-item) {
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.notice-scroll :deep(.n-collapse-item__header) {
+  font-size: 18px;
+  font-weight: 500;
+  border-radius: 8px 8px 0 0;
+}
+
+.notice-scroll :deep(.n-collapse-item__header-main) {
+  flex: 1;
+  margin-top: 10px;
+}
+
+.notice-scroll :deep(.n-collapse-item__content-inner) {
+  padding: 10px !important;
+}
+
+.notice-time {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: normal;
+}
+
+.top-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+  color: white;
+  font-size: 12px;
+  border-radius: 4px;
+  font-weight: 500;
+  margin-top: 10px;
+  box-shadow: 0 2px 4px rgba(238, 90, 90, 0.3);
+}
+
+.notice-content {
+  line-height: 1.8;
+  color: var(--n-text-color);
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.notice-content :deep(p) {
+  margin: 8px 0;
+}
+
+.no-notice {
+  text-align: center;
+  color: var(--n-text-color-3);
+  padding: 40px 0;
+  font-size: 14px;
 }
 
 .welcome-card-container {

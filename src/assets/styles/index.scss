@@ -18,6 +18,18 @@
   border-radius: 13px !important;
 }
 
+.n-notification {
+  border-radius: 13px !important;
+}
+
+.n-button {
+  border-radius: 15px !important;
+}
+
+.n-base-selection {
+  border-radius: 15px !important;
+}
+
 /* 对话框模糊效果 */
 .n-modal-mask {
   backdrop-filter: blur(var(--modal-filter, 10px)) !important;
@@ -93,19 +105,6 @@ body::before {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-// /* 毛玻璃模式下的输入框和按钮 */
-// .frosted-glass-mode .n-input,
-// .frosted-glass-mode .n-button,
-// .frosted-glass-mode .n-select,
-// .frosted-glass-mode .n-switch {
-//   backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8));
-//   background-color: rgba(
-//     var(--n-color-modal-rgb, 255, 255, 255),
-//     0.12
-//   ) !important;
-//   border: 1px solid rgba(var(--n-color-modal-rgb, 255, 255, 255), 0.15);
-// }
-
 /* 毛玻璃模式下的模态框 */
 .frosted-glass-mode .n-modal .n-card {
   backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 2));
@@ -125,35 +124,6 @@ body::before {
   ) !important;
   border-right: 1px solid rgba(var(--n-color-modal-rgb, 255, 255, 255), 0.2);
 }
-
-// /* 毛玻璃模式下的导航栏 */
-// .frosted-glass-mode .n-menu {
-//   backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8));
-//   background-color: rgba(
-//     var(--n-color-modal-rgb, 255, 255, 255),
-//     0.1
-//   ) !important;
-// }
-
-// /* 毛玻璃模式下的表格 */
-// .frosted-glass-mode .n-data-table {
-//   backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.5));
-//   background-color: rgba(
-//     var(--n-color-modal-rgb, 255, 255, 255),
-//     0.08
-//   ) !important;
-//   border: 1px solid rgba(var(--n-color-modal-rgb, 255, 255, 255), 0.1);
-// }
-
-// /* 毛玻璃模式下的标签页 */
-// .frosted-glass-mode .n-tabs {
-//   backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.6));
-//   background-color: rgba(
-//     var(--n-color-modal-rgb, 255, 255, 255),
-//     0.09
-//   ) !important;
-//   border-radius: 8px;
-// }
 
 .frosted-glass-mode .n-layout-header {
   backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.6));

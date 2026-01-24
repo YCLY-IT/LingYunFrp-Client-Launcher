@@ -74,3 +74,12 @@ export interface TrafficType {
   allUsedTraffic: number;
   allTraffic: number;
 }
+
+export interface Broadcast {
+  id: number;
+  title: string;
+  message: string;
+  top: boolean;
+  created_at: string;
+  updated_at: string;
+}

@@ -175,7 +175,7 @@ pub async fn stop_easytire(app: tauri::AppHandle, _network_id: String) -> Result
         ]);
         cmd.creation_flags(CREATE_NO_WINDOW);
         
-        let output = cmd.output().map_err(|e| format!("停止easytier失败: {}", e))?;
+        let _output = cmd.output().map_err(|e| format!("停止easytier失败: {}", e))?;
         
         *ACTIVE_NETWORK.lock().unwrap() = None;
         clear_active_network(&app);
