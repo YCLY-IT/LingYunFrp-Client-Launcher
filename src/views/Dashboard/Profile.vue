@@ -114,7 +114,7 @@
                     backgroundPosition: 'center',
                     width: '80px',
                     height: '80px',
-                    borderRadius: '64px',
+                    borderRadius: '25%',
                   }"
                   alt="User Avatar"
                 />
@@ -1067,7 +1067,7 @@ const handleChangePassword = async () => {
   .user-avatar {
     width: 80px;
     height: 80px;
-    border-radius: 8px;
+    margin: 0px 10px 0px 10px;
     overflow: hidden;
 
     img {

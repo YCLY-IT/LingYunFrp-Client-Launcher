@@ -31,15 +31,7 @@
             </NScrollbar>
           </div>
         </NPopover>
-        <h2
-          style="
-            margin-left: 20px;
-            background: transparent;
-            -webkit-background-clip: text;
-            color: transparent;
-            background-image: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
-          "
-        >
+        <h2 :style="{ marginLeft: '20px', color: themeStore.primaryColor }">
           {{ packageData.title }}
         </h2>
       </div>
@@ -106,7 +98,7 @@
               <ScanOutline />
             </NIcon>
           </NButton>
-          <NButton text @click="ToClose = true">
+          <NButton text @click="handleCloseButtonClick">
             <NIcon size="20">
               <CloseOutline />
             </NIcon>
@@ -127,6 +119,9 @@
     <template #header> 你确定要关闭吗? </template>
     这样会关闭所有隧道, 你也可以同样点击右上角的X图标来关闭当前弹窗。
     <br />
+    <div style="margin-top: 15px">
+      <n-checkbox v-model:checked="rememberChoice">记住我的选择</n-checkbox>
+    </div>
     <template #action>
       <NButton size="small" type="error" @click="handleToClose(false)"
         >确定</NButton
@@ -169,6 +164,7 @@ import {
   NModal,
   useMessage,
   DrawerPlacement,
+  NCheckbox,
 } from "naive-ui";
 import {
   PersonCircleOutline,
@@ -205,6 +201,8 @@ const ToClose = ref(false);
 const isMobile = ref(window.innerWidth <= 768);
 const nickname = ref("");
 const avatarUrl = ref("");
+const rememberChoice = ref(false);
+const rememberedAction = ref("");
 
 const themeSwitcherDrawer = ref(false);
 const placement = ref<DrawerPlacement>("right");
@@ -296,6 +294,10 @@ const handleToRefresh = () => {
 };
 
 const handleToClose = async (isKeep: boolean) => {
+  if (rememberChoice.value) {
+    rememberedAction.value = isKeep ? "keep" : "close";
+    localStorage.setItem("remembered_close_action", rememberedAction.value);
+  }
   await invoke("quit_window", { isKeep: isKeep });
 };
 
@@ -309,10 +311,49 @@ const handleToMaximize = async () => {
 
 const handleToCloseToPanel = async () => {
   ToClose.value = false;
+  if (rememberChoice.value) {
+    rememberedAction.value = "tray";
+    localStorage.setItem("remembered_close_action", rememberedAction.value);
+  }
   await invoke("hide_to_tray");
 };
 const handleResize = () => {
   isMobile.value = window.innerWidth <= 768;
+};
+
+const handleCloseButtonClick = async () => {
+  const rememberedAction = localStorage.getItem("remembered_close_action");
+  const saveToTray = localStorage.getItem("boot_settings");
+
+  if (saveToTray) {
+    try {
+      const settings = JSON.parse(saveToTray);
+      if (settings.saveToTray) {
+        await invoke("hide_to_tray");
+        return;
+      }
+    } catch (e) {
+      console.error("解析启动设置失败:", e);
+    }
+  }
+
+  if (rememberedAction) {
+    switch (rememberedAction) {
+      case "keep":
+        await invoke("quit_window", { isKeep: true });
+        break;
+      case "close":
+        await invoke("quit_window", { isKeep: false });
+        break;
+      case "tray":
+        await invoke("hide_to_tray");
+        break;
+      default:
+        ToClose.value = true;
+    }
+  } else {
+    ToClose.value = true;
+  }
 };
 
 onMounted(() => {
@@ -337,10 +378,10 @@ onUnmounted(() => {
 }
 
 .avatar {
-  --size: 36px;
+  --size: 35px;
   width: var(--size);
   height: var(--size);
-  border-radius: 50%;
+  border-radius: 25%;
   transform: translateY(-8px) translateX(-12px);
   overflow: hidden;
   display: flex;

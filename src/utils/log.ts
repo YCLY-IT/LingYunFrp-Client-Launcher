@@ -35,13 +35,43 @@ const ansi = new AnsiToHtml({
 export const logStore = reactive<{
   allLogs: string[];
   tunnelLogs: Record<string, string[]>;
-}>({ allLogs: [], tunnelLogs: {} });
+  systemLogs: string[];
+  frpLogs: string[];
+  virtualNetworkLogs: string[];
+}>({
+  allLogs: [],
+  tunnelLogs: {},
+  systemLogs: [],
+  frpLogs: [],
+  virtualNetworkLogs: [],
+});
 const MAX_LOG_COUNT = 10000;
 
-function addLog(raw: string) {
+function addLog(
+  raw: string,
+  category: "system" | "frp" | "virtual_network" = "system",
+) {
   if (logStore.allLogs.at(-1) === raw) return;
   logStore.allLogs.push(raw);
   if (logStore.allLogs.length > MAX_LOG_COUNT) logStore.allLogs.splice(0, 1);
+
+  switch (category) {
+    case "system":
+      logStore.systemLogs.push(raw);
+      if (logStore.systemLogs.length > MAX_LOG_COUNT)
+        logStore.systemLogs.splice(0, 1);
+      break;
+    case "frp":
+      logStore.frpLogs.push(raw);
+      if (logStore.frpLogs.length > MAX_LOG_COUNT)
+        logStore.frpLogs.splice(0, 1);
+      break;
+    case "virtual_network":
+      logStore.virtualNetworkLogs.push(raw);
+      if (logStore.virtualNetworkLogs.length > MAX_LOG_COUNT)
+        logStore.virtualNetworkLogs.splice(0, 1);
+      break;
+  }
 
   const m = raw.match(/隧道\s+(\d+|link-[A-Za-z0-9\-_]+)/);
   const tid = m?.[1];
@@ -56,6 +86,9 @@ function addLog(raw: string) {
 export const clearLogs = () => {
   logStore.allLogs = [];
   logStore.tunnelLogs = {};
+  logStore.systemLogs = [];
+  logStore.frpLogs = [];
+  logStore.virtualNetworkLogs = [];
   localStorage.removeItem("frpcLogs");
 };
 
@@ -65,7 +98,7 @@ export const initLogService = async () => {
   inited = true;
 
   const saved = localStorage.getItem("frpcLogs");
-  if (saved) saved.split("\n").forEach(addLog);
+  if (saved) saved.split("\n").forEach((log) => addLog(log, "system"));
 
   await listen("log", (e: any) => {
     const { level, message } = e.payload;
@@ -74,6 +107,7 @@ export const initLogService = async () => {
     const style = PALETTE[level as keyof typeof PALETTE] ?? "";
     addLog(
       `<span style="${PALETTE.time}">[${t}]</span> <span style="${PALETTE.system}">[系统]</span> <span style="${style}">${html}</span>`,
+      "system",
     );
   });
 
@@ -83,6 +117,20 @@ export const initLogService = async () => {
     const html = ansi.toHtml(message);
     addLog(
       `<span style="${PALETTE.time}">[${t}]</span> <span style="${PALETTE.tunnel}">[隧道 ${tunnelId}]</span> ${html}`,
+      "frp",
     );
   });
+};
+
+export const addVirtualNetworkLog = (
+  message: string,
+  level: "info" | "success" | "warning" | "error" = "info",
+) => {
+  const t = new Date().toLocaleTimeString();
+  const style = PALETTE[level] ?? "";
+  const html = ansi.toHtml(message);
+  addLog(
+    `<span style="${PALETTE.time}">[${t}]</span> <span style="color:#a855f7">[虚拟网络]</span> <span style="${style}">${html}</span>`,
+    "virtual_network",
+  );
 };

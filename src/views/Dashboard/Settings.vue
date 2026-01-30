@@ -34,11 +34,14 @@ const currentVersion = ref("获取中...");
 const checking = ref(false);
 const autoStart = ref(false);
 const autoRestoreTunnels = ref(true);
+const saveToTray = ref(false);
 const activeNames = ref<string[]>(["2"]);
 const downloadProgress = ref(0);
 const downloadedBytes = ref(0);
 const totalBytes = ref(0);
 const BOOT_SETTINGS_KEY = "boot_settings";
+const buildTime = ref(__BUILD_TIME__ || "开发模式");
+const buildFingerprint = ref(__BUILD_FINGERPRINT__ || "dev");
 
 const clientVersion = await loadAppVersion();
 const systemInfo = await loadAppSystemInfo();
@@ -104,6 +107,12 @@ const toggleAutoRestoreTunnels = (value: boolean) => {
       message.warning("已禁用恢复隧道，程序将在启动后不会自动启动隧道");
     }, 500);
   }
+};
+
+const toggleSaveToTray = (value: boolean) => {
+  saveToTray.value = value;
+  message.success(`${value ? "启用" : "禁用"}保存到托盘成功`);
+  saveBootSettings();
 };
 
 onBeforeRouteLeave((_to, _from, next) => {
@@ -300,6 +309,7 @@ const saveBootSettings = () => {
     JSON.stringify({
       autoStart: autoStart.value,
       autoRestoreTunnels: autoRestoreTunnels.value,
+      saveToTray: saveToTray.value,
     }),
   );
 };
@@ -311,6 +321,7 @@ onMounted(async () => {
       const cfg = JSON.parse(str);
       autoStart.value = Boolean(cfg.autoStart);
       autoRestoreTunnels.value = Boolean(cfg.autoRestoreTunnels);
+      saveToTray.value = Boolean(cfg.saveToTray);
     }
   } catch {
     /* 忽略解析错误 */
@@ -378,6 +389,8 @@ const disableUpdateNotification = () => {
               <n-collapse-item title="版本信息" name="2">
                 <n-space vertical>
                   <n-text>当前版本：Beta v{{ currentVersion }}</n-text>
+                  <n-text>构建时间：{{ buildTime }}</n-text>
+                  <n-text>构建指纹：{{ buildFingerprint }}</n-text>
                   <n-space>
                     <n-button @click="checkAppUpdate()" :loading="checking">
                       {{ checking ? "检查中..." : "检查更新" }}
@@ -450,6 +463,13 @@ const disableUpdateNotification = () => {
                       @update:value="toggleAutoRestoreTunnels"
                     />
                     <span>打开上次未关闭的隧道</span>
+                  </n-space>
+                  <n-space style="display: flex">
+                    <n-switch
+                      v-model:value="saveToTray"
+                      @update:value="toggleSaveToTray"
+                    />
+                    <span>关闭时保存到托盘</span>
                   </n-space>
                 </n-space>
               </n-collapse-item>

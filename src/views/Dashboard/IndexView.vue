@@ -13,9 +13,9 @@
               backgroundImage: `url(${avatar})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              width: '64px',
-              height: '64px',
-              borderRadius: '64px',
+              width: '60px',
+              height: '60px',
+              borderRadius: '25%',
               marginTop: '1px',
               transform: 'scale(1.2)',
             }"

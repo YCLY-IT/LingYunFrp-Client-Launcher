@@ -82,54 +82,6 @@
                       </div>
                     </div>
                   </n-card>
-
-                  <!-- 运行日志卡片 -->
-                  <n-card title="运行日志" class="log-card">
-                    <template #header>
-                      <div class="log-header">
-                        <span class="log-title">运行日志</span>
-                        <div class="log-actions">
-                          <n-button text size="small" @click="clearLogs">
-                            <template #icon>
-                              <n-icon><TrashOutline /></n-icon>
-                            </template>
-                            清空
-                          </n-button>
-                          <n-button text size="small" @click="refreshLogs">
-                            <template #icon>
-                              <n-icon><RefreshOutline /></n-icon>
-                            </template>
-                            刷新
-                          </n-button>
-                        </div>
-                      </div>
-                    </template>
-                    <div class="log-container">
-                      <div v-if="logs.length === 0" class="log-empty">
-                        <n-empty description="暂无日志" size="small" />
-                      </div>
-                      <div v-else class="log-list">
-                        <div
-                          v-for="(log, index) in logs"
-                          :key="index"
-                          class="log-item"
-                          :class="log.type"
-                        >
-                          <div class="log-time">{{ log.time }}</div>
-                          <div class="log-content">
-                            <n-tag
-                              :type="getLogTagType(log.type)"
-                              size="tiny"
-                              class="log-type"
-                            >
-                              {{ getLogTypeText(log.type) }}
-                            </n-tag>
-                            <span class="log-message">{{ log.message }}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </n-card>
                 </div>
               </n-card>
             </div>
@@ -298,152 +250,6 @@
             </n-card>
           </div>
         </n-tab-pane>
-
-        <!-- 日志页面 -->
-        <n-tab-pane name="logs" tab="日志">
-          <div class="tab-content">
-            <n-card class="logs-card">
-              <template #header>
-                <div class="logs-header">
-                  <div class="logs-title-section">
-                    <h3>系统日志</h3>
-                    <p class="logs-subtitle">
-                      查看虚拟网络的运行日志和操作记录
-                    </p>
-                  </div>
-                  <div class="logs-actions">
-                    <n-button type="primary" size="small" @click="exportLogs">
-                      <template #icon>
-                        <n-icon><CopyOutline /></n-icon>
-                      </template>
-                      导出日志
-                    </n-button>
-                    <n-button type="warning" size="small" @click="clearLogs">
-                      <template #icon>
-                        <n-icon><TrashOutline /></n-icon>
-                      </template>
-                      清空日志
-                    </n-button>
-                    <n-button type="info" size="small" @click="refreshLogs">
-                      <template #icon>
-                        <n-icon><RefreshOutline /></n-icon>
-                      </template>
-                      刷新
-                    </n-button>
-                  </div>
-                </div>
-              </template>
-
-              <!-- 日志筛选器 -->
-              <div class="logs-filter">
-                <div class="filter-section">
-                  <span class="filter-label">日志类型：</span>
-                  <n-space>
-                    <n-tag
-                      v-for="type in logTypes"
-                      :key="type.value"
-                      :type="
-                        selectedLogType === type.value ? 'primary' : 'default'
-                      "
-                      :bordered="false"
-                      clickable
-                      @click="selectedLogType = type.value"
-                      class="filter-tag"
-                    >
-                      {{ type.label }}
-                    </n-tag>
-                  </n-space>
-                </div>
-                <div class="filter-section">
-                  <span class="filter-label">时间范围：</span>
-                  <n-space>
-                    <n-button
-                      v-for="range in timeRanges"
-                      :key="range.value"
-                      :type="
-                        selectedTimeRange === range.value
-                          ? 'primary'
-                          : 'default'
-                      "
-                      size="small"
-                      @click="selectedTimeRange = range.value"
-                    >
-                      {{ range.label }}
-                    </n-button>
-                  </n-space>
-                </div>
-              </div>
-
-              <!-- 日志统计 -->
-              <div class="logs-stats">
-                <div class="stat-item">
-                  <div class="stat-number">{{ totalLogs }}</div>
-                  <div class="stat-label">总日志数</div>
-                </div>
-                <div class="stat-item">
-                  <div class="stat-number">{{ infoLogs }}</div>
-                  <div class="stat-label">信息</div>
-                </div>
-                <div class="stat-item">
-                  <div class="stat-number">{{ successLogs }}</div>
-                  <div class="stat-label">成功</div>
-                </div>
-                <div class="stat-item">
-                  <div class="stat-number">{{ warningLogs }}</div>
-                  <div class="stat-label">警告</div>
-                </div>
-                <div class="stat-item">
-                  <div class="stat-number">{{ errorLogs }}</div>
-                  <div class="stat-label">错误</div>
-                </div>
-              </div>
-
-              <!-- 日志列表 -->
-              <div class="logs-container">
-                <div v-if="filteredLogs.length === 0" class="logs-empty">
-                  <n-empty description="暂无日志记录" size="large">
-                    <template #icon>
-                      <n-icon size="45" color="#d9d9d9">
-                        <InformationCircleOutline />
-                      </n-icon>
-                    </template>
-                  </n-empty>
-                </div>
-                <div v-else class="logs-list">
-                  <div
-                    v-for="(log, index) in filteredLogs"
-                    :key="index"
-                    class="log-item"
-                    :class="log.type"
-                  >
-                    <div class="log-time">{{ log.time }}</div>
-                    <div class="log-content">
-                      <n-tag
-                        :type="getLogTagType(log.type)"
-                        size="small"
-                        class="log-type"
-                      >
-                        {{ getLogTypeText(log.type) }}
-                      </n-tag>
-                      <span class="log-message">{{ log.message }}</span>
-                    </div>
-                    <div class="log-actions">
-                      <n-button
-                        text
-                        size="tiny"
-                        @click="copyLogMessage(log.message)"
-                      >
-                        <template #icon>
-                          <n-icon><CopyOutline /></n-icon>
-                        </template>
-                      </n-button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </n-card>
-          </div>
-        </n-tab-pane>
       </n-tabs>
     </div>
 
@@ -451,30 +257,43 @@
     <n-card title="使用说明" class="help-card" style="margin-top: 20px">
       <div class="help-content">
         <div class="help-item">
-          <h4>🌐 如何创建虚拟网络？</h4>
-          <p>1. 输入网络名称</p>
-          <p>2. 设置网络密钥</p>
-          <p>3. 设置本地IP地址（默认127.0.0.1）</p>
-          <p>4. 可选择添加备注信息</p>
-          <p>5. 点击"创建网络"按钮</p>
+          <h4>🌐 创建虚拟网络</h4>
+          <p>1. 切换到"创建网络"标签页</p>
+          <p>2. 输入网络名称（必填）</p>
+          <p>3. 设置网络密钥（必填）</p>
+          <p>4. 设置本地IP地址（默认 10.114.114.1）</p>
+          <p>5. 可选择添加备注信息（可选）</p>
+          <p>6. 点击"创建网络"按钮完成创建</p>
         </div>
         <div class="help-item">
-          <h4>📋 管理我的网络</h4>
-          <p>在"我的网络"标签页中可以查看和管理您创建的所有虚拟网络。</p>
+          <h4>� 启动虚拟网络</h4>
+          <p>1. 切换到"我的通道"标签页</p>
+          <p>2. 找到要启动的网络卡片</p>
+          <p>3. 点击网络卡片，弹出启动确认对话框</p>
+          <p>4. 点击"启动网络"按钮开始启动</p>
+          <p>5. 启动成功后，切换到"当前通道"标签页查看状态</p>
         </div>
         <div class="help-item">
-          <h4>🔗 启动虚拟网络</h4>
+          <h4>� 管理虚拟网络</h4>
+          <p>在"我的通道"标签页中可以查看和管理所有已创建的虚拟网络。</p>
+          <p>• 点击网络卡片可启动该网络</p>
+          <p>• 点击复制图标可复制网络 ID</p>
+          <p>• 点击删除图标可删除该网络（不可恢复）</p>
+        </div>
+        <div class="help-item">
+          <h4>🔌 断开虚拟网络</h4>
+          <p>1. 切换到"当前通道"标签页</p>
+          <p>2. 点击"断开连接"按钮</p>
+          <p>3. 确认断开后，虚拟网络将停止运行</p>
+        </div>
+        <div class="help-item">
+          <h4>📊 查看运行日志</h4>
+          <p>在侧边栏"运行日志"页面中可以查看所有操作记录和运行状态。</p>
           <p>
-            创建网络后，在我的列表点击刚刚创建的网络，会弹出一个是否启动虚拟网络的弹窗，点击确定后会启动网络，点击取消则不启动。
+            • 支持按日志类型筛选：全部日志、系统日志、FRP 日志、虚拟网络日志
           </p>
-          <p>启动网络后，虚拟网络即可使用</p>
-        </div>
-        <div class="help-item">
-          <h4>📊 查看系统日志</h4>
-          <p>在"日志"标签页中可以查看所有虚拟网络的操作记录和运行状态。</p>
-          <p>
-            支持按类型和时间范围筛选，可以导出日志文件，便于问题排查和系统监控。
-          </p>
+          <p>• 选择 FRP 日志时，可按隧道进一步筛选</p>
+          <p>• 支持自动滚动和日志清空功能</p>
         </div>
       </div>
     </n-card>
@@ -502,7 +321,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import {
   NCard,
   NButton,
@@ -529,6 +348,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import router from "../../router";
 import { loadAppSystemInfo, loadAppVersion } from "../../utils/localInfo";
+import { addVirtualNetworkLog } from "../../utils/log";
 
 // 定义网络项类型
 interface NetworkItem {
@@ -538,12 +358,6 @@ interface NetworkItem {
   createTime: string;
   localIp: string;
   remark?: string;
-}
-
-interface LogItem {
-  time: string;
-  type: "info" | "success" | "warning" | "error";
-  message: string;
 }
 
 // 基础响应式数据
@@ -573,85 +387,8 @@ const currentNetwork = ref<any>(null);
 // 我的网络列表
 const myNetworks = ref<NetworkItem[]>([]);
 
-// 日志列表
-const logs = ref<LogItem[]>([]);
-
 // 清理函数数组
 const cleanupFunctions = ref<(() => void)[]>([]);
-
-// 日志筛选相关
-const selectedLogType = ref<string>("all");
-const selectedTimeRange = ref<string>("all");
-
-// 日志类型选项
-const logTypes = [
-  { value: "all", label: "全部" },
-  { value: "info", label: "信息" },
-  { value: "success", label: "成功" },
-  { value: "warning", label: "警告" },
-  { value: "error", label: "错误" },
-];
-
-// 时间范围选项
-const timeRanges = [
-  { value: "all", label: "全部时间" },
-  { value: "today", label: "今天" },
-  { value: "yesterday", label: "昨天" },
-  { value: "week", label: "最近7天" },
-  { value: "month", label: "最近30天" },
-];
-
-// 计算属性
-const filteredLogs = computed(() => {
-  let filtered = logs.value;
-
-  // 按类型筛选
-  if (selectedLogType.value !== "all") {
-    filtered = filtered.filter((log) => log.type === selectedLogType.value);
-  }
-
-  // 按时间范围筛选
-  if (selectedTimeRange.value !== "all") {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    filtered = filtered.filter((log) => {
-      const logTime = new Date(log.time);
-      switch (selectedTimeRange.value) {
-        case "today":
-          return logTime >= today;
-        case "yesterday":
-          return logTime >= yesterday && logTime < today;
-        case "week":
-          return logTime >= weekAgo;
-        case "month":
-          return logTime >= monthAgo;
-        default:
-          return true;
-      }
-    });
-  }
-
-  return filtered;
-});
-
-// 日志统计
-const totalLogs = computed(() => logs.value.length);
-const infoLogs = computed(
-  () => logs.value.filter((log) => log.type === "info").length,
-);
-const successLogs = computed(
-  () => logs.value.filter((log) => log.type === "success").length,
-);
-const warningLogs = computed(
-  () => logs.value.filter((log) => log.type === "warning").length,
-);
-const errorLogs = computed(
-  () => logs.value.filter((log) => log.type === "error").length,
-);
 
 // 本地存储相关
 const STORAGE_KEY = "my_networks";
@@ -693,12 +430,12 @@ const generateNetworkId = (): string => {
 const createNetwork = () => {
   if (!networkName.value.trim()) {
     message.warning("请输入网络名称");
-    addLog("warning", "创建失败：网络名称不能为空");
+    addVirtualNetworkLog("创建失败：网络名称不能为空", "warning");
     return;
   }
 
   creating.value = true;
-  addLog("info", `开始创建虚拟网络: ${networkName.value.trim()}`);
+  addVirtualNetworkLog(`开始创建虚拟网络: ${networkName.value.trim()}`, "info");
 
   setTimeout(() => {
     const newNetwork: NetworkItem = {
@@ -720,7 +457,7 @@ const createNetwork = () => {
     networkRemark.value = "";
 
     creating.value = false;
-    addLog("success", `虚拟网络 "${newNetwork.name}" 创建成功`);
+    addVirtualNetworkLog(`虚拟网络 "${newNetwork.name}" 创建成功`, "success");
     message.success("网络创建成功！");
 
     dialog.info({
@@ -753,9 +490,9 @@ const leaveNetwork = async () => {
     console.log("停止虚拟网络结果:", result);
 
     if (result === true) {
-      addLog(
-        "success",
+      addVirtualNetworkLog(
         `虚拟网络 "${currentNetwork.value.config.name}" 已断开`,
+        "success",
       );
       message.success("网络连接已断开");
 
@@ -767,7 +504,7 @@ const leaveNetwork = async () => {
     }
   } catch (error) {
     console.error("断开网络连接失败:", error);
-    addLog("error", `断开虚拟网络失败: ${error}`);
+    addVirtualNetworkLog(`断开虚拟网络失败: ${error}`, "error");
     message.error(`断开失败: ${error}`);
   } finally {
     leaving.value = false;
@@ -820,7 +557,7 @@ const startNetwork = async (network: NetworkItem) => {
     console.log(result);
 
     if (Array.isArray(result) && result[0] === "true") {
-      addLog("success", `虚拟网络 "${network.name}" 启动成功`);
+      addVirtualNetworkLog(`虚拟网络 "${network.name}" 启动成功`, "success");
       message.success(`虚拟网络 "${network.name}" 启动成功`);
 
       currentNetwork.value = {
@@ -838,7 +575,10 @@ const startNetwork = async (network: NetworkItem) => {
     }
   } catch (error) {
     console.error("启动虚拟网络失败:", error);
-    addLog("error", `虚拟网络 "${network.name}" 启动失败: ${error}`);
+    addVirtualNetworkLog(
+      `虚拟网络 "${network.name}" 启动失败: ${error}`,
+      "error",
+    );
     message.error(`启动失败: ${error}`);
     return;
   }
@@ -853,7 +593,7 @@ const startNetwork = async (network: NetworkItem) => {
       negativeText: "关闭",
       onPositiveClick: () => {
         copyToClipboard(network.localIp);
-        addLog("info", "本地地址已复制到剪贴板");
+        addVirtualNetworkLog("本地地址已复制到剪贴板", "info");
       },
     });
   }, 500);
@@ -877,102 +617,13 @@ const deleteNetwork = (networkId: string) => {
 
       saveNetworksToLocal(myNetworks.value);
 
-      addLog("warning", `虚拟网络 "${network?.name || networkId}" 已删除`);
+      addVirtualNetworkLog(
+        `虚拟网络 "${network?.name || networkId}" 已删除`,
+        "warning",
+      );
       message.success(`虚拟网络 ${networkId} 已删除`);
     },
   });
-};
-
-// 日志相关函数
-const addLog = (
-  type: "info" | "success" | "warning" | "error",
-  message: string,
-) => {
-  // 检查最后一条日志是否相同
-  if (logs.value.length > 0 && logs.value[0].message === message) {
-    return; // 相同则不添加
-  }
-
-  const log: LogItem = {
-    time: new Date().toLocaleTimeString("zh-CN"),
-    type,
-    message,
-  };
-  logs.value.unshift(log);
-
-  // 限制日志数量，最多保留100条
-  if (logs.value.length > 100) {
-    logs.value = logs.value.slice(0, 100);
-  }
-};
-
-const clearLogs = () => {
-  dialog.warning({
-    title: "清空日志",
-    content: "确定要清空所有日志吗？此操作不可恢复。",
-    positiveText: "确定清空",
-    negativeText: "取消",
-    onPositiveClick: () => {
-      logs.value = [];
-      message.success("日志已清空");
-    },
-  });
-};
-
-const refreshLogs = () => {
-  // 这里可以添加从服务器获取最新日志的逻辑
-  addLog("info", "日志已刷新");
-  message.success("日志已刷新");
-};
-
-const getLogTagType = (type: string) => {
-  switch (type) {
-    case "success":
-      return "success";
-    case "warning":
-      return "warning";
-    case "error":
-      return "error";
-    default:
-      return "info";
-  }
-};
-
-const getLogTypeText = (type: string) => {
-  switch (type) {
-    case "success":
-      return "成功";
-    case "warning":
-      return "警告";
-    case "error":
-      return "错误";
-    default:
-      return "信息";
-  }
-};
-
-const exportLogs = () => {
-  const logText = logs.value
-    .map((log) => `[${log.time}] [${getLogTypeText(log.type)}] ${log.message}`)
-    .join("\n");
-
-  const blob = new Blob([logText], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `virtual-network-logs-${new Date().toISOString().split("T")[0]}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-
-  addLog("info", "日志已导出到本地文件");
-  message.success("日志导出成功");
-};
-
-const copyLogMessage = (message: string) => {
-  copyToClipboard(message);
-  addLog("info", "日志消息已复制到剪贴板");
 };
 
 // 初始化时加载本地网络
@@ -1041,7 +692,7 @@ onMounted(async () => {
   console.log("Network.vue 组件开始挂载");
   initLocalNetworks();
   checkHasEasyTire();
-  addLog("info", "虚拟网络管理系统已启动");
+  addVirtualNetworkLog("虚拟网络管理系统已启动", "info");
 
   try {
     console.log("开始检查 easytier-core 进程状态...");
@@ -1068,27 +719,33 @@ onMounted(async () => {
           nodes: {},
         };
         activeTab.value = "status";
-        addLog("info", `已恢复虚拟网络 "${network.name}" 的状态`);
+        addVirtualNetworkLog(`已恢复虚拟网络 "${network.name}" 的状态`, "info");
       } else {
         console.log("未找到对应的网络配置");
-        addLog("warning", "检测到进程运行，但未找到对应的网络配置");
+        addVirtualNetworkLog(
+          "检测到进程运行，但未找到对应的网络配置",
+          "warning",
+        );
       }
     } else if (processRunning && !networkId) {
       console.log("检测到 easytier-core 进程正在运行，但没有记录的网络ID");
-      addLog(
-        "warning",
+      addVirtualNetworkLog(
         "检测到 easytier-core 进程正在运行，但没有记录的网络ID",
+        "warning",
       );
     } else if (!processRunning && networkId) {
       console.log("检测到记录的网络ID，但进程未运行，清除状态");
       await invoke("stop_easytire", { networkId });
-      addLog("warning", "检测到记录的网络ID，但进程未运行，已清除状态");
+      addVirtualNetworkLog(
+        "检测到记录的网络ID，但进程未运行，已清除状态",
+        "warning",
+      );
     } else {
       console.log("没有检测到活动的虚拟网络");
     }
   } catch (error) {
     console.error("检查活动网络失败:", error);
-    addLog("error", `检查活动网络失败: ${error}`);
+    addVirtualNetworkLog(`检查活动网络失败: ${error}`, "error");
   }
 
   try {
@@ -1291,266 +948,6 @@ onUnmounted(() => {
   }
 }
 
-.log-card {
-  .log-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .log-title {
-      font-weight: 500;
-      color: var(--text-color-1);
-    }
-
-    .log-actions {
-      display: flex;
-      gap: 8px;
-    }
-  }
-
-  .log-container {
-    .log-empty {
-      text-align: center;
-      padding: 40px 20px;
-    }
-
-    .log-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-
-      .log-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 8px 12px;
-        border-radius: 6px;
-        background-color: var(--hover-color);
-        transition: all 0.2s ease;
-
-        &:hover {
-          background-color: var(--primary-color-suppl);
-        }
-
-        .log-time {
-          font-size: 11px;
-          color: var(--text-color-3);
-          font-family: monospace;
-          white-space: nowrap;
-          min-width: 60px;
-        }
-
-        .log-content {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex: 1;
-
-          .log-type {
-            min-width: 40px;
-            text-align: center;
-          }
-
-          .log-message {
-            font-size: 13px;
-            color: var(--text-color-1);
-            line-height: 1.4;
-          }
-        }
-
-        &.success {
-          border-left: 3px solid var(--success-color);
-        }
-
-        &.warning {
-          border-left: 3px solid var(--warning-color);
-        }
-
-        &.error {
-          border-left: 3px solid var(--error-color);
-        }
-
-        &.info {
-          border-left: 3px solid var(--info-color);
-        }
-      }
-    }
-  }
-}
-
-.logs-card {
-  .logs-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-
-    .logs-title-section {
-      h3 {
-        margin: 0 0 4px 0;
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--text-color-1);
-      }
-
-      .logs-subtitle {
-        margin: 0;
-        font-size: 14px;
-        color: var(--text-color-3);
-      }
-    }
-
-    .logs-actions {
-      display: flex;
-      gap: 8px;
-    }
-  }
-
-  .logs-filter {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    background-color: var(--hover-color);
-    border-radius: 8px;
-    margin-bottom: 20px;
-
-    .filter-section {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-
-      .filter-label {
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--text-color-1);
-        white-space: nowrap;
-      }
-
-      .filter-tag {
-        cursor: pointer;
-        transition: all 0.2s ease;
-
-        &:hover {
-          transform: translateY(-1px);
-        }
-      }
-    }
-  }
-
-  .logs-stats {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
-    margin-bottom: 20px;
-
-    .stat-item {
-      text-align: center;
-      padding: 16px;
-      background-color: var(--hover-color);
-      border-radius: 8px;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background-color: var(--primary-color-suppl);
-        transform: translateY(-2px);
-      }
-
-      .stat-number {
-        font-size: 24px;
-        font-weight: 600;
-        color: var(--primary-color);
-        margin-bottom: 4px;
-      }
-
-      .stat-label {
-        font-size: 12px;
-        color: var(--text-color-3);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-    }
-  }
-
-  .logs-container {
-    .logs-empty {
-      text-align: center;
-      padding: 60px 20px;
-    }
-
-    .logs-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-
-      .log-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 12px 16px;
-        border-radius: 8px;
-        background-color: var(--hover-color);
-        transition: all 0.2s ease;
-
-        &:hover {
-          background-color: var(--primary-color-suppl);
-          transform: translateX(4px);
-        }
-
-        .log-time {
-          font-size: 12px;
-          color: var(--text-color-3);
-          font-family: monospace;
-          white-space: nowrap;
-          min-width: 80px;
-        }
-
-        .log-content {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex: 1;
-
-          .log-type {
-            min-width: 50px;
-            text-align: center;
-          }
-
-          .log-message {
-            font-size: 14px;
-            color: var(--text-color-1);
-            line-height: 1.5;
-          }
-        }
-
-        .log-actions {
-          opacity: 0;
-          transition: opacity 0.2s ease;
-        }
-
-        &:hover .log-actions {
-          opacity: 1;
-        }
-
-        &.success {
-          border-left: 4px solid var(--success-color);
-        }
-
-        &.warning {
-          border-left: 4px solid var(--warning-color);
-        }
-
-        &.error {
-          border-left: 4px solid var(--error-color);
-        }
-
-        &.info {
-          border-left: 4px solid var(--info-color);
-        }
-      }
-    }
-  }
-}
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -1738,28 +1135,6 @@ onUnmounted(() => {
 
   .info-card .connection-info-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .log-card .log-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .logs-card .logs-header {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-
-  .logs-filter {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .logs-stats {
-    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
 }
