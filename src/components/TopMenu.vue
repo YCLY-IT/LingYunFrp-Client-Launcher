@@ -54,7 +54,7 @@
             quaternary
             circle
             size="small"
-            @click="toggleTheme"
+            @click="handleThemeToggle"
             class="theme-toggle-btn"
             style="transform: translateX(-30px)"
           >
@@ -189,6 +189,7 @@ import { accessHandle, removeToken } from "../net/base.ts";
 import { invoke } from "@tauri-apps/api/core";
 import type { MenuOption } from "../types/menu";
 import { useThemeStore } from "../stores/theme.ts";
+import { useThemeTransition } from "../composables/useThemeTransition.ts";
 
 const router = useRouter();
 const route = useRoute();
@@ -207,15 +208,18 @@ const rememberedAction = ref("");
 const themeSwitcherDrawer = ref(false);
 const placement = ref<DrawerPlacement>("right");
 const themeStore = useThemeStore();
+const { toggleThemeWithDualCircle } = useThemeTransition();
+
 const ThemeSwitcherDrawer = (place: DrawerPlacement) => {
   themeSwitcherDrawer.value = true;
   placement.value = place;
 };
 
-// 主题切换函数
-const toggleTheme = () => {
-  themeStore.theme = themeStore.theme === "dark" ? "light" : "dark";
-  themeStore.setTheme(themeStore.theme);
+const handleThemeToggle = async (event: MouseEvent) => {
+  await toggleThemeWithDualCircle(event, {
+    duration: 600,
+    easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+  });
 };
 
 // 从 localStorage 获取头像链接
@@ -366,12 +370,20 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.theme-toggle-btn {
+:deep(.theme-toggle-btn) {
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+
   &:hover {
-    transform: rotate(30deg);
+    transform: rotate(30deg) scale(1.1);
     background-color: var(--n-color-hover);
   }
+
+  &:active {
+    transform: rotate(30deg) scale(0.95);
+  }
+
   .n-icon {
     transition: all 0.3s ease;
   }

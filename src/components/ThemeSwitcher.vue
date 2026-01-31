@@ -25,6 +25,7 @@
           <n-switch
             size="large"
             v-model:value="isAutoTheme"
+            @click="changeTheme"
             :checked-value="true"
             :unchecked-value="false"
           >
@@ -43,6 +44,8 @@
             :rail-style="railStyle"
             :checked-value="true"
             :unchecked-value="false"
+            @click="changeTheme"
+            :loading="isTransitioning"
           >
             <template #checked-icon>
               <n-icon :component="Sparkles" color="#9f9f9c" />
@@ -286,6 +289,7 @@
 <script lang="ts" setup>
 import { CSSProperties, ref, onMounted, watch } from "vue";
 import { useThemeStore } from "../stores/theme";
+import { useThemeTransition } from "../composables/useThemeTransition.ts";
 import {
   Sparkles,
   Sunny,
@@ -307,6 +311,7 @@ import {
 } from "@vicons/ionicons5";
 
 const themeStore = useThemeStore();
+const { toggleThemeWithDualCircle, isTransitioning } = useThemeTransition();
 const isDarkTheme = ref(themeStore.theme === "dark");
 const primaryColor = ref(themeStore.primaryColor);
 const isAutoTheme = ref(themeStore.isAutoTheme);
@@ -334,10 +339,11 @@ const presetColors = [
   "#2f54eb",
 ];
 
-const changeTheme = (isDark: boolean) => {
-  const theme = isDark ? "dark" : "light";
-  themeStore.setTheme(theme);
-  document.documentElement.setAttribute("data-theme", theme);
+const changeTheme = async (event?: MouseEvent) => {
+  await toggleThemeWithDualCircle(event, {
+    duration: 600,
+    easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+  });
 };
 
 const changePrimaryColor = (color: string) => {
@@ -373,9 +379,9 @@ watch(isDialogBoxHairGlass, (newVal) => {
   }
 });
 
-watch(isDarkTheme, (newIsDark) => {
-  if (!isAutoTheme.value) {
-    changeTheme(newIsDark);
+watch(isDarkTheme, async () => {
+  if (!isAutoTheme.value && !isTransitioning.value) {
+    await changeTheme();
   }
 });
 
@@ -388,7 +394,7 @@ watch(isAutoTheme, (newVal) => {
   if (newVal) {
     const systemDarkTheme = window.matchMedia("(prefers-color-scheme: dark)");
     isDarkTheme.value = systemDarkTheme.matches;
-    changeTheme(isDarkTheme.value);
+    changeTheme();
     systemDarkTheme.addEventListener("change", handleSystemThemeChange);
   } else {
     const systemDarkTheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -470,7 +476,7 @@ const railStyle = ({
 
 const handleSystemThemeChange = (e: MediaQueryListEvent) => {
   isDarkTheme.value = e.matches;
-  changeTheme(isDarkTheme.value);
+  changeTheme();
 };
 
 // 压缩图片函数

@@ -165,7 +165,6 @@ async function checkHasFrpcAndUpdate() {
     if (!frpcInfo?.version || typeof frpcInfo.version !== "string") {
       throw new Error("无效的版本信息格式");
     }
-
     const updateInfo = await checkUpdate(
       "Frpc",
       system,
@@ -197,8 +196,11 @@ async function checkHasFrpcAndUpdate() {
       clientVersion,
       currentVersion.value,
     );
+    console.log(updateInfo);
     if (updateInfo.success) {
       await downloadAndReplaceFrpc(updateInfo.url, system);
+    } else {
+      message.info(updateInfo.message);
     }
   }
 }
@@ -242,7 +244,7 @@ const killAllProcesses = async () => {
     negativeText: "取消",
     onPositiveClick: async () => {
       try {
-        await invoke("kill_all_processes");
+        await invoke("kill_all_processes", { processes: ["frpc.exe"] });
         message.success("已终止所有 frpc 进程");
       } catch (e) {
         message.error(`操作失败: ${e}`);

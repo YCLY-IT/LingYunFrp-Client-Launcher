@@ -10,6 +10,8 @@ import {
   useMessage,
 } from "naive-ui";
 import { logStore, clearLogs } from "../../utils/log.ts";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 
 const message = useMessage();
 
@@ -64,7 +66,16 @@ const handleScroll = ({ scrollTop, scrollHeight, containerHeight }: any) => {
 const scrollBottom = () =>
   nextTick(() => logInst.value?.scrollTo({ position: "bottom", silent: true }));
 
-const exportLogs = () => {
+const exportLogs = async () => {
+  const tempDiv = document.createElement("div");
+  tempDiv.innerHTML = logs.value;
+  const plainText = tempDiv.innerText || tempDiv.textContent || "";
+
+  if (!plainText.trim()) {
+    message.warning("当前没有可导出的日志");
+    return;
+  }
+
   const categoryLabels: Record<string, string> = {
     all: "全部日志",
     system: "系统日志",
@@ -75,22 +86,27 @@ const exportLogs = () => {
     virtual_network: "虚拟网络日志",
   };
 
-  const fileName = `${categoryLabels[selectedCategory.value]}_${new Date().toISOString().split("T")[0]}.txt`;
+  const defaultFileName = `${categoryLabels[selectedCategory.value]}_${new Date().toISOString().split("T")[0]}.txt`;
 
-  const tempDiv = document.createElement("div");
-  tempDiv.innerHTML = logs.value;
-  const plainText = tempDiv.innerText || tempDiv.textContent || "";
+  try {
+    const filePath = await save({
+      filters: [
+        {
+          name: "文本文件",
+          extensions: ["txt"],
+        },
+      ],
+      defaultPath: defaultFileName,
+    });
 
-  const blob = new Blob([plainText], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  message.success("日志导出成功");
+    if (filePath) {
+      await writeTextFile(filePath, plainText);
+      message.success("日志导出成功");
+    }
+  } catch (error) {
+    message.error("日志导出失败");
+    console.error(error);
+  }
 };
 
 watch(logs, () => autoScroll.value && scrollBottom(), { flush: "post" });

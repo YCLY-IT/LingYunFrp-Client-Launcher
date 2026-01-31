@@ -8,6 +8,9 @@
     "opener:default",
     "notification:default",
     "core:event:default",
-    "deep-link:default"
+    "deep-link:default",
+    "dialog:allow-save",
+    "fs:allow-write-text-file",
+    "core:window:allow-start-dragging"
   ]
 }

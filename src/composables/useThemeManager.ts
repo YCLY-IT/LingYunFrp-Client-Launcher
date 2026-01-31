@@ -117,7 +117,7 @@ export function useThemeManager() {
         isRGBRunning = false;
 
         const defaultColor =
-          localStorage.getItem("app-primary-color") || "#722ed1";
+          localStorage.getItem("app-primary-color") || "#2080F0FF";
         themeStore.setPrimaryColor(defaultColor);
       }
     },

@@ -69,10 +69,12 @@ use commands::{
 fn main() {
     tauri::Builder::default()
     .manage(Mutex::new(HashMap::<u32, std::process::Child>::new()))
-    .manage(Mutex::new(false)) // 添加退出状态标志
+    .manage(Mutex::new(false))
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_deep_link::init())
+    .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_fs::init())
     .plugin(single_instance_init(|app, argv, _cwd| {
         // 第二实例启动时，激活主窗口
         if let Some(window) = app.get_webview_window("main") {

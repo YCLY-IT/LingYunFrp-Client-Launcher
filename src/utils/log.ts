@@ -102,7 +102,7 @@ export const initLogService = async () => {
 
   await listen("log", (e: any) => {
     const { level, message } = e.payload;
-    const t = new Date().toLocaleTimeString();
+    const t = new Date().toLocaleString();
     const html = ansi.toHtml(message);
     const style = PALETTE[level as keyof typeof PALETTE] ?? "";
     addLog(
@@ -113,7 +113,7 @@ export const initLogService = async () => {
 
   await listen("tunnel-event", (e: any) => {
     const { tunnelId, message } = e.payload;
-    const t = new Date().toLocaleTimeString();
+    const t = new Date().toLocaleString();
     const html = ansi.toHtml(message);
     addLog(
       `<span style="${PALETTE.time}">[${t}]</span> <span style="${PALETTE.tunnel}">[隧道 ${tunnelId}]</span> ${html}`,
@@ -126,7 +126,7 @@ export const addVirtualNetworkLog = (
   message: string,
   level: "info" | "success" | "warning" | "error" = "info",
 ) => {
-  const t = new Date().toLocaleTimeString();
+  const t = new Date().toLocaleString();
   const style = PALETTE[level] ?? "";
   const html = ansi.toHtml(message);
   addLog(
