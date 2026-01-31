@@ -49,7 +49,7 @@
                 </NButton>
               </NButtonGroup>
 
-              <NButton secondary @click="handleRefresh" size="medium">
+              <NButton secondary @click="fetchProxies" size="medium">
                 <template #icon>
                   <NIcon>
                     <RefreshOutline />
