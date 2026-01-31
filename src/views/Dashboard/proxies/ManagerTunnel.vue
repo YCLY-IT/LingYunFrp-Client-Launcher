@@ -1015,9 +1015,6 @@ const fetchToken = async () => {
   }
 };
 
-const handleRefresh = () => {
-  fetchProxies();
-};
 const handleSelect = (key: string, proxy: Proxy) => {
   switch (key) {
     case "view":
@@ -1129,7 +1126,7 @@ const handleEditSubmit = () => {
               if (data.code === 0) {
                 message.success("更新隧道成功");
                 showEditModal.value = false;
-                handleRefresh();
+                fetchProxies();
               } else {
                 message.error(data.message || "更新隧道失败");
               }
@@ -1159,7 +1156,7 @@ const handleDeleteConfirm = () => {
       (data) => {
         if (data.code === 0) {
           message.success("删除隧道成功");
-          handleRefresh();
+          fetchProxies();
         } else {
           message.error("删除隧道失败");
         }
@@ -1188,7 +1185,7 @@ const handleToggleConfirm = async () => {
         if (data.code === 0) {
           message.success("操作成功");
           showToggleModal.value = false;
-          handleRefresh();
+          fetchProxies();
         } else {
           message.error(data.message || "操作失败");
         }
@@ -1318,19 +1315,21 @@ const handleStarProxy = async (proxy: Proxy) => {
       proxy.isOnline = true;
       if (success) message.info("正在尝试启动隧道");
       setTimeout(() => {
-        handleRefresh();
-        const latest = proxies.value.find((p) => p.proxyId === proxy.proxyId);
-        if (latest?.isOnline) {
-          (window as any).$notification?.success({
-            title: "隧道启动成功",
-            duration: 3000,
-            content: `隧道已启动，端口为 ${latest.remotePort}`,
-          });
-          addRunningId(proxy.proxyId);
-        } else {
-          message.error("隧道启动失败，请检查配置或网络连接");
-        }
-      }, 1000);
+        fetchProxies();
+        setTimeout(() => {
+          const latest = proxies.value.find((p) => p.proxyId === proxy.proxyId);
+          if (latest?.isOnline) {
+            (window as any).$notification?.success({
+              title: "隧道启动成功",
+              duration: 3000,
+              content: `隧道已启动，端口为 ${latest.remotePort}`,
+            });
+            addRunningId(proxy.proxyId);
+          } else {
+            message.error("隧道启动失败，请检查配置或网络连接");
+          }
+        }, 1000);
+      }, 500);
     } else {
       const success = await invoke("stop_proxy", { proxyId: proxy.proxyId });
       removeRunningId(proxy.proxyId);
@@ -1344,7 +1343,6 @@ const handleStarProxy = async (proxy: Proxy) => {
     console.error("隧道操作失败:", e);
   } finally {
     setTimeout(() => {
-      handleRefresh();
       starProxyLoading.value = false;
     }, 300);
   }
