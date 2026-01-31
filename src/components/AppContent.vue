@@ -18,7 +18,6 @@ import {
   useNotification,
   useMessage,
 } from "naive-ui";
-import { Window } from "../types";
 import HomeMenu from "./HomeMenu.vue";
 const dialog = useDialog();
 const notification = useNotification();
@@ -33,8 +32,7 @@ const isDashboard = computed(() => {
   return route.path.startsWith("/dashboard");
 });
 
-// 声明window类型
-declare const window: Window;
+// Window类型在global.d.ts中已定义
 
 // 使用路由的isReady替代setTimeout
 onMounted(async () => {

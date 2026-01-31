@@ -339,7 +339,6 @@ import {
 } from "naive-ui";
 import {
   WifiOutline,
-  RefreshOutline,
   CopyOutline,
   InformationCircleOutline,
   TrashOutline,

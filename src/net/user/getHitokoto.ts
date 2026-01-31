@@ -1,7 +1,4 @@
 import { defaultError, defaultFailure, get } from "../base";
-import { Window } from "../../types";
-
-declare const window: Window;
 
 // 导出一个函数，用于获取一句名言
 export function getHitokoto(

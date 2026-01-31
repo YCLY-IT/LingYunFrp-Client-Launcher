@@ -1,4 +1,3 @@
-import { Window } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { loadAppVersion } from "../utils/localInfo";
 import { openUrl } from "@tauri-apps/plugin-opener";
