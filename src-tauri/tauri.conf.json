@@ -52,8 +52,7 @@
         "type": "downloadBootstrapper",
         "silent": true
       }
-    },
-    "resources": ["assets/"]
+    }
   },
   "plugins": {
     "deep-link": {
