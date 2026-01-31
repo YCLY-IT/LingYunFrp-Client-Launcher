@@ -1075,75 +1075,77 @@ const handleEdit = (proxy: Proxy) => {
   }
   showEditModal.value = true;
 };
-const handleEditSubmit = () => {
+const handleEditSubmit = async () => {
   // 验证基本配置和高级配置
-  const validateBasic = basicFormRef.value?.validate() || Promise.resolve(null);
-  const validateAdvanced =
-    advancedFormRef.value?.validate() || Promise.resolve(null);
+  try {
+    if (basicFormRef.value) {
+      await basicFormRef.value.validate();
+    }
+    if (advancedFormRef.value) {
+      await advancedFormRef.value.validate();
+    }
+  } catch (errors) {
+    // 验证失败，不继续执行
+    return;
+  }
 
-  Promise.all([validateBasic, validateAdvanced]).then(
-    async ([basicErrors, advancedErrors]) => {
-      if (!basicErrors && !advancedErrors) {
-        loading.value = true;
-        try {
-          // 转换速率单位为KB
-          const convertToKB = (value: number, unit: string) => {
-            if (!value || value <= 0) return 0;
-            switch (unit) {
-              case "KB":
-                return value;
-              case "MB":
-                return value * 1024;
-              case "Mbps":
-                return Math.round(value * 125); // 1 Mbps = 125 KB/s
-              default:
-                return value;
-            }
-          };
-
-          const payload = {
-            ...editForm.value,
-            proxyProtocolVersion: (
-              editForm.value.proxy_protocol_version || ""
-            ).trim(),
-            ipLimitIn: convertToKB(
-              editForm.value.ipLimitIn,
-              editForm.value.ipLimitInUnit,
-            ),
-            ipLimitOut: convertToKB(
-              editForm.value.ipLimitOut,
-              editForm.value.ipLimitOutUnit,
-            ),
-          };
-          delete payload.proxy_protocol_version;
-          delete payload.ipLimitInUnit;
-          delete payload.ipLimitOutUnit;
-          userApi.post(
-            "/proxy/update",
-            payload,
-            accessHandle(),
-            (data) => {
-              if (data.code === 0) {
-                message.success("更新隧道成功");
-                showEditModal.value = false;
-                fetchProxies();
-              } else {
-                message.error(data.message || "更新隧道失败");
-              }
-            },
-            (msg) => message.error("更新隧道失败:" + msg || "更新隧道失败"),
-            () => {
-              loading.value = false;
-            },
-          );
-        } catch (e: any) {
-          message.error(e?.response?.data?.message || "更新隧道失败");
-        } finally {
-          loading.value = false;
-        }
+  loading.value = true;
+  try {
+    // 转换速率单位为KB
+    const convertToKB = (value: number, unit: string) => {
+      if (!value || value <= 0) return 0;
+      switch (unit) {
+        case "KB":
+          return value;
+        case "MB":
+          return value * 1024;
+        case "Mbps":
+          return Math.round(value * 125); // 1 Mbps = 125 KB/s
+        default:
+          return value;
       }
-    },
-  );
+    };
+
+    const payload = {
+      ...editForm.value,
+      proxyProtocolVersion: (
+        editForm.value.proxy_protocol_version || ""
+      ).trim(),
+      ipLimitIn: convertToKB(
+        editForm.value.ipLimitIn,
+        editForm.value.ipLimitInUnit,
+      ),
+      ipLimitOut: convertToKB(
+        editForm.value.ipLimitOut,
+        editForm.value.ipLimitOutUnit,
+      ),
+    };
+    delete payload.proxy_protocol_version;
+    delete payload.ipLimitInUnit;
+    delete payload.ipLimitOutUnit;
+    userApi.post(
+      "/proxy/update",
+      payload,
+      accessHandle(),
+      (data) => {
+        if (data.code === 0) {
+          message.success("更新隧道成功");
+          showEditModal.value = false;
+          fetchProxies();
+        } else {
+          message.error(data.message || "更新隧道失败");
+        }
+      },
+      (msg) => message.error("更新隧道失败:" + msg || "更新隧道失败"),
+      () => {
+        loading.value = false;
+      },
+    );
+  } catch (e: any) {
+    message.error(e?.response?.data?.message || "更新隧道失败");
+  } finally {
+    loading.value = false;
+  }
 };
 const handleDeleteConfirm = () => {
   if (!proxyToDelete.value) return;
@@ -1328,8 +1330,8 @@ const handleStarProxy = async (proxy: Proxy) => {
           } else {
             message.error("隧道启动失败，请检查配置或网络连接");
           }
-        }, 1000);
-      }, 500);
+        }, 500);
+      }, 1000);
     } else {
       const success = await invoke("stop_proxy", { proxyId: proxy.proxyId });
       removeRunningId(proxy.proxyId);
