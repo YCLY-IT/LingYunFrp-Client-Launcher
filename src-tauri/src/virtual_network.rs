@@ -122,11 +122,12 @@ pub async fn start_easytire(app: tauri::AppHandle, name: String, password: Strin
         let mut cmd = std::process::Command::new("sudo");
         cmd.args(&[
             &exe_path.to_string_lossy(),
-            "-i", &format!("{}/24", local_ip),
+            "-i", &format!("{}/24", local_ip).into(),
             "--network-name", &name,
             "--network-secret", &password,
             "-p", "tcp://public.easytier.cn:11010",
         ]);
+        use std::process::Stdio;
         cmd.stdout(Stdio::null());
         cmd.stderr(Stdio::null());
         cmd.stdin(Stdio::null());

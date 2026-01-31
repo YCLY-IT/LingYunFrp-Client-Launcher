@@ -140,26 +140,6 @@ fn main() {
         window.set_decorations(false).unwrap();
         
         // 修改后的窗口事件处理
-        window.on_window_event(move |_event| {
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
-            {
-                use std::env;
-                use std::process::Command;
-                if nix::unistd::Uid::effective().is_root() {
-                    // 已是 root
-                    return;
-                }
-                let exe = env::current_exe().unwrap();
-                let args: Vec<String> = env::args().skip(1).collect();
-                let mut cmd = Command::new("sudo");
-                cmd.arg(exe);
-                for arg in args { cmd.arg(arg); }
-                let _status = cmd.status().expect("无法请求 sudo 权限");
-                std::process::exit(0);
-            }
-        });
-        
-        // 修改后的窗口事件处理
         let window_clone = window.clone();
         window.on_window_event(move |event| {
             match event {
