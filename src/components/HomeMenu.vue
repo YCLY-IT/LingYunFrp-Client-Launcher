@@ -21,20 +21,11 @@
             quaternary
             circle
             size="small"
-            @click="toggleTheme"
+            @click="handleThemeToggle"
             class="theme-toggle-btn no-drag"
           >
             <NIcon size="19" :component="isDarkMode ? Sunny : Moon" />
           </NButton>
-          <n-button
-            quaternary
-            circle
-            size="small"
-            class="no-drag"
-            @click="handleToRefresh"
-          >
-            <NIcon size="20"><RefreshOutline /></NIcon>
-          </n-button>
           <NButton
             quaternary
             circle
@@ -97,23 +88,20 @@ import {
   RemoveOutline,
   ScanOutline,
   CloseOutline,
-  RefreshOutline,
 } from "@vicons/ionicons5";
 import { invoke } from "@tauri-apps/api/core";
 import { useThemeStore } from "../stores/theme";
+import { useThemeTransition } from "../composables/useThemeTransition.ts";
 
+const { toggleThemeWithDualCircle } = useThemeTransition();
 const ToShow = ref(false);
 const themeStore = useThemeStore();
-const { isDarkMode, toggleTheme } = inject("theme", {
+const { isDarkMode } = inject("theme", {
   isDarkMode: ref(false),
   toggleTheme: () => {},
 }) as {
   isDarkMode: Ref<boolean>;
   toggleTheme: () => void;
-};
-
-const handleToRefresh = () => {
-  window.location.reload();
 };
 
 const handleToClose = async (isKeep: boolean) => {
@@ -131,6 +119,13 @@ const handleToMaximize = async () => {
 const handleToCloseToPanel = async () => {
   ToShow.value = false;
   await invoke("hide_to_tray");
+};
+
+const handleThemeToggle = async (event: MouseEvent) => {
+  await toggleThemeWithDualCircle(event, {
+    duration: 600,
+    easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+  });
 };
 </script>
 

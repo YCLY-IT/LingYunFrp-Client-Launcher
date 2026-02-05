@@ -3,6 +3,7 @@ import { useThemeManager } from "./useThemeManager";
 import { useUpdateManager } from "./useUpdateManager";
 import { useSystemChecker } from "./useSystemChecker";
 import { useInputDeviceDetection } from "./useInputDeviceDetection";
+import { restoreTunnels } from "./useTunnelRestore";
 
 export function useAppInitialization() {
   const isAppReady = ref(false);
@@ -44,7 +45,12 @@ export function useAppInitialization() {
 
     setTimeout(() => {
       checkForUpdates();
-    }, 2000);
+    }, 1000);
+
+    // 应用启动后恢复上次未关闭的隧道
+    setTimeout(() => {
+      restoreTunnels();
+    }, 500);
 
     document.addEventListener("contextmenu", (e) => {
       e.preventDefault();

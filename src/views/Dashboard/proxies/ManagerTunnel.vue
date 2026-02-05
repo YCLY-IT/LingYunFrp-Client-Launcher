@@ -75,6 +75,15 @@
                     </NText>
                     <NSpace size="small">
                       <NTag
+                        v-if="tunnelStore.isStarting(proxy.proxyId)"
+                        type="warning"
+                        size="small"
+                        round
+                      >
+                        启动中
+                      </NTag>
+                      <NTag
+                        v-else
                         :type="proxy.isOnline ? 'success' : 'error'"
                         size="small"
                         round
@@ -343,6 +352,15 @@
                 <NDescriptionsItem label="状态">
                   <NSpace size="small">
                     <NTag
+                      v-if="tunnelStore.isStarting(selectedProxy.proxyId)"
+                      type="warning"
+                      size="small"
+                      round
+                    >
+                      启动中
+                    </NTag>
+                    <NTag
+                      v-else
                       :type="selectedProxy.isOnline ? 'success' : 'error'"
                       size="small"
                       round
@@ -799,6 +817,7 @@ import { userApi } from "../../../net";
 import { accessHandle } from "../../../net/base.ts";
 import { invoke } from "@tauri-apps/api/core";
 import { zhCN } from "naive-ui";
+import { useTunnelStore } from "../../../stores/tunnel";
 
 const isIPAddress = (hostname: string) =>
   /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
@@ -809,6 +828,7 @@ const splitDomain = (domain: string) => {
 };
 
 const message = useMessage();
+const tunnelStore = useTunnelStore();
 const loading = ref(false);
 const proxies = ref<Proxy[]>([]);
 const viewMode = ref<"grid" | "list">("grid");
@@ -833,7 +853,6 @@ const showDeleteModal = ref(false);
 const proxyToDelete = ref<Proxy | null>(null);
 const expandedNames = ref<string[]>(["basic"]);
 const starProxyLoading = ref(false);
-const BOOT_SETTINGS_KEY = "boot_settings";
 const RUNNING_TUNNELS_KEY = "running_tunnel_ids";
 
 const page = ref(1);
@@ -1303,35 +1322,33 @@ const renderIcon = (icon: any) => () =>
   h(NIcon, null, { default: () => h(icon) });
 
 // -------------------- 隧道启停 --------------------
+
 const handleStarProxy = async (proxy: Proxy) => {
   if (!getNodeStatus(proxy.nodeId)) return message.error("节点离线");
   if (proxy.isDisabled)
     return message.error("此隧道已被禁用，请先启用后再操作");
+
+  // 如果正在启动中，不允许重复点击
+  if (tunnelStore.isStarting(proxy.proxyId)) {
+    return message.warning("隧道正在启动中，请稍候...");
+  }
+
   starProxyLoading.value = true;
   try {
     if (!proxy.isOnline) {
-      const success = await invoke("start_proxy", {
+      // 第一步：启动进程（立即返回）
+      const pid = await invoke<number>("start_proxy", {
         proxyId: proxy.proxyId,
         token: token.value,
       });
-      proxy.isOnline = true;
-      if (success) message.info("正在尝试启动隧道");
-      setTimeout(() => {
-        fetchProxies();
-        setTimeout(() => {
-          const latest = proxies.value.find((p) => p.proxyId === proxy.proxyId);
-          if (latest?.isOnline) {
-            (window as any).$notification?.success({
-              title: "隧道启动成功",
-              duration: 3000,
-              content: `隧道已启动，端口为 ${latest.remotePort}`,
-            });
-            addRunningId(proxy.proxyId);
-          } else {
-            message.error("隧道启动失败，请检查配置或网络连接");
-          }
-        }, 500);
-      }, 1000);
+
+      // 标记为正在启动
+      tunnelStore.addStartingProxy(proxy.proxyId);
+      message.info(`隧道进程已启动 (PID: ${pid})，正在检测启动状态...`);
+
+      // 第二步：异步检测启动状态（30秒超时）
+      // 使用 Promise.race 来检测状态，不阻塞UI
+      checkTunnelStatus(proxy);
     } else {
       const success = await invoke("stop_proxy", { proxyId: proxy.proxyId });
       removeRunningId(proxy.proxyId);
@@ -1347,6 +1364,64 @@ const handleStarProxy = async (proxy: Proxy) => {
     setTimeout(() => {
       starProxyLoading.value = false;
     }, 300);
+  }
+};
+
+// 异步检测隧道启动状态
+const checkTunnelStatus = async (proxy: Proxy) => {
+  try {
+    const startSuccess = await invoke<boolean>("wait_for_tunnel_start", {
+      proxyId: proxy.proxyId,
+    });
+
+    // 从正在启动集合中移除
+    tunnelStore.removeStartingProxy(proxy.proxyId);
+
+    if (startSuccess) {
+      proxy.isOnline = true;
+
+      // 构建访问地址
+      const node = nodeList.value.find((n: any) => n.nodeId === proxy.nodeId);
+      const hostname = node?.hostname || "";
+      const port = proxy.remotePort || "";
+      const address = hostname && port ? `${hostname}:${port}` : "";
+
+      (window as any).$notification?.success({
+        title: "隧道启动成功",
+        duration: 5000,
+        content: `隧道 "${proxy.proxyName}" 已启动`,
+        meta: address
+          ? () =>
+              h(
+                "a",
+                {
+                  href: "#",
+                  style:
+                    "color: #18a058; text-decoration: underline; cursor: pointer;",
+                  onClick: (e: Event) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(address);
+                    (window as any).$message?.success("连接地址已复制到剪贴板");
+                  },
+                },
+                address,
+              )
+          : undefined,
+      });
+      addRunningId(proxy.proxyId);
+      // 刷新隧道列表以同步状态
+      fetchProxies();
+    } else {
+      message.error("隧道启动超时，请检查配置或网络连接");
+      // 刷新状态
+      fetchProxies();
+    }
+  } catch (e) {
+    tunnelStore.removeStartingProxy(proxy.proxyId);
+    message.error(`隧道状态检测失败: ${e}`);
+    console.error("隧道状态检测失败:", e);
+    fetchProxies();
   }
 };
 
@@ -1414,21 +1489,32 @@ const columns = [
     title: "状态",
     key: "status",
     render(row: Proxy) {
+      const isStarting = tunnelStore.isStarting(row.proxyId);
       return h(
         NSpace,
         { size: 4 },
         {
           default: () =>
             [
-              h(
-                NTag,
-                {
-                  type: row.isOnline ? "success" : "error",
-                  size: "small",
-                  round: true,
-                },
-                { default: () => (row.isOnline ? "在线" : "离线") },
-              ),
+              isStarting
+                ? h(
+                    NTag,
+                    {
+                      type: "warning",
+                      size: "small",
+                      round: true,
+                    },
+                    { default: () => "启动中" },
+                  )
+                : h(
+                    NTag,
+                    {
+                      type: row.isOnline ? "success" : "error",
+                      size: "small",
+                      round: true,
+                    },
+                    { default: () => (row.isOnline ? "在线" : "离线") },
+                  ),
               row.isBanned &&
                 h(
                   NTag,
@@ -1502,57 +1588,8 @@ watch([searchText, viewMode, filteredProxies], () => {
 onMounted(async () => {
   fetchNodesAndProxies();
   fetchToken();
-  setTimeout(() => {
-    checkStartTunnel();
-  }, 500);
   checkFrpcHas();
 });
-
-async function checkStartTunnel() {
-  const str = localStorage.getItem(BOOT_SETTINGS_KEY);
-  if (str) {
-    const cfg = JSON.parse(str);
-    if (cfg.autoRestoreTunnels) {
-      const str = localStorage.getItem(RUNNING_TUNNELS_KEY);
-      if (!str) return;
-
-      let ids: number[] = [];
-      try {
-        ids = JSON.parse(str);
-      } catch {
-        return;
-      }
-      if (!Array.isArray(ids)) return;
-      var temp = 0;
-      // 逐个启动
-      for (const id of ids) {
-        const proxy = proxies.value.find((p) => p.proxyId === id);
-        const node = nodeList.value.find((n) => n.nodeId === proxy?.nodeId);
-        if (
-          node.isDisabled ||
-          node.status === false ||
-          proxy.isDisabled ||
-          proxy.isBanned
-        )
-          continue;
-        if (proxy && !proxy.isOnline) {
-          await handleStarProxy(proxy);
-          temp++;
-          await handleStarProxy(proxy);
-        }
-      }
-      if (temp > 0) {
-        invoke("emit_event", {
-          event: "log",
-          payload: {
-            level: "info",
-            message: `已尝试启动${temp}个代理`,
-          },
-        });
-      }
-    }
-  }
-}
 
 function addRunningId(id: number) {
   const raw = localStorage.getItem(RUNNING_TUNNELS_KEY);

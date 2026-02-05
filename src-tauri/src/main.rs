@@ -38,6 +38,8 @@ use request::{
 use tunnel::{
     start_proxy,
     stop_proxy,
+    wait_for_tunnel_start,
+    TunnelStatus,
 };
 
 use commands::{
@@ -70,6 +72,7 @@ fn main() {
     tauri::Builder::default()
     .manage(Mutex::new(HashMap::<u32, std::process::Child>::new()))
     .manage(Mutex::new(false))
+    .manage(TunnelStatus::new())
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_deep_link::init())
@@ -102,6 +105,7 @@ fn main() {
         get_client_version,
         start_proxy,
         stop_proxy,
+        wait_for_tunnel_start,
         quit_window,
         api_url,
         forward_request,

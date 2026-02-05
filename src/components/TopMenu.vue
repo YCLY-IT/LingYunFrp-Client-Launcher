@@ -50,19 +50,6 @@
               style="cursor: pointer"
             ></n-icon>
           </n-button>
-          <n-button
-            quaternary
-            circle
-            size="small"
-            @click="handleThemeToggle"
-            class="theme-toggle-btn"
-            style="transform: translateX(-30px)"
-          >
-            <NIcon
-              size="20"
-              :component="themeStore.theme === 'dark' ? Sunny : Moon"
-            />
-          </n-button>
           <NDropdown
             style="margin-top: 12px"
             :options="options"
@@ -81,13 +68,21 @@
             </NButton>
           </NDropdown>
         </div>
+        <n-button
+          quaternary
+          circle
+          size="small"
+          @click="handleThemeToggle"
+          class="theme-toggle-btn"
+          style="transform: translateX(-3px)"
+        >
+          <NIcon
+            size="20"
+            :component="themeStore.theme === 'dark' ? Sunny : Moon"
+          />
+        </n-button>
         <div class="theme-switch">
-          <!-- 客户端关闭按钮、全屏、刷新和最小化按钮 -->
-          <NButton text @click="handleToRefresh">
-            <NIcon size="20">
-              <RefreshOutline />
-            </NIcon>
-          </NButton>
+          <!-- 客户端关闭按钮、全屏和最小化按钮 -->
           <NButton text @click="handleToMinimize" style="margin-right: 2px">
             <NIcon size="20">
               <RemoveOutline />
@@ -176,7 +171,6 @@ import {
   CloseOutline,
   ScanOutline,
   RemoveOutline,
-  RefreshOutline,
 } from "@vicons/ionicons5";
 import {
   getMenuOptions,
@@ -293,10 +287,6 @@ const currentKey = computed(() => {
   return key;
 });
 
-const handleToRefresh = () => {
-  window.location.reload();
-};
-
 const handleToClose = async (isKeep: boolean) => {
   if (rememberChoice.value) {
     rememberedAction.value = isKeep ? "keep" : "close";
@@ -394,7 +384,7 @@ onUnmounted(() => {
   width: var(--size);
   height: var(--size);
   border-radius: 25%;
-  transform: translateY(-8px) translateX(-12px);
+  transform: translateY(-8px) translateX(-23px);
   overflow: hidden;
   display: flex;
   align-items: center;
