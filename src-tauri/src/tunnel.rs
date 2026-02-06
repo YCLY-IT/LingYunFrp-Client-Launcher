@@ -195,9 +195,11 @@ pub async fn wait_for_tunnel_start(
 }
 
 #[tauri::command]
-pub async fn stop_proxy(app: tauri::AppHandle, proxy_id: u32) -> Result<bool, String> {
+pub async fn stop_proxy(app: tauri::AppHandle, proxy_id: u32, pid: Option<u32>) -> Result<bool, String> {
+    // 首先尝试从内存中的进程管理器停止
     let processes = app.state::<Mutex<HashMap<u32, std::process::Child>>>();
     let mut processes = processes.lock().unwrap();
+    
     if let Some(mut child) = processes.remove(&proxy_id) {
         child.kill().map_err(|e| format!("停止隧道失败: {}", e))?;
         // 向前端发送停止事件
@@ -206,8 +208,70 @@ pub async fn stop_proxy(app: tauri::AppHandle, proxy_id: u32) -> Result<bool, St
                 "message": format!("[FRPC] 停止进程 PID: {}", child.id())
             })
         );
-        Ok(true)
-    } else {
-        Err("未找到对应的隧道进程".to_string())
+        return Ok(true);
+    }
+    
+    // 如果内存中没有，但提供了PID，尝试通过PID停止
+    if let Some(process_id) = pid {
+        return stop_process_by_pid(process_id, &app);
+    }
+    
+    Err("未找到对应的隧道进程".to_string())
+}
+
+// 通过PID停止进程
+#[cfg(target_os = "windows")]
+fn stop_process_by_pid(pid: u32, app: &tauri::AppHandle) -> Result<bool, String> {
+    use std::os::windows::process::CommandExt;
+    
+    let output = std::process::Command::new("taskkill")
+        .arg("/F")
+        .arg("/PID")
+        .arg(pid.to_string())
+        .creation_flags(0x08000000)
+        .output();
+    
+    match output {
+        Ok(output) => {
+            if output.status.success() {
+                let _ = app.emit("log", 
+                    serde_json::json!({
+                        "message": format!("[FRPC] 通过PID停止进程: {}", pid)
+                    })
+                );
+                Ok(true)
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Err(format!("停止进程失败: {}", stderr))
+            }
+        }
+        Err(e) => Err(format!("执行taskkill失败: {}", e))
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn stop_process_by_pid(pid: u32, app: &tauri::AppHandle) -> Result<bool, String> {
+    use std::process::Command;
+    
+    let output = Command::new("kill")
+        .arg("-9")
+        .arg(pid.to_string())
+        .output();
+    
+    match output {
+        Ok(output) => {
+            if output.status.success() {
+                let _ = app.emit("log", 
+                    serde_json::json!({
+                        "message": format!("[FRPC] 通过PID停止进程: {}", pid)
+                    })
+                );
+                Ok(true)
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Err(format!("停止进程失败: {}", stderr))
+            }
+        }
+        Err(e) => Err(format!("执行kill失败: {}", e))
     }
 }

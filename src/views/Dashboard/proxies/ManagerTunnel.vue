@@ -854,6 +854,7 @@ const proxyToDelete = ref<Proxy | null>(null);
 const expandedNames = ref<string[]>(["basic"]);
 const starProxyLoading = ref(false);
 const RUNNING_TUNNELS_KEY = "running_tunnel_ids";
+const TUNNEL_PID_KEY = "tunnel_pid_map"; // 存储隧道ID与进程ID的映射
 
 const page = ref(1);
 const pageSize = ref(4);
@@ -1342,16 +1343,25 @@ const handleStarProxy = async (proxy: Proxy) => {
         token: token.value,
       });
 
+      // 保存进程ID到本地存储
+      saveTunnelPid(proxy.proxyId, pid);
+
       // 标记为正在启动
       tunnelStore.addStartingProxy(proxy.proxyId);
       message.info(`隧道进程已启动 (PID: ${pid})，正在检测启动状态...`);
 
       // 第二步：异步检测启动状态（30秒超时）
       // 使用 Promise.race 来检测状态，不阻塞UI
-      checkTunnelStatus(proxy);
+      checkTunnelStatus(proxy, pid);
     } else {
-      const success = await invoke("stop_proxy", { proxyId: proxy.proxyId });
+      // 从本地存储获取进程ID并停止
+      const pid = getTunnelPid(proxy.proxyId);
+      const success = await invoke("stop_proxy", {
+        proxyId: proxy.proxyId,
+        pid,
+      });
       removeRunningId(proxy.proxyId);
+      removeTunnelPid(proxy.proxyId);
       if (success) {
         proxy.isOnline = false;
         message.success("隧道停止成功");
@@ -1368,7 +1378,7 @@ const handleStarProxy = async (proxy: Proxy) => {
 };
 
 // 异步检测隧道启动状态
-const checkTunnelStatus = async (proxy: Proxy) => {
+const checkTunnelStatus = async (proxy: Proxy, _pid: number) => {
   try {
     const startSuccess = await invoke<boolean>("wait_for_tunnel_start", {
       proxyId: proxy.proxyId,
@@ -1414,6 +1424,8 @@ const checkTunnelStatus = async (proxy: Proxy) => {
       fetchProxies();
     } else {
       message.error("隧道启动超时，请检查配置或网络连接");
+      // 启动失败，移除保存的PID
+      removeTunnelPid(proxy.proxyId);
       // 刷新状态
       fetchProxies();
     }
@@ -1421,6 +1433,8 @@ const checkTunnelStatus = async (proxy: Proxy) => {
     tunnelStore.removeStartingProxy(proxy.proxyId);
     message.error(`隧道状态检测失败: ${e}`);
     console.error("隧道状态检测失败:", e);
+    // 发生异常，移除保存的PID
+    removeTunnelPid(proxy.proxyId);
     fetchProxies();
   }
 };
@@ -1620,6 +1634,51 @@ function removeRunningId(id: number) {
   const next = ids.filter((tid) => tid !== id);
   localStorage.setItem(RUNNING_TUNNELS_KEY, JSON.stringify(next));
 }
+
+// 保存隧道进程ID到本地存储
+function saveTunnelPid(proxyId: number, pid: number) {
+  const raw = localStorage.getItem(TUNNEL_PID_KEY);
+  let pidMap: Record<number, number> = {};
+  try {
+    pidMap = JSON.parse(raw || "{}");
+  } catch {
+    /* ignore */
+  }
+  if (typeof pidMap !== "object") pidMap = {};
+
+  pidMap[proxyId] = pid;
+  localStorage.setItem(TUNNEL_PID_KEY, JSON.stringify(pidMap));
+}
+
+// 从本地存储获取隧道进程ID
+function getTunnelPid(proxyId: number): number | null {
+  const raw = localStorage.getItem(TUNNEL_PID_KEY);
+  let pidMap: Record<number, number> = {};
+  try {
+    pidMap = JSON.parse(raw || "{}");
+  } catch {
+    return null;
+  }
+  if (typeof pidMap !== "object") return null;
+
+  return pidMap[proxyId] || null;
+}
+
+// 从本地存储移除隧道进程ID
+function removeTunnelPid(proxyId: number) {
+  const raw = localStorage.getItem(TUNNEL_PID_KEY);
+  let pidMap: Record<number, number> = {};
+  try {
+    pidMap = JSON.parse(raw || "{}");
+  } catch {
+    return;
+  }
+  if (typeof pidMap !== "object") return;
+
+  delete pidMap[proxyId];
+  localStorage.setItem(TUNNEL_PID_KEY, JSON.stringify(pidMap));
+}
+
 // 检查frpc
 const checkFrpcHas = async () => {
   try {
