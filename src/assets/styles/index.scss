@@ -30,10 +30,6 @@
   border-radius: 15px !important;
 }
 
-.n-collapse-item {
-  --n-item-margin: 2px 0 0 0 !important;
-}
-
 /* 对话框模糊效果 */
 .n-modal-mask {
   backdrop-filter: blur(var(--modal-filter, 10px)) !important;
