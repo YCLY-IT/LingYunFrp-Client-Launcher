@@ -16,7 +16,8 @@ if (!isDebug) {
       (e.ctrlKey && e.shiftKey && e.key === "I") || // Ctrl+Shift+I
       (e.ctrlKey && e.shiftKey && e.key === "J") || // Ctrl+Shift+J
       (e.ctrlKey && e.key === "U") || // Ctrl+U
-      e.key === "F12"
+      e.key === "F12" ||
+      e.key === "F5"
     ) {
       e.preventDefault();
     }

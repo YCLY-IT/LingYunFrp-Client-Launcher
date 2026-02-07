@@ -17,11 +17,6 @@ mod tunnel;
 mod virtual_network;
 
 use virtual_network::{
-    // nat_start,
-    // nat_stop,
-    // nat_get_address,
-    // get_active_nat,
-    // check_natter_exists,
     check_easy_tire_exists,
     start_easytire,
     stop_easytire,
@@ -152,14 +147,14 @@ fn main() {
                     let _ = window_clone.hide();
                     
                     // 检查是否是退出操作
-                    let is_quitting = *window_clone.app_handle().state::<Mutex<bool>>().lock().unwrap();
-                    if !is_quitting && !window_clone.is_visible().unwrap_or(true) {
-                        let _ = window_clone.app_handle().notification()
-                            .builder()
-                            .title("LingYunFRP客户端")
-                            .body("LingYunFRP客户端已最小化到托盘")
-                            .show();
-                    }
+                    // let is_quitting = *window_clone.app_handle().state::<Mutex<bool>>().lock().unwrap();
+                    // if !is_quitting && !window_clone.is_visible().unwrap_or(true) {
+                    //     let _ = window_clone.app_handle().notification()
+                    //         .builder()
+                    //         .title("LingYunFRP客户端")
+                    //         .body("LingYunFRP客户端已最小化到托盘")
+                    //         .show();
+                    // }
                 }
                 tauri::WindowEvent::Moved { .. } => {
                     // 处理拖动事件

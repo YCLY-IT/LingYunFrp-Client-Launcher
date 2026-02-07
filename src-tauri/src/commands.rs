@@ -5,8 +5,6 @@ use tauri::command;
 use std::fs::File;
 use std::sync::Mutex;
 use crate::config;
-use tauri::path::BaseDirectory;
-use tauri_plugin_notification::NotificationExt;
 use std::path::Path;
 
 #[tauri::command]
@@ -55,13 +53,13 @@ pub fn toggle_maximize(window: tauri::Window) {
 #[tauri::command]
 pub fn hide_to_tray(window: tauri::Window) {
     window.hide().unwrap();
-    let icon_path = window.app_handle().path().resolve("icons/icon.png", BaseDirectory::Resource).unwrap();
-    let _ = window.app_handle().notification()
-        .builder()
-        .title("LingYunFRP")
-        .body("LingYunFRP客户端已最小化到托盘")
-        .icon(icon_path.to_string_lossy())
-        .show();
+    //let icon_path = window.app_handle().path().resolve("icons/icon.png", BaseDirectory::Resource).unwrap();
+    // let _ = window.app_handle().notification()
+    //     .builder()
+    //     .title("LingYunFRP")
+    //     .body("LingYunFRP客户端已最小化到托盘")
+    //     .icon(icon_path.to_string_lossy())
+    //     .show();
 }
 
 #[tauri::command]

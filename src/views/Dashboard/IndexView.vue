@@ -71,33 +71,36 @@
           <NCard title="通知内容" class="notice-card">
             <template #default>
               <div class="notice-scroll">
-                <NCollapse v-if="notices.length > 0" accordion>
-                  <template
-                    v-for="(notice, _index) in notices"
-                    :key="notice.id"
-                  >
-                    <NCollapseItem :title="notice.title" :name="notice.id">
-                      <template #header-extra>
-                        <div
-                          style="display: flex; align-items: center; gap: 8px"
-                        >
-                          <span v-if="notice.top" class="top-badge">置顶</span>
-                          <span
-                            class="notice-time"
-                            :style="{ color: themeStore.$state.primaryColor }"
-                            >{{ formatTime(notice.created_at) }}</span
+                <NScrollbar :vertical-rail-style="{ right: '-15px' }">
+                  <NCollapse v-if="notices.length > 0" accordion>
+                    <template
+                      v-for="(notice, _index) in notices"
+                      :key="notice.id"
+                    >
+                      <NCollapseItem :title="notice.title" :name="notice.id">
+                        <template #header-extra>
+                          <div
+                            style="display: flex; align-items: center; gap: 8px"
                           >
-                        </div>
-                      </template>
-                      <div
-                        class="notice-content"
-                        v-html="renderNoticeContent(notice.message)"
-                      />
-                    </NCollapseItem>
-                    <NDivider style="margin: 8px 0" />
-                  </template>
-                </NCollapse>
-                <div v-else class="no-notice">暂无通知</div>
+                            <span v-if="notice.top" class="top-badge"
+                              >置顶</span
+                            >
+                            <span
+                              class="notice-time"
+                              :style="{ color: themeStore.$state.primaryColor }"
+                              >{{ formatTime(notice.created_at) }}</span
+                            >
+                          </div>
+                        </template>
+                        <div
+                          class="notice-content"
+                          v-html="renderNoticeContent(notice.message)"
+                        />
+                      </NCollapseItem>
+                    </template>
+                  </NCollapse>
+                  <div v-else class="no-notice">暂无通知</div>
+                </NScrollbar>
               </div>
             </template>
           </NCard>
@@ -108,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { NCard, NAlert, NButton } from "naive-ui";
+import { NCard, NAlert, NButton, NScrollbar } from "naive-ui";
 import { ref, onMounted, computed } from "vue";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
@@ -277,16 +280,17 @@ onMounted(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 16px 16px 16px;
 }
 
 .notice-scroll {
   flex: 1 1 0;
   min-height: 0;
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #e0e0e0 #fff;
   max-height: 100%;
+  margin-top: 10px;
+}
+
+.notice-scroll :deep(.n-scrollbar) {
+  overflow: visible;
 }
 
 .notice-scroll :deep(.n-collapse) {
@@ -296,7 +300,6 @@ onMounted(() => {
 }
 
 .notice-scroll :deep(.n-collapse-item) {
-  border-radius: 8px;
   overflow: hidden;
   margin-bottom: 0;
 }
@@ -309,7 +312,6 @@ onMounted(() => {
 
 .notice-scroll :deep(.n-collapse-item__header-main) {
   flex: 1;
-  margin-top: 10px;
 }
 
 .notice-scroll :deep(.n-collapse-item__content-inner) {
@@ -317,7 +319,6 @@ onMounted(() => {
 }
 
 .notice-time {
-  margin-top: 10px;
   font-size: 13px;
   font-weight: normal;
 }
@@ -330,7 +331,6 @@ onMounted(() => {
   font-size: 12px;
   border-radius: 4px;
   font-weight: 500;
-  margin-top: 10px;
   box-shadow: 0 2px 4px rgba(238, 90, 90, 0.3);
 }
 

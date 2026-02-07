@@ -88,7 +88,9 @@ const {
   updateTotal,
   initializeApp,
   cleanup,
+  contextMenuRef,
 } = useAppInitialization();
+void contextMenuRef;
 
 onMounted(() => {
   initializeApp();

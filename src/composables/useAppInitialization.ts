@@ -53,8 +53,23 @@ export function useAppInitialization() {
     }, 500);
 
     document.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      contextMenuRef.value?.showMenu(e.clientX, e.clientY);
+      const target = e.target as HTMLElement;
+      const selection = window.getSelection()?.toString() || "";
+
+      // 检查是否是输入框、文本域或可编辑元素
+      const isInputElement =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable;
+
+      // 检查是否有选中的文字
+      const hasSelectedText = selection.length > 0;
+
+      // 只有在输入框或可编辑元素上，或有选中文字时才显示右键菜单
+      if (isInputElement || hasSelectedText) {
+        e.preventDefault();
+        contextMenuRef.value?.showMenu(e.clientX, e.clientY);
+      }
     });
   };
 
