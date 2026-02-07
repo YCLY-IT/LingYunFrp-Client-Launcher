@@ -65,10 +65,13 @@ export function useAppInitialization() {
       // 检查是否有选中的文字
       const hasSelectedText = selection.length > 0;
 
-      // 只有在输入框或可编辑元素上，或有选中文字时才显示右键菜单
+      // 只有在输入框或可编辑元素上，或有选中文字时才显示自定义右键菜单
       if (isInputElement || hasSelectedText) {
         e.preventDefault();
         contextMenuRef.value?.showMenu(e.clientX, e.clientY);
+      } else {
+        // 非允许区域直接禁用右键
+        e.preventDefault();
       }
     });
   };
