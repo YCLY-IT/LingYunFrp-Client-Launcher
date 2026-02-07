@@ -24,6 +24,12 @@
     .content-grid {
       grid-template-columns: 1fr;
     }
+
+    .notice-card {
+      grid-row: auto;
+      height: auto;
+      min-height: 200px;
+    }
   }
 
   .left-column {

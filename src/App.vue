@@ -131,4 +131,8 @@ select {
   overflow: hidden;
   pointer-events: none;
 }
+
+.n-layout .n-layout-scroll-container {
+  overflow: hidden;
+}
 </style>
