@@ -90,6 +90,14 @@ const router = createRouter({
       ],
     },
     {
+      path: "/tray-menu",
+      name: "tray-menu",
+      component: () => import("../views/TrayMenu.vue"),
+      meta: {
+        title: "托盘菜单",
+      },
+    },
+    {
       path: "/:pathMatch(.*)*",
       name: "NotFound",
       component: () => import("../views/NotFound.vue"),

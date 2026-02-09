@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "凌云FRP",
         "width": 1300,
         "height": 620,
@@ -19,6 +20,22 @@
         "fullscreen": false,
         "resizable": true,
         "visible": true
+      },
+      {
+        "label": "tray_menu",
+        "title": "",
+        "url": "#/tray-menu",
+        "width": 260,
+        "height": 360,
+        "decorations": false,
+        "transparent": true,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "visible": false,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "closable": false
       }
     ],
     "security": {

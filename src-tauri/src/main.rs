@@ -3,11 +3,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 use tauri::Manager;
 use tauri::Emitter;
-use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{TrayIcon, TrayIconBuilder};
 use std::collections::HashMap;
 use std::sync::Mutex;
-use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_single_instance::init as single_instance_init;
 use tauri_plugin_deep_link::DeepLinkExt;
 mod config;
@@ -62,6 +60,71 @@ use commands::{
     install_and_restart
 };
 
+// 显示主窗口命令
+#[tauri::command]
+fn show_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+// 隐藏主窗口命令
+#[tauri::command]
+fn hide_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.hide().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+// 显示设置页面命令
+#[tauri::command]
+fn show_settings(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+        window.eval("window.location.href = '/#/dashboard/settings'").map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+// 退出应用（不关闭FRPC）命令
+#[tauri::command]
+fn quit_without_frpc(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
+// 完全退出应用命令
+#[tauri::command]
+fn quit_app(app: tauri::AppHandle) {
+    *app.state::<Mutex<bool>>().lock().unwrap() = true;
+    if let Err(e) = kill_all_processes(vec!["frpc.exe".to_string(), "easytire-cli.exe".to_string()]) {
+        eprintln!("关闭进程失败: {}", e);
+    }
+    app.exit(0);
+}
+
+// 隐藏托盘菜单窗口
+#[tauri::command]
+fn hide_tray_menu(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("tray_menu") {
+        window.hide().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+// 检查主窗口是否可见
+#[tauri::command]
+fn is_main_window_visible(app: tauri::AppHandle) -> bool {
+    if let Some(window) = app.get_webview_window("main") {
+        window.is_visible().unwrap_or(true)
+    } else {
+        true
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
     tauri::Builder::default()
@@ -109,12 +172,7 @@ fn main() {
         get_api_url,
         check_auto_start_status,
         get_image_base64,
-        // nat_start,
-        // nat_stop,
-        // nat_get_address,
         check_software_file,
-        // get_active_nat,
-        // check_natter_exists,
         check_easy_tire_exists,
         start_easytire,
         stop_easytire,
@@ -123,7 +181,15 @@ fn main() {
         download_file,
         delete_file,
         auto_update,
-        install_and_restart
+        install_and_restart,
+        // 新增命令
+        show_main_window,
+        hide_main_window,
+        show_settings,
+        quit_without_frpc,
+        quit_app,
+        hide_tray_menu,
+        is_main_window_visible
     ])
     .setup(|app| {
         // 确保应用数据目录存在
@@ -132,9 +198,13 @@ fn main() {
             std::fs::create_dir_all(&app_data_dir).unwrap();
         }
         
-        let auto_start_enabled = tauri::async_runtime::block_on(check_auto_start_status()).unwrap_or(false);
-        let tray = create_tray_menu(app, auto_start_enabled)?;
+        // 配置托盘菜单窗口
+        setup_tray_menu_window(app)?;
+        
+        // 创建托盘图标
+        let tray = create_tray_menu(app)?;
         app.manage(tray);
+        
         let window = app.get_webview_window("main").unwrap();
         window.set_decorations(false).unwrap();
         
@@ -145,16 +215,6 @@ fn main() {
                 tauri::WindowEvent::CloseRequested { api, .. } => {
                     api.prevent_close();
                     let _ = window_clone.hide();
-                    
-                    // 检查是否是退出操作
-                    // let is_quitting = *window_clone.app_handle().state::<Mutex<bool>>().lock().unwrap();
-                    // if !is_quitting && !window_clone.is_visible().unwrap_or(true) {
-                    //     let _ = window_clone.app_handle().notification()
-                    //         .builder()
-                    //         .title("LingYunFRP客户端")
-                    //         .body("LingYunFRP客户端已最小化到托盘")
-                    //         .show();
-                    // }
                 }
                 tauri::WindowEvent::Moved { .. } => {
                     // 处理拖动事件
@@ -169,7 +229,6 @@ fn main() {
         #[cfg(any(windows, target_os = "linux"))]
         app.deep_link().register_all().unwrap();
         
-
         // 运行时注册自定义 scheme（仅桌面端可用）
         #[cfg(desktop)]
         app.deep_link().register("lyfrp").unwrap();
@@ -180,101 +239,89 @@ fn main() {
     .expect("error in running tauri application");
 }
 
-fn create_tray_menu(app: &tauri::App, _auto_start_enabled: bool) -> Result<TrayIcon, Box<dyn std::error::Error>> {
-    let menu = Menu::with_items(
-        app,
-        &[
-            &MenuItem::with_id(app, "show", "显示主窗口", true, None::<&str>)?,
-            &MenuItem::with_id(app, "hide", "隐藏主窗口", true, None::<&str>)?,
-            &MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?,
-            &MenuItem::with_id(app, "auto_start", "开/关闭自启", true, None::<&str>)?,
-            &MenuItem::with_id(app, "app_data_dir", "打开数据目录", true, None::<&str>)?,
-            &MenuItem::with_id(app, "quit_without_frpc", "退出不关闭FRPC", true, None::<&str>)?,
-            &MenuItem::with_id(app, "quit", "完全退出", true, None::<&str>)?,
-        ],
-    )?;
+// 配置托盘菜单窗口
+fn setup_tray_menu_window(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(tray_window) = app.get_webview_window("tray_menu") {
+        // 监听窗口失焦事件，自动隐藏
+        let window_clone = tray_window.clone();
+        tray_window.on_window_event(move |event| {
+            if let tauri::WindowEvent::Focused(focused) = event {
+                if !focused {
+                    let _ = window_clone.hide();
+                }
+            }
+        });
+    }
+    
+    Ok(())
+}
 
-    let _app_handle = app.handle().clone();
+// 创建托盘图标
+fn create_tray_menu(app: &tauri::App) -> Result<TrayIcon, Box<dyn std::error::Error>> {
     let tray = TrayIconBuilder::new()
-        .menu(&menu)
         .icon(app.default_window_icon().unwrap().clone())
         .on_tray_icon_event(move |tray, event| {
-            if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
-                if let Some(window) = tray.app_handle().get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            }
-        })
-        .on_menu_event(move |app, event| match event.id.as_ref() {
-            "show" => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            }
-            "hide" => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.hide();
-                }
-            }
-            "settings" => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                    let _ = window.eval("window.location.href = '/dashboard/settings'");
-                }
-            }
-            "auto_start" => {
-                let app_clone = app.clone();
-                std::thread::spawn(move || {
-                    if let Ok(current_status) = tauri::async_runtime::block_on(check_auto_start_status()) {
-                        let new_status = !current_status;
-                        if let Err(e) = tauri::async_runtime::block_on(toggle_auto_start(new_status)) {
-                            eprintln!("切换开机自启失败: {}", e);
+            match event {
+                // 左键点击 - 显示/隐藏主窗口
+                tauri::tray::TrayIconEvent::Click { 
+                    button: tauri::tray::MouseButton::Left, 
+                    .. 
+                } => {
+                    if let Some(window) = tray.app_handle().get_webview_window("main") {
+                        if window.is_visible().unwrap_or(false) {
+                            let _ = window.hide();
                         } else {
-                            if let Some(window) = app_clone.get_webview_window("main") {
-                                let _ = window.app_handle().notification()
-                                    .builder()
-                                    .title("LingYunFRP")
-                                    .body(if new_status { 
-                                        "开机自启已开启 ✓" 
-                                    } else { 
-                                        "开机自启已关闭 ✗" 
-                                    })
-                                    .show();
-                            }
-                            // 状态已通过通知告知用户
+                            let _ = window.show();
+                            let _ = window.set_focus();
                         }
-                    } else {
-                        eprintln!("检查开机自启状态失败");
                     }
-                });
-            }
-            "app_data_dir" => {
-                let app_clone = app.clone();
-                std::thread::spawn(move || {
-                    if let Err(e) = tauri::async_runtime::block_on(open_app_data_dir(app_clone)) {
-                        eprintln!("打开数据目录失败: {}", e);
-                    }
-                });
-            }
-            "quit_without_frpc" => {
-                app.exit(0);
-            }
-            "quit" => {
-                *app.state::<Mutex<bool>>().lock().unwrap() = true;
-                if let Err(e) = kill_all_processes(vec!["frpc.exe".to_string(), "easytire-cli.exe".to_string()]) {
-                    eprintln!("关闭进程失败: {}", e);
                 }
-                app.exit(0);
+                // 右键点击 - 显示自定义菜单
+                tauri::tray::TrayIconEvent::Click { 
+                    button: tauri::tray::MouseButton::Right,
+                    rect,
+                    .. 
+                } => {
+                    if let Some(menu_window) = tray.app_handle().get_webview_window("tray_menu") {
+                        // 计算菜单位置（在托盘图标上方或下方）
+                        let menu_width = 260.0;
+                        let menu_height = 320.0;
+                        
+                        // 从 Rect 中获取位置和大小
+                        let (pos_x, pos_y) = match rect.position {
+                            tauri::Position::Physical(p) => (p.x as f64, p.y as f64),
+                            tauri::Position::Logical(p) => (p.x, p.y),
+                        };
+                        
+                        let (size_width, size_height) = match rect.size {
+                            tauri::Size::Physical(s) => (s.width as f64, s.height as f64),
+                            tauri::Size::Logical(s) => (s.width, s.height),
+                        };
+                        
+                        let x = pos_x + size_width / 2.0 - menu_width / 2.0;
+                        let y = pos_y - menu_height - 8.0; // 在图标上方显示
+                        
+                        // 如果上方空间不够，显示在下方
+                        let y = if y < 0.0 {
+                            pos_y + size_height + 8.0
+                        } else {
+                            y
+                        };
+                        
+                        let _ = menu_window.set_position(tauri::Position::Physical(tauri::PhysicalPosition::new(x as i32, y as i32)));
+                        let _ = menu_window.show();
+                        let _ = menu_window.set_focus();
+                        
+                        // 触发菜单显示事件，让前端更新窗口状态
+                        let _ = menu_window.eval(r#"
+                            window.dispatchEvent(new CustomEvent('menu-shown'));
+                        "#);
+                    }
+                }
+                _ => {}
             }
-            _ => {}
         })
         .build(app)?;
 
     Ok(tray)
 }
-
-
-
