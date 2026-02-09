@@ -86,7 +86,7 @@
             />
           </svg>
         </div>
-        <span class="menu-label">退出不关闭FRPC</span>
+        <span class="menu-label">退出但不关闭FRPC</span>
       </div>
 
       <div class="menu-item danger" @click="handleQuit">
