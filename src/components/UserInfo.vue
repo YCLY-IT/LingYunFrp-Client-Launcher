@@ -200,7 +200,7 @@ const signButtonText = computed(() =>
 const handleSign = async () => {
   if (!isSignAvailable.value || signLoading.value) return;
   signLoading.value = true;
-  userApi.post("/user/sign", {}, accessHandle(), (data) => {
+  userApi.post("/sign/", {}, accessHandle(), (data) => {
     if (data.code === 0) {
       dialog.success({
         title: "签到成功",

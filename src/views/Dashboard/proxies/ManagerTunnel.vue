@@ -978,7 +978,7 @@ const getNodeStatus = (nodeId: number) => {
 const fetchNodes = async () => {
   try {
     loading.value = true;
-    userApi.get("/proxy/node/list", accessHandle(), (data) => {
+    userApi.get("/proxies/nodes", accessHandle(), (data) => {
       if (data.code === 0) {
         nodeOptions.value = (data.data || []).map((node: any) => ({
           label: node.name,
@@ -1000,7 +1000,7 @@ const fetchProxies = async () => {
   loading.value = true;
   try {
     userApi.get(
-      "/proxy/list",
+      "/proxies/",
       accessHandle(),
       (data) => {
         if (data.code === 0) {
@@ -1143,8 +1143,8 @@ const handleEditSubmit = async () => {
     delete payload.proxy_protocol_version;
     delete payload.ipLimitInUnit;
     delete payload.ipLimitOutUnit;
-    userApi.post(
-      "/proxy/update",
+    userApi.put(
+      "/proxies",
       payload,
       accessHandle(),
       (data) => {
@@ -1171,8 +1171,8 @@ const handleDeleteConfirm = () => {
   if (!proxyToDelete.value) return;
   loading.value = true;
   try {
-    userApi.post(
-      "/proxy/delete",
+    userApi.delete(
+      "/proxies",
       { proxyId: proxyToDelete.value.proxyId },
       accessHandle(),
       (data) => {
@@ -1196,8 +1196,8 @@ const handleToggleConfirm = async () => {
   if (!proxyToOperate.value) return;
   loading.value = true;
   try {
-    userApi.post(
-      "/proxy/toggle",
+    userApi.patch(
+      "/proxies/toggle",
       {
         proxyId: proxyToOperate.value.proxyId,
         isDisabled: !proxyToOperate.value.isDisabled,
@@ -1224,12 +1224,10 @@ const handleToggleConfirm = async () => {
 const handleGetFreePortForEdit = async () => {
   gettingFreePort.value = true;
   try {
-    userApi.post(
-      "/proxy/freePort",
-      {
-        nodeId: editForm.value.nodeId,
-        protocol: editForm.value.proxyType === "udp" ? "udp" : "tcp",
-      },
+    const nodeId = editForm.value.nodeId;
+    const protocol = editForm.value.proxyType === "udp" ? "udp" : "tcp";
+    userApi.get(
+      `/proxies/free-port?nodeId=${nodeId}&protocol=${protocol}`,
       accessHandle(),
       (data) => {
         if (data.code === 0) editForm.value.remotePort = data.data;

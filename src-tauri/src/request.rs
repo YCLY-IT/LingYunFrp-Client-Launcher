@@ -11,8 +11,16 @@ pub async fn forward_request(
     method: String,
     data: serde_json::Value,
     headers: serde_json::Value,
+    skip_system_proxy: Option<bool>,
 ) -> Result<serde_json::Value, String> {
-    let client = reqwest::Client::new();
+    let client = if skip_system_proxy.unwrap_or(false) {
+        reqwest::Client::builder()
+            .no_proxy()
+            .build()
+            .map_err(|e| format!("创建HTTP客户端失败: {}", e))?
+    } else {
+        reqwest::Client::new()
+    };
     let api_url = if url.starts_with("http://") || url.starts_with("https://") {
         url
     } else {
@@ -25,6 +33,9 @@ pub async fn forward_request(
     let mut request_builder = match method.to_uppercase().as_str() {
         "POST" => client.post(&api_url),
         "GET" => client.get(&api_url),
+        "PATCH" => client.patch(&api_url),
+        "PUT" => client.put(&api_url),
+        "DELETE" => client.delete(&api_url),
         _ => return Err("不支持的请求方法".to_string()),
     };
 
@@ -36,7 +47,8 @@ pub async fn forward_request(
         }
     }
 
-    let response = if method.to_uppercase() == "POST" && is_file_upload {
+    let method_upper = method.to_uppercase();
+    let response = if method_upper == "POST" && is_file_upload {
         // 处理 multipart/form-data 文件上传
         let mut form = reqwest::multipart::Form::new();
         if let Some(file_base64) = data.get("file").and_then(|v| v.as_str()) {
@@ -54,8 +66,8 @@ pub async fn forward_request(
         }
         // 你可以根据需要添加更多字段
         request_builder.multipart(form).send().await
-    } else if method.to_uppercase() == "POST" {
-        request_builder.form(&data).send().await
+    } else if method_upper == "POST" || method_upper == "PATCH" || method_upper == "PUT" || method_upper == "DELETE" {
+        request_builder.json(&data).send().await
     } else {
         request_builder.send().await
     }.map_err(|e| e.to_string())?;

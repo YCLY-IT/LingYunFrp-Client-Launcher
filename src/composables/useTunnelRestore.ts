@@ -72,8 +72,8 @@ export async function restoreTunnels() {
 
   try {
     const [proxiesRes, nodesRes] = await Promise.all([
-      getPromise("/proxy/list", accessHandle()),
-      getPromise("/proxy/node/list", accessHandle()),
+      getPromise("/proxies/", accessHandle()),
+      getPromise("/proxies/nodes", accessHandle()),
     ]);
 
     if (proxiesRes.code === 0) {

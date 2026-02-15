@@ -17,7 +17,7 @@ export function login(
   failure: Function = defaultFailure,
 ) {
   post(
-    "/user/login",
+    "/auth/login",
     {
       username: username,
       password: password,

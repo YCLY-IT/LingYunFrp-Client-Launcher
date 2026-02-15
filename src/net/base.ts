@@ -135,6 +135,19 @@ function accessHandle() {
   };
 }
 
+function getSkipSystemProxy(): boolean {
+  try {
+    const str = localStorage.getItem("boot_settings");
+    if (str) {
+      const cfg = JSON.parse(str);
+      return Boolean(cfg.skipSystemProxy);
+    }
+  } catch {
+    /* 忽略解析错误 */
+  }
+  return false;
+}
+
 //! TODO: use promise instead of callback
 async function post(
   url: string,
@@ -156,6 +169,7 @@ async function post(
     method: "POST",
     data: data,
     headers: postHeaders,
+    skip_system_proxy: getSkipSystemProxy(),
   })
     .then((data: any) => {
       if (data.code === 0) {
@@ -204,6 +218,7 @@ async function get(
     method: "GET",
     data: {},
     headers: getHeaders,
+    skip_system_proxy: getSkipSystemProxy(),
   })
     .then((data: any) => {
       // 检查是否是完整的URL（外部API）
@@ -238,6 +253,156 @@ async function get(
     });
 }
 
+//! TODO: use promise instead of callback
+async function patch(
+  url: string,
+  data: any,
+  headers: Record<string, string | number>,
+  success: Function,
+  failure = defaultFailure,
+  error = defaultError,
+) {
+  window.$loadingBar?.start();
+  const patchHeaders = {
+    ...headers,
+    ClientVersion: await getClientVersion(),
+    Client: "LingYunFRPClient",
+  };
+  invoke("forward_request", {
+    url: url,
+    method: "PATCH",
+    data: data,
+    headers: patchHeaders,
+    skip_system_proxy: getSkipSystemProxy(),
+  })
+    .then((data: any) => {
+      if (data.code === 0) {
+        success(data);
+        window.$loadingBar?.finish();
+      } else if (data.code === 2) {
+        dialogDeduplicator.showDialog({
+          title: "提示",
+          content: "登录信息已过期，请重新登录",
+          positiveText: "确定",
+          negativeText: "取消",
+          onPositiveClick: () => {
+            removeToken();
+            window.location.href = "/login";
+          },
+        });
+
+        failure(data.message);
+        window.$loadingBar?.error();
+      } else if (data.code === 1) {
+        failure(data.message);
+        window.$loadingBar?.error();
+      }
+    })
+    .catch((err) => {
+      error(err);
+    });
+}
+
+//! TODO: use promise instead of callback
+async function put(
+  url: string,
+  data: any,
+  headers: Record<string, string | number>,
+  success: Function,
+  failure = defaultFailure,
+  error = defaultError,
+) {
+  window.$loadingBar?.start();
+  const putHeaders = {
+    ...headers,
+    ClientVersion: await getClientVersion(),
+    Client: "LingYunFRPClient",
+  };
+  invoke("forward_request", {
+    url: url,
+    method: "PUT",
+    data: data,
+    headers: putHeaders,
+    skip_system_proxy: getSkipSystemProxy(),
+  })
+    .then((data: any) => {
+      if (data.code === 0) {
+        success(data);
+        window.$loadingBar?.finish();
+      } else if (data.code === 2) {
+        dialogDeduplicator.showDialog({
+          title: "提示",
+          content: "登录信息已过期，请重新登录",
+          positiveText: "确定",
+          negativeText: "取消",
+          onPositiveClick: () => {
+            removeToken();
+            window.location.href = "/login";
+          },
+        });
+
+        failure(data.message);
+        window.$loadingBar?.error();
+      } else if (data.code === 1) {
+        failure(data.message);
+        window.$loadingBar?.error();
+      }
+    })
+    .catch((err) => {
+      error(err);
+    });
+}
+
+//! TODO: use promise instead of callback
+async function del(
+  url: string,
+  data: any,
+  headers: Record<string, string | number>,
+  success: Function,
+  failure = defaultFailure,
+  error = defaultError,
+) {
+  window.$loadingBar?.start();
+  const deleteHeaders = {
+    ...headers,
+    ClientVersion: await getClientVersion(),
+    Client: "LingYunFRPClient",
+  };
+  invoke("forward_request", {
+    url: url,
+    method: "DELETE",
+    data: data,
+    headers: deleteHeaders,
+    skip_system_proxy: getSkipSystemProxy(),
+  })
+    .then((data: any) => {
+      if (data.code === 0) {
+        success(data);
+        window.$loadingBar?.finish();
+      } else if (data.code === 2) {
+        dialogDeduplicator.showDialog({
+          title: "提示",
+          content: "登录信息已过期，请重新登录",
+          positiveText: "确定",
+          negativeText: "取消",
+          onPositiveClick: () => {
+            removeToken();
+            window.location.href = "/login";
+          },
+        });
+
+        failure(data.message);
+        window.$loadingBar?.error();
+      } else if (data.code === 1) {
+        failure(data.message);
+        window.$loadingBar?.error();
+      }
+    })
+    .catch((err) => {
+      error(err);
+    });
+}
+
 function unauthorized() {
   return !getToken();
 }
@@ -262,6 +427,9 @@ export {
   removeToken,
   post,
   get,
+  patch,
+  put,
+  del,
   unauthorized,
   OpenBrowser,
 };

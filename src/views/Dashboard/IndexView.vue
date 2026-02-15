@@ -207,7 +207,7 @@ const handleUserUpdate = () => {
 
 // 获取通知
 const fetchNotice = async (): Promise<void> => {
-  userApi.get("/user/info/broadcast", accessHandle(), (data) => {
+  userApi.get("/info/broadcasts", accessHandle(), (data) => {
     if (data.code === 0) {
       notices.value = data.data.sort((a: Broadcast, b: Broadcast) => {
         if (a.top && !b.top) return -1;
@@ -228,7 +228,7 @@ const getHitokoto = async (): Promise<void> => {
 };
 // 获取用户流量
 const getUserTraffic = async (): Promise<void> => {
-  userApi.get("/user/info/traffic", accessHandle(), (data) => {
+  userApi.get("/user/traffic", accessHandle(), (data) => {
     traffic.value = data.data;
   });
 };

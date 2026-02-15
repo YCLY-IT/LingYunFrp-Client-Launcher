@@ -173,10 +173,7 @@
             <n-button
               :disabled="emailCodeSending"
               @click="
-                sendEmailVerificationCode(
-                  'UpdateUsername',
-                  forms.username.emailCode,
-                )
+                sendEmailVerificationCode('username', forms.username.emailCode)
               "
             >
               {{ emailCodeButtonText }}
@@ -429,7 +426,7 @@
         />
       </div>
       <div class="modal-actions">
-        <n-button @click="cropperVisible = false">取消</n-button>
+        <n-button @click="handleCropCancel">取消</n-button>
         <n-button type="primary" @click="handleCropConfirm">确认</n-button>
       </div>
     </n-modal>
@@ -600,9 +597,6 @@ const rules = {
 };
 
 // 表单引用
-const usernameFormRef = ref(null);
-const avatarFormRef = ref(null);
-const passwordFormRef = ref(null);
 const loading = ref(false);
 
 // 邮箱验证码
@@ -646,8 +640,8 @@ const handleChangeUsername = async () => {
   }
   loading.value = true;
   try {
-    userApi.post(
-      "/user/update/username",
+    userApi.patch(
+      "/user/username",
       {
         newUsername: forms.username.newUsername,
         emailCode: forms.username.emailCode,
@@ -672,7 +666,7 @@ const handleChangeUsername = async () => {
 };
 const handleResetToken = async () => {
   loading.value = true;
-  userApi.post("/user/reset/token", {}, accessHandle(), (data) => {
+  userApi.post("/user/token/reset", {}, accessHandle(), (data) => {
     if (data.code === 0) {
       loading.value = false;
       modals.changeResetToken = false;
@@ -690,22 +684,21 @@ const handleResetToken = async () => {
   });
 };
 const sendEmailVerificationCode = async (model: string, email: string) => {
-  if (emailCodeSending.value) return;
+  if (emailCodeSending.value || emailCodeCountdown.value > 0) return;
   if (!email) {
     message.error("请输入邮箱");
     return;
   }
   emailCodeSending.value = true;
-  emailCodeCountdown.value = 60; // 初始化倒计时为60秒
   loading.value = true;
 
   try {
-    userApi.post(
-      `/user/code/${model}`,
-      { email: email },
-      accessHandle(),
+    userApi.sendEmailCode(
+      email,
+      model,
       (data) => {
-        if (data.code !== 0) {
+        if (data.code === 0) {
+          emailCodeCountdown.value = 60; // 初始化倒计时为60秒
           const timer = setInterval(() => {
             if (emailCodeCountdown.value > 0) {
               emailCodeCountdown.value--;
@@ -714,6 +707,8 @@ const sendEmailVerificationCode = async (model: string, email: string) => {
             }
           }, 1000);
           message.success("验证码发送成功");
+        } else {
+          message.error(data.message || "验证码发送失败");
         }
       },
       (messageText) => {
@@ -734,8 +729,8 @@ const handleUpdateNickname = async () => {
   }
   loading.value = true;
   try {
-    userApi.post(
-      `/user/update/nickname/${forms.nickname.newNickname}`,
+    userApi.patch(
+      `/user/nickname`,
       { nickname: forms.nickname.newNickname },
       accessHandle(),
       (data) => {
@@ -772,7 +767,8 @@ const handleBeforeUpload = async (options: { file: UploadFileInfo }) => {
   const reader = new FileReader();
   reader.onload = (e) => {
     cropperImg.value = e.target?.result as string;
-    cropperVisible.value = true;
+    modals.changeAvatar = false; // 关闭更改头像窗口
+    cropperVisible.value = true; // 打开裁剪窗口
   };
   if (file.file) {
     reader.readAsDataURL(file.file);
@@ -810,7 +806,14 @@ const handleCropConfirm = () => {
       },
     ];
     cropperVisible.value = false;
+    modals.changeAvatar = true; // 重新打开更改头像窗口
   }
+};
+
+// 裁剪取消
+const handleCropCancel = () => {
+  cropperVisible.value = false;
+  modals.changeAvatar = true; // 重新打开更改头像窗口
 };
 
 // 头像上传主逻辑
@@ -841,11 +844,11 @@ const handleChangeAvatar = () => {
   message.loading("正在上传头像...");
   let url = "";
   if (forms.avatar.avatarMode === "upload") {
-    url = "/user/update/avatar/uploads";
+    url = "/user/avatar";
   } else if (forms.avatar.avatarMode === "qq") {
-    url = "/user/update/avatar/qq";
+    url = "/user/avatar/qq";
   } else if (forms.avatar.avatarMode === "cravatar") {
-    url = "/user/update/avatar/cravatar";
+    url = "/user/avatar/cravatar";
   }
   userApi.post(
     url,
@@ -895,7 +898,7 @@ const handleChangePassword = async () => {
   loading.value = true;
   try {
     userApi.post(
-      "/user/update/password",
+      "/auth/password/update",
       {
         oldPassword: forms.password.currentPassword,
         newPassword: forms.password.newPassword,

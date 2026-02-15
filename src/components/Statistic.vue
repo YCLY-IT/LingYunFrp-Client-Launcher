@@ -96,7 +96,7 @@ const cards = computed(() => [
 // 获取用户流量
 const getUserTraffic = async (): Promise<void> => {
   userApi.get(
-    "/user/info/traffic",
+    "/user/traffic",
     accessHandle(),
     (data) => {
       traffic.value = data.data;

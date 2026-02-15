@@ -8,13 +8,13 @@ export function sendEmailCode(
   failure = defaultFailure,
 ) {
   post(
-    `/user/code/${module}`,
+    `/codes/${module}`,
     {
       email: email,
     },
-    //! TODO: to be deleted
     {
-      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/json",
+      ...accessHandle(),
     },
     //! TODO: why not just use "success" as param? failure is same
     (data) => {
@@ -32,7 +32,7 @@ export function sendSmsCode(
   failure = defaultFailure,
 ) {
   post(
-    `/user/code/${module}`,
+    `/codes/${module}`,
     {
       phone: phone,
     },

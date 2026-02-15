@@ -35,6 +35,7 @@ const checking = ref(false);
 const autoStart = ref(false);
 const autoRestoreTunnels = ref(true);
 const saveToTray = ref(false);
+const skipSystemProxy = ref(true);
 const activeNames = ref<string[]>(["2"]);
 const downloadProgress = ref(0);
 const downloadedBytes = ref(0);
@@ -112,6 +113,12 @@ const toggleAutoRestoreTunnels = (value: boolean) => {
 const toggleSaveToTray = (value: boolean) => {
   saveToTray.value = value;
   message.success(`${value ? "启用" : "禁用"}保存到托盘成功`);
+  saveBootSettings();
+};
+
+const toggleSkipSystemProxy = (value: boolean) => {
+  skipSystemProxy.value = value;
+  message.success(`${value ? "启用" : "禁用"}跳过系统代理成功`);
   saveBootSettings();
 };
 
@@ -312,6 +319,7 @@ const saveBootSettings = () => {
       autoStart: autoStart.value,
       autoRestoreTunnels: autoRestoreTunnels.value,
       saveToTray: saveToTray.value,
+      skipSystemProxy: skipSystemProxy.value,
     }),
   );
 };
@@ -324,6 +332,7 @@ onMounted(async () => {
       autoStart.value = Boolean(cfg.autoStart);
       autoRestoreTunnels.value = Boolean(cfg.autoRestoreTunnels);
       saveToTray.value = Boolean(cfg.saveToTray);
+      skipSystemProxy.value = Boolean(cfg.skipSystemProxy);
     }
   } catch {
     /* 忽略解析错误 */
@@ -472,6 +481,17 @@ const disableUpdateNotification = () => {
                       @update:value="toggleSaveToTray"
                     />
                     <span>关闭时保存到托盘</span>
+                  </n-space>
+                </n-space>
+              </n-collapse-item>
+              <n-collapse-item title="网络设置" name="4">
+                <n-space vertical>
+                  <n-space style="display: flex">
+                    <n-switch
+                      v-model:value="skipSystemProxy"
+                      @update:value="toggleSkipSystemProxy"
+                    />
+                    <span>跳过系统代理</span>
                   </n-space>
                 </n-space>
               </n-collapse-item>

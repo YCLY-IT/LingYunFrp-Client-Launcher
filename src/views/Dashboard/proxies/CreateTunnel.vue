@@ -1144,7 +1144,7 @@ const groupList = ref<{ label: string; value: string }[]>([]);
 const fetchUserGroups = async () => {
   return new Promise((resolve) => {
     userApi.get(
-      "/user/info/groups",
+      "/info/groups",
       accessHandle(),
       (data) => {
         if (data.code === 0) {
@@ -1188,7 +1188,7 @@ const fetchUserGroups = async () => {
 const fetchNodes = async () => {
   nodeLoading.value = true;
   userApi.get(
-    "/proxy/node/list",
+    "/proxies/nodes",
     accessHandle(),
     (data) => {
       if (data.code === 0) {
@@ -1373,7 +1373,7 @@ const handleCreate = async () => {
     };
 
     userApi.post(
-      "/proxy/create",
+      "/proxies/",
       requestData,
       accessHandle(),
       (data) => {
