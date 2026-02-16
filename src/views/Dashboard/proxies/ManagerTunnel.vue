@@ -999,13 +999,19 @@ const fetchNodes = async () => {
 const fetchProxies = async () => {
   loading.value = true;
   try {
+    const params = new URLSearchParams();
+    params.append("page", page.value.toString());
+    params.append("pageSize", pageSize.value.toString());
+    if (searchText.value) {
+      params.append("search", searchText.value);
+    }
     userApi.get(
-      "/proxies/",
+      `/proxies/?${params.toString()}`,
       accessHandle(),
       (data) => {
         if (data.code === 0) {
           // 按 proxyId 升序排序
-          proxies.value = (data.data || []).sort(
+          proxies.value = (data.data.proxies || []).sort(
             (a, b) => a.proxyId - b.proxyId,
           );
         } else {
@@ -1595,6 +1601,11 @@ watch([searchText, viewMode, filteredProxies], () => {
   if (page.value > maxPage) {
     page.value = maxPage;
   }
+});
+
+// 监听分页和搜索变化，重新获取数据
+watch([page, pageSize, searchText], () => {
+  fetchProxies();
 });
 
 onMounted(async () => {
