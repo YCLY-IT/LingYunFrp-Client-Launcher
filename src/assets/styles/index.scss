@@ -87,51 +87,108 @@ body::before {
   z-index: -1;
 }
 
-/* 毛玻璃模式 */
 .frosted-glass-mode {
-  backdrop-filter: blur(var(--frosted-glass-blur, 10px));
-  background-color: rgba(var(--n-color-modal-rgb, 255, 255, 255), 0.1);
-  transition: var(--frosted-glass-transition, none);
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  overflow: hidden !important;
 }
 
-/* 毛玻璃模式下的卡片样式 */
+.frosted-glass-mode .n-layout-sider .n-layout-sider__border {
+  display: none !important;
+}
+
 .frosted-glass-mode .n-card {
-  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 1.5));
-  background-color: rgba(
-    var(--n-color-modal-rgb, 255, 255, 255),
-    0.15
-  ) !important;
-  border: 1px solid rgba(var(--n-color-modal-rgb, 255, 255, 255), 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-/* 毛玻璃模式下的模态框 */
 .frosted-glass-mode .n-modal .n-card {
-  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 2));
-  background-color: rgba(
-    var(--n-color-modal-rgb, 255, 255, 255),
-    0.2
-  ) !important;
-  border: 1px solid rgba(var(--n-color-modal-rgb, 255, 255, 255), 0.25);
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-/* 毛玻璃模式下的侧边栏 */
 .frosted-glass-mode .n-layout-sider {
-  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 1.2));
-  background-color: rgba(
-    var(--n-color-modal-rgb, 255, 255, 255),
-    0.18
-  ) !important;
-  border-right: 1px solid rgba(var(--n-color-modal-rgb, 255, 255, 255), 0.2);
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 .frosted-glass-mode .n-layout-header {
-  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.6));
-  background-color: rgba(
-    var(--n-color-modal-rgb, 255, 255, 255),
-    0.1
-  ) !important;
-  border-bottom: 1px solid rgba(var(--n-color-modal-rgb, 255, 255, 255), 0.2);
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.frosted-glass-mode .n-layout-content {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.frosted-glass-mode .n-base-selection,
+.frosted-glass-mode .n-select .n-base-selection {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.frosted-glass-mode .n-notification {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.frosted-glass-mode .n-message {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.frosted-glass-mode .n-dialog {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.frosted-glass-mode .n-drawer {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.frosted-glass-mode .n-popover {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.frosted-glass-mode .n-upload-dragger {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.frosted-glass-mode .custom-context-menu {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 /* 主题切换扩散动画 */

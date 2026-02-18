@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, watch } from "vue";
 import { initLogService } from "./utils/log.ts";
 
 initLogService();
@@ -77,6 +77,7 @@ import {
 import AppContent from "./components/AppContent.vue";
 import CustomContextMenu from "./components/CustomContextMenu.vue";
 import { useAppInitialization } from "./composables/useAppInitialization";
+import { useThemeStore } from "./stores/theme";
 
 const {
   theme,
@@ -92,8 +93,36 @@ const {
 } = useAppInitialization();
 void contextMenuRef;
 
+const themeStore = useThemeStore();
+
 onMounted(() => {
   initializeApp();
+
+  // 设置自定义 hover 背景色变量
+  const updateHoverColor = () => {
+    const hoverColor =
+      themeStore.theme === "dark"
+        ? "rgba(255, 255, 255, 0.08)"
+        : "rgba(0, 0, 0, 0.06)";
+    document.documentElement.style.setProperty("--n-color-hover", hoverColor);
+  };
+  updateHoverColor();
+
+  // 监听主题变化，更新 hover 背景色
+  watch(() => themeStore.theme, updateHoverColor);
+
+  // 设置悬浮阴影颜色变量（使用主题色）
+  const updateHoverShadowColor = () => {
+    const primaryColor = themeStore.primaryColor.replace("FF", ""); // 移除透明度
+    document.documentElement.style.setProperty(
+      "--n-color-hover-shadow",
+      `${primaryColor}1F`, // 12% 透明度
+    );
+  };
+  updateHoverShadowColor();
+
+  // 监听主题色变化，更新阴影颜色
+  watch(() => themeStore.primaryColor, updateHoverShadowColor);
 });
 
 onUnmounted(() => {

@@ -7,287 +7,298 @@
 -->
 
 <template>
-  <div class="container">
-    <!-- 主题设置卡片 -->
-    <n-card class="setting-card" size="small">
-      <template #header>
-        <div class="card-header">
-          <n-icon :component="ColorPaletteOutline" :size="20" />
-          <span>主题设置</span>
-        </div>
-      </template>
-      <div class="setting-content">
-        <div class="setting-item">
-          <div class="setting-label">
-            <n-icon :component="SyncOutline" :size="18" />
-            <span>自动切换主题</span>
-          </div>
-          <n-switch
-            size="large"
-            v-model:value="isAutoTheme"
-            @click="changeTheme"
-            :checked-value="true"
-            :unchecked-value="false"
-          >
-            <template #checked>自动切换</template>
-            <template #unchecked>手动切换</template>
-          </n-switch>
-        </div>
-        <div class="setting-item" v-if="!isAutoTheme">
-          <div class="setting-label">
-            <n-icon :component="isDarkTheme ? Sparkles : Sunny" :size="18" />
-            <span>主题模式</span>
-          </div>
-          <n-switch
-            size="large"
-            v-model:value="isDarkTheme"
-            :rail-style="railStyle"
-            :checked-value="true"
-            :unchecked-value="false"
-            @click="changeTheme"
-            :loading="isTransitioning"
-          >
-            <template #checked-icon>
-              <n-icon :component="Sparkles" color="#9f9f9c" />
-            </template>
-            <template #unchecked-icon>
-              <n-icon :component="Sunny" color="#E6A23C" />
-            </template>
-            <template #checked>月映万川</template>
-            <template #unchecked>日照千里</template>
-          </n-switch>
-        </div>
-      </div>
-    </n-card>
-
-    <!-- 主题色设置卡片 -->
-    <n-card class="setting-card" size="small">
-      <template #header>
-        <div class="card-header">
-          <n-icon :component="BrushOutline" :size="20" />
-          <span>主题色</span>
-        </div>
-      </template>
-      <div class="setting-content">
-        <div class="color-picker-wrapper">
-          <n-color-picker
-            v-model:value="primaryColor"
-            :show-preview="true"
-            :modes="['hex']"
-            size="large"
-          />
-        </div>
-        <div class="preset-colors">
-          <div
-            v-for="color in presetColors"
-            :key="color"
-            :style="{ backgroundColor: color }"
-            class="preset-color"
-            :class="{ active: primaryColor === color }"
-            @click="setPresetColor(color)"
-          >
-            <n-icon
-              v-if="primaryColor === color"
-              :component="CheckmarkCircleOutline"
-              :size="16"
-              color="#fff"
-            />
-          </div>
-        </div>
-      </div>
-    </n-card>
-
-    <!-- 视觉效果设置卡片 -->
-    <n-card class="setting-card" size="small">
-      <template #header>
-        <div class="card-header">
-          <n-icon :component="EyeOutline" :size="20" />
-          <span>视觉效果</span>
-        </div>
-      </template>
-      <div class="setting-content">
-        <div class="setting-item">
-          <div class="setting-label">
-            <n-icon :component="ColorFilterOutline" :size="18" />
-            <span>RGB模式</span>
-          </div>
-          <n-switch
-            size="large"
-            v-model:value="isRGBMode"
-            :checked-value="true"
-            :unchecked-value="false"
-          />
-        </div>
-        <div class="setting-item">
-          <div class="setting-label">
-            <n-icon :component="LayersOutline" :size="18" />
-            <span>对话框模糊</span>
-          </div>
-          <n-switch
-            size="large"
-            v-model:value="isDialogBoxHairGlass"
-            :checked-value="true"
-            :unchecked-value="false"
-          />
-        </div>
-      </div>
-    </n-card>
-
-    <!-- 无障碍设置卡片 -->
-    <n-card class="setting-card" size="small">
-      <template #header>
-        <div class="card-header">
-          <n-icon :component="AccessibilityOutline" :size="20" />
-          <span>无障碍</span>
-        </div>
-      </template>
-      <div class="setting-content">
-        <div class="setting-item">
-          <div class="setting-label">
-            <n-icon :component="ColorWandOutline" :size="18" />
-            <span>色弱模式</span>
-          </div>
-          <n-switch
-            size="large"
-            v-model:value="colorBlindMode"
-            :checked-value="true"
-            :unchecked-value="false"
-          />
-        </div>
-        <div class="setting-item">
-          <div class="setting-label">
-            <n-icon :component="ContrastOutline" :size="18" />
-            <span>高对比度模式</span>
-          </div>
-          <n-switch
-            size="large"
-            v-model:value="highContrastMode"
-            :checked-value="true"
-            :unchecked-value="false"
-          />
-        </div>
-      </div>
-    </n-card>
-
-    <!-- 背景图设置卡片 -->
-    <n-card class="setting-card" size="small">
-      <template #header>
-        <div class="card-header">
-          <n-icon :component="ImageOutline" :size="20" />
-          <span>背景图</span>
-        </div>
-      </template>
-      <div class="setting-content">
-        <div class="background-settings">
-          <n-upload
-            :file-list="[]"
-            :show-file-list="false"
-            accept="image/*"
-            @change="handleFileChange"
-            :max="1"
-          >
-            <n-button block type="primary" ghost>
-              <template #icon>
-                <n-icon :component="CloudUploadOutline" />
-              </template>
-              选择本地图片
-            </n-button>
-          </n-upload>
-          <n-input
-            v-model:value="backgroundImageUrl"
-            placeholder="输入网络图片链接"
-            class="background-input"
-            @update:value="handleImageUrlChange"
-            clearable
-          >
-            <template #prefix>
-              <n-icon :component="LinkOutline" />
-            </template>
-          </n-input>
-          <div
-            v-if="backgroundImageUrl || backgroundImage"
-            class="image-preview"
-          >
-            <div class="preview-wrapper">
-              <img
-                :src="backgroundImageUrl || backgroundImage"
-                alt="背景预览"
-                class="preview-image"
-              />
-              <div class="preview-overlay">
-                <n-button
-                  size="small"
-                  type="error"
-                  @click="clearBackgroundImage"
-                >
-                  <template #icon>
-                    <n-icon :component="TrashOutline" />
-                  </template>
-                  清除
-                </n-button>
-              </div>
+  <div class="theme-switcher">
+    <n-scrollbar
+      class="container-scrollbar"
+      :vertical-rail-style="{ right: '-15px' }"
+    >
+      <div class="container">
+        <!-- 主题设置卡片 -->
+        <n-card class="setting-card" size="small">
+          <template #header>
+            <div class="card-header">
+              <n-icon :component="ColorPaletteOutline" :size="20" />
+              <span>主题设置</span>
             </div>
-            <div class="slider-control">
-              <div class="slider-label">
-                <n-icon :component="LayersOutline" :size="16" />
-                <span>模糊深度: {{ backgroundBlur }}px</span>
-              </div>
-              <n-slider
-                v-model:value="backgroundBlur"
-                :min="0"
-                :max="20"
-                :step="1"
-                @update:value="handleBlurChange"
-              />
-            </div>
-            <div class="slider-control" v-if="!frostedGlassMode">
-              <div class="slider-label">
-                <n-icon :component="WaterOutline" :size="16" />
-                <span>元素不透明度: {{ backgroundOpacity || 100 }}%</span>
-              </div>
-              <n-slider
-                v-model:value="backgroundOpacity"
-                :min="20"
-                :max="100"
-                :step="1"
-                @update:value="handleOpacityChange"
-              />
-            </div>
-            <div class="setting-item" style="margin-top: 12px">
+          </template>
+          <div class="setting-content">
+            <div class="setting-item">
               <div class="setting-label">
-                <n-icon :component="LayersOutline" :size="18" />
-                <span>毛玻璃模式</span>
+                <n-icon :component="SyncOutline" :size="18" />
+                <span>自动切换主题</span>
               </div>
               <n-switch
                 size="large"
-                v-model:value="frostedGlassMode"
+                v-model:value="isAutoTheme"
+                @click="changeTheme"
                 :checked-value="true"
                 :unchecked-value="false"
-                @update:value="handleFrostedGlassChange"
+              >
+                <template #checked>自动切换</template>
+                <template #unchecked>手动切换</template>
+              </n-switch>
+            </div>
+            <div class="setting-item" v-if="!isAutoTheme">
+              <div class="setting-label">
+                <n-icon
+                  :component="isDarkTheme ? Sparkles : Sunny"
+                  :size="18"
+                />
+                <span>主题模式</span>
+              </div>
+              <n-switch
+                size="large"
+                v-model:value="isDarkTheme"
+                :rail-style="railStyle"
+                :checked-value="true"
+                :unchecked-value="false"
+                @click="changeTheme"
+                :loading="isTransitioning"
+              >
+                <template #checked-icon>
+                  <n-icon :component="Sparkles" color="#9f9f9c" />
+                </template>
+                <template #unchecked-icon>
+                  <n-icon :component="Sunny" color="#E6A23C" />
+                </template>
+                <template #checked>月映万川</template>
+                <template #unchecked>日照千里</template>
+              </n-switch>
+            </div>
+          </div>
+        </n-card>
+
+        <!-- 主题色设置卡片 -->
+        <n-card class="setting-card" size="small">
+          <template #header>
+            <div class="card-header">
+              <n-icon :component="BrushOutline" :size="20" />
+              <span>主题色</span>
+            </div>
+          </template>
+          <div class="setting-content">
+            <div class="color-picker-wrapper">
+              <n-color-picker
+                v-model:value="primaryColor"
+                :show-preview="true"
+                :modes="['hex']"
+                size="large"
               />
             </div>
-            <div class="slider-control" v-if="frostedGlassMode">
-              <div class="slider-label">
-                <n-icon :component="WaterOutline" :size="16" />
-                <span>毛玻璃强度: {{ frostedGlassIntensity }}px</span>
+            <div class="preset-colors">
+              <div
+                v-for="color in presetColors"
+                :key="color"
+                :style="{ backgroundColor: color }"
+                class="preset-color"
+                :class="{ active: primaryColor === color }"
+                @click="setPresetColor(color)"
+              >
+                <n-icon
+                  v-if="primaryColor === color"
+                  :component="CheckmarkCircleOutline"
+                  :size="16"
+                  color="#fff"
+                />
               </div>
-              <n-slider
-                v-model:value="frostedGlassIntensity"
-                :min="5"
-                :max="30"
-                :step="1"
-                @update:value="handleFrostedGlassIntensityChange"
+            </div>
+          </div>
+        </n-card>
+
+        <!-- 视觉效果设置卡片 -->
+        <n-card class="setting-card" size="small">
+          <template #header>
+            <div class="card-header">
+              <n-icon :component="EyeOutline" :size="20" />
+              <span>视觉效果</span>
+            </div>
+          </template>
+          <div class="setting-content">
+            <div class="setting-item">
+              <div class="setting-label">
+                <n-icon :component="ColorFilterOutline" :size="18" />
+                <span>RGB模式</span>
+              </div>
+              <n-switch
+                size="large"
+                v-model:value="isRGBMode"
+                :checked-value="true"
+                :unchecked-value="false"
+              />
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <n-icon :component="LayersOutline" :size="18" />
+                <span>对话框模糊</span>
+              </div>
+              <n-switch
+                size="large"
+                v-model:value="isDialogBoxHairGlass"
+                :checked-value="true"
+                :unchecked-value="false"
               />
             </div>
           </div>
-        </div>
+        </n-card>
+
+        <!-- 无障碍设置卡片 -->
+        <n-card class="setting-card" size="small">
+          <template #header>
+            <div class="card-header">
+              <n-icon :component="AccessibilityOutline" :size="20" />
+              <span>无障碍</span>
+            </div>
+          </template>
+          <div class="setting-content">
+            <div class="setting-item">
+              <div class="setting-label">
+                <n-icon :component="ColorWandOutline" :size="18" />
+                <span>色弱模式</span>
+              </div>
+              <n-switch
+                size="large"
+                v-model:value="colorBlindMode"
+                :checked-value="true"
+                :unchecked-value="false"
+              />
+            </div>
+            <div class="setting-item">
+              <div class="setting-label">
+                <n-icon :component="ContrastOutline" :size="18" />
+                <span>高对比度模式</span>
+              </div>
+              <n-switch
+                size="large"
+                v-model:value="highContrastMode"
+                :checked-value="true"
+                :unchecked-value="false"
+              />
+            </div>
+          </div>
+        </n-card>
+
+        <!-- 背景图设置卡片 -->
+        <n-card class="setting-card" size="small">
+          <template #header>
+            <div class="card-header">
+              <n-icon :component="ImageOutline" :size="20" />
+              <span>背景图</span>
+            </div>
+          </template>
+          <div class="setting-content">
+            <div class="background-settings">
+              <n-upload
+                :file-list="[]"
+                :show-file-list="false"
+                accept="image/*"
+                @change="handleFileChange"
+                :max="1"
+              >
+                <n-button block type="primary" ghost>
+                  <template #icon>
+                    <n-icon :component="CloudUploadOutline" />
+                  </template>
+                  选择本地图片
+                </n-button>
+              </n-upload>
+              <n-input
+                v-model:value="backgroundImageUrl"
+                placeholder="输入网络图片链接"
+                class="background-input"
+                @update:value="handleImageUrlChange"
+                clearable
+              >
+                <template #prefix>
+                  <n-icon :component="LinkOutline" />
+                </template>
+              </n-input>
+              <div
+                v-if="backgroundImageUrl || backgroundImage"
+                class="image-preview"
+              >
+                <div class="preview-wrapper">
+                  <img
+                    :src="backgroundImageUrl || backgroundImage"
+                    alt="背景预览"
+                    class="preview-image"
+                  />
+                  <div class="preview-overlay">
+                    <n-button
+                      size="small"
+                      type="error"
+                      @click="clearBackgroundImage"
+                    >
+                      <template #icon>
+                        <n-icon :component="TrashOutline" />
+                      </template>
+                      清除
+                    </n-button>
+                  </div>
+                </div>
+                <div class="slider-control">
+                  <div class="slider-label">
+                    <n-icon :component="LayersOutline" :size="16" />
+                    <span>模糊深度: {{ backgroundBlur }}px</span>
+                  </div>
+                  <n-slider
+                    v-model:value="backgroundBlur"
+                    :min="0"
+                    :max="20"
+                    :step="1"
+                    @update:value="handleBlurChange"
+                  />
+                </div>
+                <div class="slider-control" v-if="!frostedGlassMode">
+                  <div class="slider-label">
+                    <n-icon :component="WaterOutline" :size="16" />
+                    <span>元素不透明度: {{ backgroundOpacity || 100 }}%</span>
+                  </div>
+                  <n-slider
+                    v-model:value="backgroundOpacity"
+                    :min="20"
+                    :max="100"
+                    :step="1"
+                    @update:value="handleOpacityChange"
+                  />
+                </div>
+                <div class="setting-item" style="margin-top: 12px">
+                  <div class="setting-label">
+                    <n-icon :component="LayersOutline" :size="18" />
+                    <span>毛玻璃模式</span>
+                  </div>
+                  <n-switch
+                    size="large"
+                    v-model:value="frostedGlassMode"
+                    :checked-value="true"
+                    :unchecked-value="false"
+                    @update:value="handleFrostedGlassChange"
+                  />
+                </div>
+                <div class="slider-control" v-if="frostedGlassMode">
+                  <div class="slider-label">
+                    <n-icon :component="WaterOutline" :size="16" />
+                    <span>毛玻璃强度: {{ frostedGlassIntensity }}px</span>
+                  </div>
+                  <n-slider
+                    v-model:value="frostedGlassIntensity"
+                    :min="5"
+                    :max="30"
+                    :step="1"
+                    @update:value="handleFrostedGlassIntensityChange"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </n-card>
       </div>
-    </n-card>
+    </n-scrollbar>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { CSSProperties, ref, onMounted, watch } from "vue";
+import { invoke } from "@tauri-apps/api/core";
 import { useThemeStore } from "../stores/theme";
 import { useThemeTransition } from "../composables/useThemeTransition.ts";
 import {
@@ -598,24 +609,38 @@ const handleOpacityChange = (opacity: number) => {
   updateBackgroundStyle();
 };
 
-const handleFrostedGlassChange = (enabled: boolean) => {
+const handleFrostedGlassChange = async (enabled: boolean) => {
   frostedGlassMode.value = enabled;
   themeStore.setFrostedGlassMode(enabled);
-  // 启用毛玻璃模式时，强制不透明度为100%
   if (enabled) {
     backgroundOpacity.value = 100;
     themeStore.setBackgroundOpacity(100);
   }
   updateBackgroundStyle();
   updateFrostedGlassStyle();
+  try {
+    await invoke("emit_event", {
+      event: "frosted-glass-change",
+      payload: { enabled, intensity: frostedGlassIntensity.value },
+    });
+  } catch (e) {
+    console.error("毛玻璃事件发送失败:", e);
+  }
 };
 
-const handleFrostedGlassIntensityChange = (intensity: number) => {
+const handleFrostedGlassIntensityChange = async (intensity: number) => {
   frostedGlassIntensity.value = intensity;
   themeStore.setFrostedGlassIntensity(intensity);
-  // 更新毛玻璃强度样式
   const root = document.documentElement;
   root.style.setProperty("--frosted-glass-blur", `${intensity}px`);
+  try {
+    await invoke("emit_event", {
+      event: "frosted-glass-intensity-change",
+      payload: { intensity },
+    });
+  } catch (e) {
+    console.error("毛玻璃强度事件发送失败:", e);
+  }
 };
 
 const clearBackgroundImage = () => {
@@ -754,6 +779,15 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+.theme-switcher {
+  height: 100%;
+}
+
+.theme-switcher :deep(.n-scrollbar) {
+  height: 100%;
+  overflow: visible;
+}
+
 .container {
   display: flex;
   flex-direction: column;

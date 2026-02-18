@@ -72,39 +72,96 @@
             <template #default>
               <div class="notice-scroll">
                 <NScrollbar :vertical-rail-style="{ right: '-15px' }">
-                  <NCollapse v-if="notices.length > 0" accordion>
-                    <template
+                  <div v-if="notices.length > 0" class="notice-list">
+                    <div
                       v-for="(notice, _index) in notices"
                       :key="notice.id"
+                      class="notice-item"
+                      @click="openNoticeModal(notice)"
                     >
-                      <NCollapseItem :title="notice.title" :name="notice.id">
-                        <template #header-extra>
-                          <div
-                            style="display: flex; align-items: center; gap: 8px"
-                          >
-                            <span v-if="notice.top" class="top-badge"
-                              >置顶</span
-                            >
-                            <span
-                              class="notice-time"
-                              :style="{ color: themeStore.$state.primaryColor }"
-                              >{{ formatTime(notice.created_at) }}</span
-                            >
-                          </div>
-                        </template>
-                        <div
-                          class="notice-content"
-                          v-html="renderNoticeContent(notice.message)"
-                        />
-                      </NCollapseItem>
-                    </template>
-                    <NDivider style="margin: 0 0" />
-                  </NCollapse>
+                      <div class="notice-item-content">
+                        <span class="notice-item-title">{{
+                          notice.title
+                        }}</span>
+                      </div>
+                      <div class="notice-item-meta">
+                        <n-tag
+                          v-if="notice.type === 'danger'"
+                          type="error"
+                          size="small"
+                          >紧急</n-tag
+                        >
+                        <n-tag
+                          v-else-if="notice.type === 'warning'"
+                          type="warning"
+                          size="small"
+                          >重要</n-tag
+                        >
+                        <n-tag
+                          v-else-if="notice.type === 'info'"
+                          type="info"
+                          size="small"
+                          >通知</n-tag
+                        >
+                        <span
+                          class="notice-time"
+                          :style="{ color: themeStore.$state.primaryColor }"
+                          >{{ formatTime(notice.created_at) }}</span
+                        >
+                      </div>
+                    </div>
+                  </div>
                   <div v-else class="no-notice">暂无通知</div>
                 </NScrollbar>
               </div>
             </template>
           </NCard>
+
+          <!-- 通知详情模态框 -->
+          <n-modal
+            v-model:show="noticeModalVisible"
+            preset="card"
+            :title="selectedNotice?.title"
+            style="width: 800px; max-width: 100vw; height: 90vh"
+          >
+            <n-scrollbar
+              v-if="selectedNotice"
+              style="height: calc(80vh - 120px)"
+            >
+              <div class="notice-modal-content">
+                <div class="notice-modal-meta">
+                  <n-tag
+                    v-if="selectedNotice.type === 'danger'"
+                    type="error"
+                    size="small"
+                    >紧急</n-tag
+                  >
+                  <n-tag
+                    v-else-if="selectedNotice.type === 'warning'"
+                    type="warning"
+                    size="small"
+                    >重要</n-tag
+                  >
+                  <n-tag
+                    v-else-if="selectedNotice.type === 'info'"
+                    type="info"
+                    size="small"
+                    >通知</n-tag
+                  >
+                  <span
+                    class="notice-time"
+                    :style="{ color: themeStore.$state.primaryColor }"
+                    >{{ formatTime(selectedNotice.created_at) }}</span
+                  >
+                </div>
+                <n-divider />
+                <div
+                  class="notice-content"
+                  v-html="renderNoticeContent(selectedNotice.message)"
+                />
+              </div>
+            </n-scrollbar>
+          </n-modal>
         </div>
       </div>
     </div>
@@ -112,7 +169,15 @@
 </template>
 
 <script setup lang="ts">
-import { NCard, NAlert, NButton, NScrollbar } from "naive-ui";
+import {
+  NCard,
+  NAlert,
+  NButton,
+  NScrollbar,
+  NTag,
+  NModal,
+  NDivider,
+} from "naive-ui";
 import { ref, onMounted, computed } from "vue";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
@@ -128,6 +193,16 @@ const router = useRouter();
 const notices = ref<Broadcast[]>([]);
 const nickname = localStorage.getItem("nickname") || "";
 const themeStore = useThemeStore();
+
+// 通知模态框
+const noticeModalVisible = ref(false);
+const selectedNotice = ref<Broadcast | null>(null);
+
+// 打开通知详情
+const openNoticeModal = (notice: Broadcast) => {
+  selectedNotice.value = notice;
+  noticeModalVisible.value = true;
+};
 
 // 用户信息引用
 const userInfoRef = ref<{
@@ -209,10 +284,15 @@ const handleUserUpdate = () => {
 const fetchNotice = async (): Promise<void> => {
   userApi.get("/info/broadcasts", accessHandle(), (data) => {
     if (data.code === 0) {
-      notices.value = data.data.sort((a: Broadcast, b: Broadcast) => {
-        if (a.top && !b.top) return -1;
-        if (!a.top && b.top) return 1;
-        return 0;
+      // 按类型优先级排序: danger > warning > info
+      const typePriority: Record<string, number> = {
+        danger: 0,
+        warning: 1,
+        info: 2,
+      };
+      const broadcasts = data.data || [];
+      notices.value = broadcasts.sort((a: Broadcast, b: Broadcast) => {
+        return (typePriority[a.type] || 2) - (typePriority[b.type] || 2);
       });
     }
   });
@@ -304,6 +384,15 @@ onMounted(() => {
 }
 
 .notice-scroll {
+  padding: 4px;
+  margin: -4px;
+}
+
+.notice-list {
+  padding: 4px;
+}
+
+.notice-scroll {
   flex: 1 1 0;
   min-height: 0;
   max-height: 100%;
@@ -314,57 +403,69 @@ onMounted(() => {
   overflow: visible;
 }
 
-.notice-scroll :deep(.n-collapse) {
+.notice-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
-.notice-scroll :deep(.n-collapse-item) {
-  overflow: hidden;
-  margin-bottom: 0;
-}
-
-.notice-scroll :deep(.n-collapse-item__header) {
-  font-size: 18px;
-  font-weight: 500;
-  border-radius: 8px 8px 0 0;
-  display: flex !important;
-  justify-content: space-between;
+.notice-item {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--n-card-color);
+  border: 1px solid var(--n-border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.notice-scroll :deep(.n-collapse-item__header-main) {
-  max-width: 50%;
+.notice-item:hover {
+  background-color: var(--n-color-hover);
+  box-shadow: 0 4px 16px var(--n-color-hover-shadow);
+  transform: scale(1.02);
+}
+
+.notice-item-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.notice-item-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--n-text-color);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
-.notice-scroll :deep(.n-collapse-item__header-extra) {
-  margin-left: auto;
+.notice-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
-}
-
-.notice-scroll :deep(.n-collapse-item__content-inner) {
-  padding: 10px !important;
+  margin-left: 12px;
 }
 
 .notice-time {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: normal;
 }
 
-.top-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
-  color: white;
-  font-size: 12px;
-  border-radius: 4px;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(238, 90, 90, 0.3);
+.notice-modal-content {
+  padding: 8px 0;
+}
+
+.notice-modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .notice-content {

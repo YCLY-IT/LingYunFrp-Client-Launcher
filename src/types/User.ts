@@ -79,7 +79,7 @@ export interface Broadcast {
   id: number;
   title: string;
   message: string;
-  top: boolean;
+  type: "info" | "warning" | "danger";
   created_at: string;
   updated_at: string;
 }

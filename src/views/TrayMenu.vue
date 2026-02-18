@@ -1,5 +1,9 @@
 <template>
-  <div class="tray-menu-container" :class="{ dark: isDark }">
+  <div
+    class="tray-menu-container"
+    :class="{ dark: isDark, 'frosted-glass': frostedGlassMode }"
+    :style="trayContainerStyle"
+  >
     <div class="menu-header">
       <img src="/favicon.ico" alt="logo" class="logo" />
       <span class="app-name">LingYunFRP</span>
@@ -105,68 +109,125 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
 const isDark = ref(false);
 const autoStartEnabled = ref(false);
 const isWindowVisible = ref(false);
+const frostedGlassMode = ref(false);
+const frostedGlassIntensity = ref(15);
 
-// 获取当前主题
+let unlistenFrostedGlass: UnlistenFn | null = null;
+let unlistenFrostedIntensity: UnlistenFn | null = null;
+
+const trayContainerStyle = computed(() => {
+  if (frostedGlassMode.value) {
+    return {
+      background: isDark.value
+        ? "rgba(35, 35, 35, 0.7)"
+        : "rgba(255, 255, 255, 0.1)",
+      backdropFilter: `blur(${frostedGlassIntensity.value}px) saturate(180%)`,
+      WebkitBackdropFilter: `blur(${frostedGlassIntensity.value}px) saturate(180%)`,
+    };
+  }
+  return {
+    background: isDark.value
+      ? "rgba(35, 35, 35, 0.95)"
+      : "rgba(255, 255, 255, 0.95)",
+    backdropFilter: "blur(20px)",
+    WebkitBackdropFilter: "blur(20px)",
+  };
+});
+
 const getCurrentTheme = () => {
   return localStorage.getItem("app-theme") || "light";
 };
 
-// 更新主题状态
+const getFrostedGlassMode = () => {
+  return localStorage.getItem("app-frosted-glass-mode") === "true";
+};
+
+const getFrostedGlassIntensity = () => {
+  return Number(localStorage.getItem("app-frosted-glass-intensity")) || 15;
+};
+
 const updateTheme = () => {
   isDark.value = getCurrentTheme() === "dark";
 };
 
-// 使用 Vue 官方推荐的 watch 监听 localStorage 变化
-// 通过监听自定义事件来实现跨窗口同步
-onMounted(() => {
-  // 初始化主题
-  updateTheme();
+const updateFrostedGlass = () => {
+  frostedGlassMode.value = getFrostedGlassMode();
+  frostedGlassIntensity.value = getFrostedGlassIntensity();
+};
 
-  // 监听 storage 事件（跨窗口/标签页同步）
+onMounted(async () => {
+  updateTheme();
+  updateFrostedGlass();
+
   window.addEventListener("storage", (e) => {
     if (e.key === "app-theme") {
       updateTheme();
     }
+    if (
+      e.key === "app-frosted-glass-mode" ||
+      e.key === "app-frosted-glass-intensity"
+    ) {
+      updateFrostedGlass();
+    }
   });
 
-  // 监听自定义主题变化事件
   window.addEventListener("theme-change", updateTheme);
 
-  // 使用 watch 监听 isDark 变化（用于调试或其他响应）
-  watch(isDark, (newVal) => {
-    console.log("主题已切换为:", newVal ? "暗色" : "亮色");
+  window.addEventListener("menu-shown", () => {
+    updateFrostedGlass();
+    updateTheme();
   });
+
+  try {
+    unlistenFrostedGlass = await listen<{
+      enabled: boolean;
+      intensity: number;
+    }>("frosted-glass-change", (e) => {
+      frostedGlassMode.value = e.payload.enabled;
+      frostedGlassIntensity.value = e.payload.intensity;
+    });
+
+    unlistenFrostedIntensity = await listen<{ intensity: number }>(
+      "frosted-glass-intensity-change",
+      (e) => {
+        frostedGlassIntensity.value = e.payload.intensity;
+      },
+    );
+  } catch (e) {
+    console.error("事件监听器注册失败:", e);
+  }
 
   checkAutoStart();
   checkWindowVisibility();
 
-  // 监听 Tauri 窗口显示事件 - 每次窗口显示/获得焦点时都检查主窗口状态
   const currentWindow = getCurrentWindow();
   const unlistenFocus = currentWindow.onFocusChanged(({ payload: focused }) => {
     if (focused) {
       checkWindowVisibility();
+      updateFrostedGlass();
     }
   });
 
-  // 保存取消监听函数
   (window as any).__unlistenFocus = unlistenFocus;
 });
 
 onUnmounted(() => {
   window.removeEventListener("theme-change", updateTheme);
+  if (unlistenFrostedGlass) unlistenFrostedGlass();
+  if (unlistenFrostedIntensity) unlistenFrostedIntensity();
   if ((window as any).__unlistenFocus) {
     (window as any).__unlistenFocus();
   }
 });
 
-// 检查主窗口可见性
 const checkWindowVisibility = async () => {
   try {
     const mainWindow = await invoke("is_main_window_visible").catch(() => true);
@@ -254,7 +315,6 @@ const hideMenu = async () => {
 </script>
 
 <style scoped lang="scss">
-// 隐藏滚动条
 :global(html),
 :global(body) {
   overflow: hidden;
@@ -264,8 +324,6 @@ const hideMenu = async () => {
 
 .tray-menu-container {
   width: 240px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.1);
@@ -276,9 +334,16 @@ const hideMenu = async () => {
   overflow: hidden;
 
   &.dark {
-    background: rgba(35, 35, 35, 0.95);
     border-color: rgba(255, 255, 255, 0.1);
     color: #fff;
+  }
+
+  &.frosted-glass {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    &.dark {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
   }
 }
 
