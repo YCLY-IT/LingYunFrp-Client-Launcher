@@ -235,7 +235,7 @@
                     </n-button>
                   </div>
                 </div>
-                <div class="slider-control">
+                <div class="slider-control" v-if="!frostedGlassMode">
                   <div class="slider-label">
                     <n-icon :component="LayersOutline" :size="16" />
                     <span>模糊深度: {{ backgroundBlur }}px</span>
@@ -261,6 +261,19 @@
                     @update:value="handleOpacityChange"
                   />
                 </div>
+                <div class="slider-control" v-else>
+                  <div class="slider-label">
+                    <n-icon :component="WaterOutline" :size="16" />
+                    <span>毛玻璃强度: {{ backgroundOpacity }}px</span>
+                  </div>
+                  <n-slider
+                    v-model:value="backgroundOpacity"
+                    :min="5"
+                    :max="30"
+                    :step="1"
+                    @update:value="handleOpacityChange"
+                  />
+                </div>
                 <div class="setting-item" style="margin-top: 12px">
                   <div class="setting-label">
                     <n-icon :component="LayersOutline" :size="18" />
@@ -272,19 +285,6 @@
                     :checked-value="true"
                     :unchecked-value="false"
                     @update:value="handleFrostedGlassChange"
-                  />
-                </div>
-                <div class="slider-control" v-if="frostedGlassMode">
-                  <div class="slider-label">
-                    <n-icon :component="WaterOutline" :size="16" />
-                    <span>毛玻璃强度: {{ frostedGlassIntensity }}px</span>
-                  </div>
-                  <n-slider
-                    v-model:value="frostedGlassIntensity"
-                    :min="5"
-                    :max="30"
-                    :step="1"
-                    @update:value="handleFrostedGlassIntensityChange"
                   />
                 </div>
               </div>
@@ -299,6 +299,14 @@
 <script lang="ts" setup>
 import { CSSProperties, ref, onMounted, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import {
+  readFile,
+  writeFile,
+  mkdir,
+  exists,
+  remove,
+} from "@tauri-apps/plugin-fs";
+import { appDataDir } from "@tauri-apps/api/path";
 import { useThemeStore } from "../stores/theme";
 import { useThemeTransition } from "../composables/useThemeTransition.ts";
 import {
@@ -336,6 +344,8 @@ const colorBlindMode = ref(themeStore.colorBlindMode);
 const highContrastMode = ref(themeStore.highContrastMode);
 const frostedGlassMode = ref(themeStore.frostedGlassMode);
 const frostedGlassIntensity = ref(themeStore.frostedGlassIntensity || 15);
+const isBackgroundLoading = ref(false);
+const BACKGROUND_IMAGE_FILENAME = "background_image";
 
 const presetColors = [
   "#18a058",
@@ -451,12 +461,22 @@ const updateFrostedGlassStyle = () => {
   const root = document.documentElement;
   if (frostedGlassMode.value && backgroundImage.value) {
     root.classList.add("frosted-glass-mode");
-    // 添加毛玻璃模式的动画效果
     root.style.setProperty("--frosted-glass-transition", "all 0.3s ease");
   } else {
     root.classList.remove("frosted-glass-mode");
-    // 移除毛玻璃模式的动画效果
     root.style.removeProperty("--frosted-glass-transition");
+  }
+};
+
+const updateElementOpacityStyle = () => {
+  const root = document.documentElement;
+  if (backgroundImage.value && !frostedGlassMode.value) {
+    root.classList.add("element-opacity-mode");
+    const opacity = Math.max(20, backgroundOpacity.value || 100);
+    root.style.setProperty("--element-opacity", `${opacity / 100}`);
+  } else {
+    root.classList.remove("element-opacity-mode");
+    root.style.removeProperty("--element-opacity");
   }
 };
 
@@ -490,29 +510,27 @@ const handleSystemThemeChange = (e: MediaQueryListEvent) => {
   changeTheme();
 };
 
-// 压缩图片函数
-const compressImage = (
+// 压缩图片函数 - 返回 Uint8Array 用于文件系统存储
+const compressImage = async (
   file: File,
   maxWidth: number = 1920,
   maxHeight: number = 1080,
   quality: number = 0.8,
-): Promise<string> => {
+): Promise<Uint8Array> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        // 计算压缩后的尺寸
         let width = img.width;
         let height = img.height;
 
         if (width > maxWidth || height > maxHeight) {
           const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width = width * ratio;
-          height = height * ratio;
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
         }
 
-        // 创建 canvas 进行压缩
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
@@ -523,12 +541,21 @@ const compressImage = (
           return;
         }
 
-        // 绘制图片
         ctx.drawImage(img, 0, 0, width, height);
 
-        // 转换为 base64
-        const compressedBase64 = canvas.toDataURL(file.type, quality);
-        resolve(compressedBase64);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("图片压缩失败"));
+              return;
+            }
+            blob.arrayBuffer().then((buffer) => {
+              resolve(new Uint8Array(buffer));
+            });
+          },
+          "image/jpeg",
+          quality,
+        );
       };
       img.onerror = () => reject(new Error("图片加载失败"));
       img.src = e.target?.result as string;
@@ -538,42 +565,84 @@ const compressImage = (
   });
 };
 
+const getBackgroundImagePath = async (): Promise<string> => {
+  const dataDir = await appDataDir();
+  const separator = dataDir.endsWith("/") || dataDir.endsWith("\\") ? "" : "/";
+  return `${dataDir}${separator}${BACKGROUND_IMAGE_FILENAME}`;
+};
+
+const saveBackgroundToFile = async (imageData: Uint8Array): Promise<string> => {
+  const dataDir = await appDataDir();
+  const dirExists = await exists(dataDir);
+  if (!dirExists) {
+    await mkdir(dataDir, { recursive: true });
+  }
+  const filePath = await getBackgroundImagePath();
+  await writeFile(filePath, imageData);
+  return filePath;
+};
+
+const loadBackgroundFromFile = async (): Promise<string | null> => {
+  try {
+    const filePath = await getBackgroundImagePath();
+    const fileExists = await exists(filePath);
+    if (!fileExists) return null;
+    const imageData = await readFile(filePath);
+    const base64 = btoa(
+      new Uint8Array(imageData).reduce(
+        (data, byte) => data + String.fromCharCode(byte),
+        "",
+      ),
+    );
+    return `data:image/jpeg;base64,${base64}`;
+  } catch {
+    return null;
+  }
+};
+
+const deleteBackgroundFile = async (): Promise<void> => {
+  try {
+    const filePath = await getBackgroundImagePath();
+    const fileExists = await exists(filePath);
+    if (fileExists) {
+      await remove(filePath);
+    }
+  } catch (error) {
+    console.error("删除背景图文件失败:", error);
+  }
+};
+
 const handleFileChange = async (options: { fileList: any[] }) => {
   const file = options.fileList[0]?.file;
   if (file && file.type.startsWith("image/")) {
+    isBackgroundLoading.value = true;
     try {
-      // 压缩图片（最大 1920x1080，质量 0.8）
-      const compressedBase64 = await compressImage(file, 1920, 1080, 0.8);
-
-      // 检查 base64 字符串长度（localStorage 限制约 5-10MB，但为了安全我们限制在 2MB）
-      if (compressedBase64.length > 2 * 1024 * 1024) {
-        // 如果还是太大，进一步压缩
-        const furtherCompressed = await compressImage(file, 1280, 720, 0.7);
-        backgroundImageUrl.value = furtherCompressed;
-        backgroundImage.value = furtherCompressed;
-        themeStore.setBackgroundImage(furtherCompressed);
-      } else {
-        backgroundImageUrl.value = compressedBase64;
-        backgroundImage.value = compressedBase64;
-        themeStore.setBackgroundImage(compressedBase64);
+      const compressedData = await compressImage(file, 1920, 1080, 0.8);
+      await saveBackgroundToFile(compressedData);
+      const base64Url = await loadBackgroundFromFile();
+      if (base64Url) {
+        backgroundImageUrl.value = base64Url;
+        backgroundImage.value = base64Url;
+        themeStore.setBackgroundImage("file://" + BACKGROUND_IMAGE_FILENAME);
+        updateBackgroundStyle();
       }
-
-      updateBackgroundStyle();
     } catch (error) {
       console.error("图片处理失败:", error);
-      // 如果压缩失败，尝试直接使用原图（但可能不工作）
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        if (result.length > 5 * 1024 * 1024) {
-          console.warn("图片太大，可能无法正常显示。建议使用较小的图片。");
+      try {
+        const compressedData = await compressImage(file, 1280, 720, 0.6);
+        await saveBackgroundToFile(compressedData);
+        const base64Url = await loadBackgroundFromFile();
+        if (base64Url) {
+          backgroundImageUrl.value = base64Url;
+          backgroundImage.value = base64Url;
+          themeStore.setBackgroundImage("file://" + BACKGROUND_IMAGE_FILENAME);
+          updateBackgroundStyle();
         }
-        backgroundImageUrl.value = result;
-        backgroundImage.value = result;
-        themeStore.setBackgroundImage(result);
-        updateBackgroundStyle();
-      };
-      reader.readAsDataURL(file);
+      } catch (fallbackError) {
+        console.error("降级压缩也失败:", fallbackError);
+      }
+    } finally {
+      isBackgroundLoading.value = false;
     }
   }
 };
@@ -596,28 +665,46 @@ const handleBlurChange = (blur: number) => {
   updateBackgroundStyle();
 };
 
-const handleOpacityChange = (opacity: number) => {
-  // 如果启用了毛玻璃模式，不允许修改不透明度
+const handleOpacityChange = async (value: number) => {
   if (frostedGlassMode.value) {
-    backgroundOpacity.value = 100;
-    return;
+    backgroundOpacity.value = value;
+    themeStore.setFrostedGlassIntensity(value);
+    document.documentElement.style.setProperty(
+      "--frosted-glass-blur",
+      `${value}px`,
+    );
+    try {
+      await invoke("emit_event", {
+        event: "frosted-glass-intensity-change",
+        payload: { intensity: value },
+      });
+    } catch (e) {
+      console.error("毛玻璃强度事件发送失败:", e);
+    }
+  } else {
+    const clampedOpacity = Math.max(20, value);
+    backgroundOpacity.value = clampedOpacity;
+    themeStore.setBackgroundOpacity(clampedOpacity);
+    updateElementOpacityStyle();
   }
-  // 确保不透明度不低于20%
-  const clampedOpacity = Math.max(20, opacity);
-  backgroundOpacity.value = clampedOpacity;
-  themeStore.setBackgroundOpacity(clampedOpacity);
-  updateBackgroundStyle();
 };
 
 const handleFrostedGlassChange = async (enabled: boolean) => {
   frostedGlassMode.value = enabled;
   themeStore.setFrostedGlassMode(enabled);
   if (enabled) {
-    backgroundOpacity.value = 100;
-    themeStore.setBackgroundOpacity(100);
+    backgroundOpacity.value = frostedGlassIntensity.value;
+    document.documentElement.style.setProperty(
+      "--frosted-glass-blur",
+      `${frostedGlassIntensity.value}px`,
+    );
+  } else {
+    const savedOpacity = themeStore.backgroundOpacity || 100;
+    backgroundOpacity.value = Math.max(20, savedOpacity);
   }
   updateBackgroundStyle();
   updateFrostedGlassStyle();
+  updateElementOpacityStyle();
   try {
     await invoke("emit_event", {
       event: "frosted-glass-change",
@@ -628,32 +715,18 @@ const handleFrostedGlassChange = async (enabled: boolean) => {
   }
 };
 
-const handleFrostedGlassIntensityChange = async (intensity: number) => {
-  frostedGlassIntensity.value = intensity;
-  themeStore.setFrostedGlassIntensity(intensity);
-  const root = document.documentElement;
-  root.style.setProperty("--frosted-glass-blur", `${intensity}px`);
-  try {
-    await invoke("emit_event", {
-      event: "frosted-glass-intensity-change",
-      payload: { intensity },
-    });
-  } catch (e) {
-    console.error("毛玻璃强度事件发送失败:", e);
-  }
-};
-
-const clearBackgroundImage = () => {
+const clearBackgroundImage = async () => {
   backgroundImageUrl.value = "";
   backgroundImage.value = "";
   themeStore.setBackgroundImage("");
-  // 清除背景图时，如果启用了毛玻璃模式，也要禁用
+  await deleteBackgroundFile();
   if (frostedGlassMode.value) {
     frostedGlassMode.value = false;
     themeStore.setFrostedGlassMode(false);
   }
   updateBackgroundStyle();
   updateFrostedGlassStyle();
+  updateElementOpacityStyle();
 };
 
 const updateBackgroundStyle = () => {
@@ -661,21 +734,17 @@ const updateBackgroundStyle = () => {
   if (backgroundImage.value) {
     try {
       const imageUrl = `url(${backgroundImage.value})`;
-      // 确保不透明度不低于20%
       const opacity = Math.max(20, backgroundOpacity.value || 100);
 
-      // 设置 CSS 变量
       root.style.setProperty("--background-image", imageUrl);
       root.style.setProperty("--background-blur", `${backgroundBlur.value}px`);
       root.style.setProperty("--background-opacity", `${opacity / 100}`);
 
-      // 验证是否设置成功
       const setValue = root.style.getPropertyValue("--background-image");
       if (!setValue || setValue === "none") {
         console.warn("背景图 CSS 变量设置可能失败，图片可能太大");
       }
 
-      // 调试信息
       console.log("背景图已设置:", {
         length: backgroundImage.value.length,
         blur: backgroundBlur.value,
@@ -696,8 +765,15 @@ const updateBackgroundStyle = () => {
 // 监听 themeStore 的变化
 watch(
   () => themeStore.backgroundImage,
-  (newImage) => {
-    if (newImage !== backgroundImage.value) {
+  async (newImage) => {
+    if (newImage && newImage.startsWith("file://")) {
+      const fileUrl = await loadBackgroundFromFile();
+      if (fileUrl && fileUrl !== backgroundImage.value) {
+        backgroundImage.value = fileUrl;
+        backgroundImageUrl.value = fileUrl;
+        updateBackgroundStyle();
+      }
+    } else if (newImage !== backgroundImage.value) {
       backgroundImage.value = newImage;
       backgroundImageUrl.value = newImage;
       updateBackgroundStyle();
@@ -749,32 +825,40 @@ watch(
 );
 
 // 初始化背景样式
-onMounted(() => {
-  // 确保 backgroundOpacity 有默认值，且不低于20%
-  if (!backgroundOpacity.value || isNaN(backgroundOpacity.value)) {
-    backgroundOpacity.value = 100;
-    themeStore.setBackgroundOpacity(100);
-  } else if (backgroundOpacity.value < 20) {
-    // 如果值小于20%，自动调整为20%
-    backgroundOpacity.value = 20;
-    themeStore.setBackgroundOpacity(20);
-  }
-  // 如果启用了毛玻璃模式，确保不透明度为100%
+onMounted(async () => {
   if (frostedGlassMode.value) {
-    backgroundOpacity.value = 100;
-    themeStore.setBackgroundOpacity(100);
+    backgroundOpacity.value = frostedGlassIntensity.value;
+  } else {
+    if (!backgroundOpacity.value || isNaN(backgroundOpacity.value)) {
+      backgroundOpacity.value = 100;
+      themeStore.setBackgroundOpacity(100);
+    } else if (backgroundOpacity.value < 20) {
+      backgroundOpacity.value = 20;
+      themeStore.setBackgroundOpacity(20);
+    }
   }
 
-  // 初始化对话框模糊效果
   if (isDialogBoxHairGlass.value) {
     document.documentElement.style.setProperty("--modal-filter", "10px");
   } else {
     document.documentElement.style.setProperty("--modal-filter", "0px");
   }
 
+  if (
+    themeStore.backgroundImage &&
+    themeStore.backgroundImage.startsWith("file://")
+  ) {
+    const fileUrl = await loadBackgroundFromFile();
+    if (fileUrl) {
+      backgroundImage.value = fileUrl;
+      backgroundImageUrl.value = fileUrl;
+    }
+  }
+
   updateBackgroundStyle();
   updateAccessibilityStyles();
   updateFrostedGlassStyle();
+  updateElementOpacityStyle();
 });
 </script>
 

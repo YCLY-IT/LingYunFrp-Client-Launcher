@@ -51,6 +51,11 @@
   filter: contrast(1.2) saturate(1.2) !important;
 }
 
+/* 色弱模式 + 高对比度模式 */
+.color-blind-mode.high-contrast-mode {
+  filter: var(--color-blind-filter, none) contrast(1.2) saturate(1.2) !important;
+}
+
 .high-contrast-mode .n-card,
 .high-contrast-mode .n-button,
 .high-contrast-mode .n-input,
@@ -85,6 +90,21 @@ body::before {
   filter: blur(var(--background-blur, 0px));
   opacity: var(--background-opacity, 1);
   z-index: -1;
+}
+
+.element-opacity-mode .n-card,
+.element-opacity-mode .n-layout-sider,
+.element-opacity-mode .n-layout-header,
+.element-opacity-mode .n-layout-content,
+.element-opacity-mode .n-modal,
+.element-opacity-mode .n-drawer,
+.element-opacity-mode .n-dialog,
+.element-opacity-mode .n-popover,
+.element-opacity-mode .n-notification,
+.element-opacity-mode .n-message,
+.element-opacity-mode .n-base-selection,
+.element-opacity-mode .n-upload-dragger {
+  opacity: var(--element-opacity, 1) !important;
 }
 
 .frosted-glass-mode {

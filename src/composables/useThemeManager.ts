@@ -1,6 +1,10 @@
 import { computed, watch } from "vue";
 import { darkTheme, lightTheme } from "naive-ui";
+import { exists, readFile } from "@tauri-apps/plugin-fs";
+import { appDataDir } from "@tauri-apps/api/path";
 import { useThemeStore } from "../stores/theme";
+
+const BACKGROUND_IMAGE_FILENAME = "background_image";
 
 export function useThemeManager() {
   const themeStore = useThemeStore();
@@ -128,7 +132,7 @@ export function useThemeManager() {
     () => {},
   );
 
-  const initializeTheme = () => {
+  const initializeTheme = async () => {
     if (themeStore.isRGBMode) {
       animatePrimaryColor();
     }
@@ -140,19 +144,47 @@ export function useThemeManager() {
     }
 
     if (themeStore.backgroundImage) {
-      const opacity = Math.max(20, themeStore.backgroundOpacity || 100);
-      document.documentElement.style.setProperty(
-        "--background-image",
-        `url(${themeStore.backgroundImage})`,
-      );
-      document.documentElement.style.setProperty(
-        "--background-blur",
-        `${themeStore.backgroundBlur}px`,
-      );
-      document.documentElement.style.setProperty(
-        "--background-opacity",
-        `${opacity / 100}`,
-      );
+      let imageUrl = themeStore.backgroundImage;
+
+      if (themeStore.backgroundImage.startsWith("file://")) {
+        try {
+          const dataDir = await appDataDir();
+          const separator =
+            dataDir.endsWith("/") || dataDir.endsWith("\\") ? "" : "/";
+          const filePath = `${dataDir}${separator}${BACKGROUND_IMAGE_FILENAME}`;
+          const fileExists = await exists(filePath);
+          if (fileExists) {
+            const imageData = await readFile(filePath);
+            const base64 = btoa(
+              new Uint8Array(imageData).reduce(
+                (data, byte) => data + String.fromCharCode(byte),
+                "",
+              ),
+            );
+            imageUrl = `data:image/jpeg;base64,${base64}`;
+          } else {
+            imageUrl = "";
+          }
+        } catch {
+          imageUrl = "";
+        }
+      }
+
+      if (imageUrl) {
+        const opacity = Math.max(20, themeStore.backgroundOpacity || 100);
+        document.documentElement.style.setProperty(
+          "--background-image",
+          `url(${imageUrl})`,
+        );
+        document.documentElement.style.setProperty(
+          "--background-blur",
+          `${themeStore.backgroundBlur}px`,
+        );
+        document.documentElement.style.setProperty(
+          "--background-opacity",
+          `${opacity / 100}`,
+        );
+      }
     } else {
       document.documentElement.style.removeProperty("--background-image");
       document.documentElement.style.removeProperty("--background-blur");
@@ -180,6 +212,13 @@ export function useThemeManager() {
       document.documentElement.style.setProperty(
         "--frosted-glass-transition",
         "all 0.3s ease",
+      );
+    } else if (themeStore.backgroundImage) {
+      document.documentElement.classList.add("element-opacity-mode");
+      const opacity = Math.max(20, themeStore.backgroundOpacity || 100);
+      document.documentElement.style.setProperty(
+        "--element-opacity",
+        `${opacity / 100}`,
       );
     }
   };

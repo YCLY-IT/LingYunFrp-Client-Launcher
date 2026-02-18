@@ -112,7 +112,8 @@
     <br />
     <NAlert class="user-info-item" type="info" show-icon>
       <NText depth="3" style="font-size: 13px"
-        >签到可以获得 10-50 积分 和 1-5GB 流量
+        >签到可以获得<NText type="primary"> 积分</NText> 和
+        <NText type="primary">流量 </NText> 噢!(๑´ڡ`๑)
       </NText>
     </NAlert>
   </div>
@@ -204,7 +205,7 @@ const handleSign = async () => {
     if (data.code === 0) {
       dialog.success({
         title: "签到成功",
-        content: `获得 ${data.data.point} 积分 和 ${data.data.traffic}GB 流量`,
+        content: `获得 ${data.data.point} 积分 和 ${data.data.traffic}MB 流量`,
         positiveText: "好的",
       });
       isSignAvailable.value = false;

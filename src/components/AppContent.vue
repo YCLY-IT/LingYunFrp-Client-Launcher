@@ -5,7 +5,7 @@
       <component :is="Component" />
     </transition>
   </RouterView>
-  <NGlobalStyle />
+  <NGlobalStyle v-if="!isTrayMenu" />
 </template>
 
 <script setup lang="ts">
@@ -23,22 +23,21 @@ const dialog = useDialog();
 const notification = useNotification();
 
 const route = useRoute();
-const router = useRouter(); // 新增路由实例
+const router = useRouter();
 const loadingBar = useLoadingBar();
 const message = useMessage();
 
-// 修改后的计算属性
 const isDashboard = computed(() => {
   return route.path.startsWith("/dashboard");
 });
 
-// Window类型在global.d.ts中已定义
+const isTrayMenu = computed(() => {
+  return route.path === "/tray-menu";
+});
 
-// 使用路由的isReady替代setTimeout
 onMounted(async () => {
-  await router.isReady(); // 等待路由完全解析
+  await router.isReady();
 
-  // 挂载全局对象
   window.$loadingBar = loadingBar;
   window.$message = message;
   window.$dialog = dialog;
