@@ -118,6 +118,8 @@ pub async fn download_file<R: Runtime>(
     url: String,
     file_name: String,
     need_extract: bool,
+    extract_inner_folder: Option<String>,
+    extract_rename_to: Option<String>,
 ) -> Result<(), String> {
     // 使用 Tauri 提供的 app_data_dir
     let save_path = app
@@ -142,15 +144,18 @@ pub async fn download_file<R: Runtime>(
         .map_err(|e| e.to_string())?;
 
     let mut downloaded: u64 = 0;
-    // 每 64 KB 汇报一次，避免过于频繁
+    let mut last_reported: u64 = 0;
+    // 每 512 KB 汇报一次，避免过于频繁
     const REPORT_INTERVAL: u64 = 512 * 1024;
-    let emit_name = format!("download-progress-{}", file_name.trim_end_matches(".exe"));
+    let emit_name = format!("download-progress-{}", file_name.trim_end_matches(".exe").trim_end_matches(".zip"));
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| e.to_string())?;
         file.write_all(&chunk).await.map_err(|e| e.to_string())?;
 
         downloaded += chunk.len() as u64;
-        if downloaded % REPORT_INTERVAL < chunk.len() as u64 {
+        // 当下载量超过上次报告位置 + 间隔时，发送进度
+        if downloaded >= last_reported + REPORT_INTERVAL {
+            last_reported = downloaded;
             let _ = app.emit(
                 &emit_name,
                 DownloadProgress {
@@ -173,8 +178,18 @@ pub async fn download_file<R: Runtime>(
     );
 
     if need_extract {
-        let extract_to = save_path.with_extension("");
-        extract_zip(app, save_path.to_string_lossy().to_string(), extract_to.to_string_lossy().to_string()).await?;
+        // 使用临时目录解压，避免和最终目标目录冲突
+        let temp_extract_to = save_path.with_extension("").with_extension("temp");
+        extract_zip(
+            app, 
+            save_path.to_string_lossy().to_string(), 
+            temp_extract_to.to_string_lossy().to_string(),
+            extract_inner_folder,
+            extract_rename_to,
+        ).await?;
+    } else {
+        // 如果不需要解压，删除 zip 文件
+        let _ = tokio::fs::remove_file(&save_path).await;
     }
 
     Ok(())

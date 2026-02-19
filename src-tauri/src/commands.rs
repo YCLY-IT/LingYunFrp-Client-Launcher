@@ -2,7 +2,7 @@ use tauri::Manager;
 use tauri::Runtime;
 use tauri::Emitter;
 use tauri::command;
-use std::fs::File;
+use std::fs::{File, self};
 use std::sync::Mutex;
 use crate::config;
 use std::path::Path;
@@ -755,10 +755,96 @@ pub async fn extract_zip<R: Runtime>(
     _app: tauri::AppHandle<R>,
     zip_path: String,
     extract_to: String,
+    inner_folder_name: Option<String>,
+    rename_to: Option<String>,
 ) -> Result<(), String> {
+    use std::path::Path;
+    
+    let extract_path = Path::new(&extract_to);
+    
+    // 1. 解压 zip 文件到临时目录
     let file = File::open(&zip_path).map_err(|e| e.to_string())?;
     let mut zip = zip::ZipArchive::new(file)
         .map_err(|e| e.to_string())?;
-    zip.extract(extract_to).map_err(|e| e.to_string())?;
+    zip.extract(&extract_to).map_err(|e| e.to_string())?;
+    
+    // 2. 确定最终目标目录（zip 文件所在目录 + 重命名后的文件夹名）
+    let zip_path_obj = Path::new(&zip_path);
+    let parent_dir = zip_path_obj.parent().unwrap_or(Path::new("."));
+    let final_target_name = rename_to.clone().unwrap_or_else(|| {
+        inner_folder_name.clone().unwrap_or_else(|| "extracted".to_string())
+    });
+    let final_target_path = parent_dir.join(&final_target_name);
+    
+    // 3. 如果指定了内层文件夹，将其内容移出到最终目标位置
+    if let Some(inner_name) = inner_folder_name {
+        // 内层文件夹路径: extract_to/inner_name/easytier/
+        let inner_path = extract_path.join(&inner_name);
+        
+        if inner_path.exists() && inner_path.is_dir() {
+            // 查找内层文件夹中的子文件夹（如 easytier）
+            let mut source_folder = inner_path.clone();
+            
+            // 如果内层文件夹中只有一个子文件夹，进入它
+            let entries: Vec<_> = fs::read_dir(&inner_path)
+                .map_err(|e| e.to_string())?
+                .filter_map(|e| e.ok())
+                .filter(|e| e.path().is_dir())
+                .collect();
+            
+            if entries.len() == 1 {
+                source_folder = entries[0].path();
+            }
+            
+            // 如果最终目标已存在，先删除
+            if final_target_path.exists() {
+                fs::remove_dir_all(&final_target_path).map_err(|e| e.to_string())?;
+            }
+            
+            // 创建最终目标文件夹
+            fs::create_dir_all(&final_target_path).map_err(|e| e.to_string())?;
+            
+            // 将源文件夹的内容移动到最终目标位置
+            for entry in fs::read_dir(&source_folder).map_err(|e| e.to_string())? {
+                let entry = entry.map_err(|e| e.to_string())?;
+                let src = entry.path();
+                let dest = final_target_path.join(entry.file_name());
+                
+                if src.is_dir() {
+                    // 递归复制文件夹
+                    copy_dir_recursive(&src, &dest).map_err(|e| e.to_string())?;
+                    fs::remove_dir_all(&src).map_err(|e| e.to_string())?;
+                } else {
+                    fs::rename(&src, &dest).map_err(|e| e.to_string())?;
+                }
+            }
+            
+            // 删除临时解压目录
+            fs::remove_dir_all(&extract_path).map_err(|e| e.to_string())?;
+        }
+    }
+    
+    // 4. 删除 zip 文件
+    fs::remove_file(&zip_path).map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+
+// 递归复制文件夹
+fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), std::io::Error> {
+    fs::create_dir_all(dest)?;
+    
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let src_path = entry.path();
+        let dest_path = dest.join(entry.file_name());
+        
+        if src_path.is_dir() {
+            copy_dir_recursive(&src_path, &dest_path)?;
+        } else {
+            fs::copy(&src_path, &dest_path)?;
+        }
+    }
+    
     Ok(())
 }

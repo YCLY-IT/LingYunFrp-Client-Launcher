@@ -346,7 +346,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import router from "../../router";
-import { loadAppSystemInfo, loadAppVersion } from "../../utils/localInfo";
+import { loadAppSystemInfo } from "../../utils/localInfo";
 import { addVirtualNetworkLog } from "../../utils/log";
 
 // 定义网络项类型
@@ -369,10 +369,73 @@ const networkPassword = ref("");
 const localIp = ref("10.114.114.1");
 const networkRemark = ref("");
 
-const clientVersion = await loadAppVersion();
 const systemInfo = await loadAppSystemInfo();
 let system = systemInfo.split(" ")[0];
 let arch = systemInfo.split(" ")[1];
+
+// 获取 EasyTier 版本号
+const EASY_TIER_VERSION = "2.4.5";
+
+// 获取 EasyTier 平台标识 (用于URL和文件夹名)
+const getEasyTierPlatform = (): { urlName: string; folderName: string } => {
+  if (system === "windows") {
+    if (arch === "x86_64") {
+      return {
+        urlName: "windows-x86_64",
+        folderName: "easytier-windows-x86_64",
+      };
+    } else if (arch === "aarch64" || arch === "arm64") {
+      return { urlName: "windows-arm64", folderName: "easytier-windows-arm64" };
+    } else if (arch === "i686") {
+      return { urlName: "windows-i686", folderName: "easytier-windows-i686" };
+    }
+  } else if (system === "linux") {
+    if (arch === "x86_64") {
+      return { urlName: "linux-x86_64", folderName: "easytier-linux-x86_64" };
+    } else if (arch === "aarch64") {
+      return { urlName: "linux-aarch64", folderName: "easytier-linux-aarch64" };
+    } else if (arch === "arm") {
+      return { urlName: "linux-arm", folderName: "easytier-linux-arm" };
+    } else if (arch === "armhf") {
+      return { urlName: "linux-armhf", folderName: "easytier-linux-armhf" };
+    } else if (arch === "armv7") {
+      return { urlName: "linux-armv7", folderName: "easytier-linux-armv7" };
+    } else if (arch === "armv7hf") {
+      return { urlName: "linux-armv7hf", folderName: "easytier-linux-armv7hf" };
+    } else if (arch === "loongarch64") {
+      return {
+        urlName: "linux-loongarch64",
+        folderName: "easytier-linux-loongarch64",
+      };
+    } else if (arch === "mips") {
+      return { urlName: "linux-mips", folderName: "easytier-linux-mips" };
+    } else if (arch === "mipsel") {
+      return { urlName: "linux-mipsel", folderName: "easytier-linux-mipsel" };
+    } else if (arch === "riscv64") {
+      return { urlName: "linux-riscv64", folderName: "easytier-linux-riscv64" };
+    }
+  } else if (system === "macos" || system === "darwin") {
+    if (arch === "x86_64") {
+      return { urlName: "macos-x86_64", folderName: "easytier-macos-x86_64" };
+    } else if (arch === "aarch64" || arch === "arm64") {
+      return { urlName: "macos-aarch64", folderName: "easytier-macos-aarch64" };
+    }
+  }
+  // 默认返回 windows x86_64
+  return { urlName: "windows-x86_64", folderName: "easytier-windows-x86_64" };
+};
+
+// 获取 EasyTier 下载 URL
+const getEasyTierDownloadUrl = (): string => {
+  const baseUrl = `https://gh-proxy.org/https://github.com/EasyTier/EasyTier/releases/download/v${EASY_TIER_VERSION}`;
+  const platform = getEasyTierPlatform();
+  return `${baseUrl}/easytier-${platform.urlName}-v${EASY_TIER_VERSION}.zip`;
+};
+
+// 获取 EasyTier 解压后的内层文件夹名
+const getEasyTierInnerFolder = (): string => {
+  return getEasyTierPlatform().folderName;
+};
 
 // 状态
 const creating = ref(false);
@@ -644,28 +707,21 @@ const checkHasEasyTire = async () => {
       negativeText: "返回上一页",
       onPositiveClick: async () => {
         dialogInstance.destroy(); // 立即关闭警告对话
-        const updateInfo = await checkUpdate(
-          "easytier",
-          system,
-          arch,
-          clientVersion,
-          "0.0.0",
-        );
-        if (!updateInfo.success) {
-          message.warning("获取版本失败");
-          return;
-        }
         let fileName = "easytier.zip";
         downloading.value = true;
         try {
           await invoke("download_file", {
-            url: updateInfo.url,
+            url: getEasyTierDownloadUrl(),
             fileName,
+            needExtract: true,
+            extractInnerFolder: getEasyTierInnerFolder(), // 解压后的内层文件夹名
+            extractRenameTo: "easytier", // 重命名为
           });
           message.success("easytier下载成功");
           downloading.value = false;
         } catch (error) {
           message.error("easytier下载失败");
+          console.error("easytier下载失败:", error);
           downloading.value = false;
           checkHasEasyTire(); // 失败时重新弹出警告
         }
@@ -681,7 +737,6 @@ const checkHasEasyTire = async () => {
 
 // 组件挂载时初始化
 import { NModal, NProgress } from "naive-ui";
-import { checkUpdate } from "../../utils/update";
 const downloading = ref(false);
 const downloadProgress = ref(0);
 const downloadedBytes = ref(0);
@@ -750,7 +805,7 @@ onMounted(async () => {
   try {
     console.log("开始监听natter下载进度事件");
     const unlistenProgress = await listen(
-      "download-progress-easytire",
+      "download-progress-easytier",
       (e: any) => {
         const { bytes_downloaded, total_bytes } = e.payload;
         downloadedBytes.value = bytes_downloaded;
