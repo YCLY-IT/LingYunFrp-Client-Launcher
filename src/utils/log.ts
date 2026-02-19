@@ -116,8 +116,30 @@ export const initLogService = async () => {
     const t = new Date().toLocaleString();
     const html = ansi.toHtml(message);
     addLog(
-      `<span style="${PALETTE.time}">[${t}]</span> <span style="${PALETTE.tunnel}">[隧道 ${tunnelId}]</span> ${html}`,
+      `<span style="${PALETTE.time}">[${t}]</span> <span style="${PALETTE.tunnel}">[隧道 ${tunnelId}]</span> ${html}>`,
       "frp",
+    );
+  });
+
+  // 监听 EasyTier 日志事件
+  await listen("easytier-log", (e: any) => {
+    const { level, message } = e.payload;
+    const t = new Date().toLocaleString();
+    const html = ansi.toHtml(message);
+    const levelStyle = level === "error" ? PALETTE.error : PALETTE.info;
+    addLog(
+      `<span style="${PALETTE.time}">[${t}]</span> <span style="color:#a855f7">[虚拟网络]</span> <span style="${levelStyle}">${html}</span>`,
+      "virtual_network",
+    );
+  });
+
+  // 监听 EasyTier 停止事件
+  await listen("easytier-stopped", (e: any) => {
+    const { network_id } = e.payload;
+    const t = new Date().toLocaleString();
+    addLog(
+      `<span style="${PALETTE.time}">[${t}]</span> <span style="color:#a855f7">[虚拟网络]</span> <span style="${PALETTE.warning}">EasyTier 进程已停止 (Network: ${network_id})</span>`,
+      "virtual_network",
     );
   });
 };

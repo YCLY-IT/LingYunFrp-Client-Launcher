@@ -102,6 +102,59 @@
             </div>
           </div>
         </n-tab-pane>
+        <!-- 加入网络 -->
+        <n-tab-pane name="join" tab="加入网络">
+          <div class="tab-content">
+            <n-card title="加入现有网络" class="join-network-card">
+              <n-space vertical size="large">
+                <n-form-item label="网络名称">
+                  <n-input
+                    v-model:value="joinNetworkName"
+                    placeholder="请输入要加入的网络名称"
+                    :maxlength="20"
+                    show-count
+                    :disabled="!!currentNetwork"
+                  />
+                </n-form-item>
+                <n-form-item label="网络密钥">
+                  <n-input
+                    v-model:value="joinNetworkPassword"
+                    placeholder="请输入网络密钥"
+                    :maxlength="20"
+                    show-count
+                    :disabled="!!currentNetwork"
+                  />
+                </n-form-item>
+                <n-form-item label="本地IP">
+                  <n-input
+                    v-model:value="joinLocalIp"
+                    placeholder="请输入本地IP地址"
+                    :disabled="!!currentNetwork"
+                  />
+                </n-form-item>
+
+                <n-button
+                  type="primary"
+                  @click="joinNetwork"
+                  :loading="joining"
+                  :disabled="
+                    !joinNetworkName || !joinNetworkPassword || !!currentNetwork
+                  "
+                  block
+                  size="large"
+                >
+                  {{
+                    joining
+                      ? "加入中..."
+                      : currentNetwork
+                        ? "已连接网络"
+                        : "加入网络"
+                  }}
+                </n-button>
+              </n-space>
+            </n-card>
+          </div>
+        </n-tab-pane>
         <!-- 创建网络 -->
         <n-tab-pane name="create" tab="创建网络">
           <div class="tab-content">
@@ -257,6 +310,14 @@
     <n-card title="使用说明" class="help-card" style="margin-top: 20px">
       <div class="help-content">
         <div class="help-item">
+          <h4>🔗 加入虚拟网络</h4>
+          <p>1. 切换到"加入网络"标签页</p>
+          <p>2. 输入要加入的网络名称（从网络创建者处获取）</p>
+          <p>3. 输入网络密钥（从网络创建者处获取）</p>
+          <p>4. 设置本地IP地址（默认 10.114.114.2）</p>
+          <p>5. 点击"加入网络"按钮连接到该网络</p>
+        </div>
+        <div class="help-item">
           <h4>🌐 创建虚拟网络</h4>
           <p>1. 切换到"创建网络"标签页</p>
           <p>2. 输入网络名称（必填）</p>
@@ -266,7 +327,7 @@
           <p>6. 点击"创建网络"按钮完成创建</p>
         </div>
         <div class="help-item">
-          <h4>� 启动虚拟网络</h4>
+          <h4>▶️ 启动虚拟网络</h4>
           <p>1. 切换到"我的通道"标签页</p>
           <p>2. 找到要启动的网络卡片</p>
           <p>3. 点击网络卡片，弹出启动确认对话框</p>
@@ -274,7 +335,7 @@
           <p>5. 启动成功后，切换到"当前通道"标签页查看状态</p>
         </div>
         <div class="help-item">
-          <h4>� 管理虚拟网络</h4>
+          <h4>📋 管理虚拟网络</h4>
           <p>在"我的通道"标签页中可以查看和管理所有已创建的虚拟网络。</p>
           <p>• 点击网络卡片可启动该网络</p>
           <p>• 点击复制图标可复制网络 ID</p>
@@ -441,7 +502,13 @@ const getEasyTierInnerFolder = (): string => {
 const creating = ref(false);
 const leaving = ref(false);
 const loadingMyNetworks = ref(false);
+const joining = ref(false);
 const activeTab = ref("create");
+
+// 加入网络表单数据
+const joinNetworkName = ref("");
+const joinNetworkPassword = ref("");
+const joinLocalIp = ref("10.114.114.2");
 
 // 当前网络
 const currentNetwork = ref<any>(null);
@@ -460,7 +527,6 @@ const saveNetworksToLocal = (networks: NetworkItem[]) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(networks));
   } catch (error) {
-    console.error("保存网络到本地存储失败:", error);
     message.error("保存网络失败");
   }
 };
@@ -473,7 +539,6 @@ const loadNetworksFromLocal = (): NetworkItem[] => {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error("从本地存储加载网络失败:", error);
     message.error("加载网络失败");
   }
   return [];
@@ -549,7 +614,6 @@ const leaveNetwork = async () => {
 
   try {
     const result = await invoke("stop_easytire", { networkId });
-    console.log("停止虚拟网络结果:", result);
 
     if (result === true) {
       addVirtualNetworkLog(
@@ -565,7 +629,6 @@ const leaveNetwork = async () => {
       throw new Error("停止失败");
     }
   } catch (error) {
-    console.error("断开网络连接失败:", error);
     addVirtualNetworkLog(`断开虚拟网络失败: ${error}`, "error");
     message.error(`断开失败: ${error}`);
   } finally {
@@ -608,6 +671,103 @@ const joinMyNetwork = (network: NetworkItem) => {
   });
 };
 
+// 加入他人网络
+const joinNetwork = async () => {
+  if (!joinNetworkName.value.trim()) {
+    message.warning("请输入网络名称");
+    addVirtualNetworkLog("加入失败：网络名称不能为空", "warning");
+    return;
+  }
+
+  if (!joinNetworkPassword.value.trim()) {
+    message.warning("请输入网络密钥");
+    addVirtualNetworkLog("加入失败：网络密钥不能为空", "warning");
+    return;
+  }
+
+  joining.value = true;
+  addVirtualNetworkLog(
+    `开始加入虚拟网络: ${joinNetworkName.value.trim()}`,
+    "info",
+  );
+
+  // 生成唯一的网络ID，确保前后端一致
+  const joinNetworkId = "JOIN_" + Date.now().toString(36).toUpperCase();
+
+  try {
+    const result = await invoke("start_easytire", {
+      name: joinNetworkName.value.trim(),
+      password: joinNetworkPassword.value.trim(),
+      id: joinNetworkId,
+      localIp: joinLocalIp.value,
+    });
+
+    if (Array.isArray(result) && result[0] === "true") {
+      addVirtualNetworkLog(
+        `成功加入虚拟网络 "${joinNetworkName.value.trim()}"`,
+        "success",
+      );
+      message.success(`成功加入虚拟网络 "${joinNetworkName.value.trim()}"`);
+
+      // 创建加入的网络对象
+      const joinedNetwork: NetworkItem = {
+        id: joinNetworkId,
+        name: joinNetworkName.value.trim(),
+        password: joinNetworkPassword.value.trim(),
+        createTime: new Date().toLocaleString("zh-CN"),
+        localIp: joinLocalIp.value,
+        remark: "加入的网络",
+      };
+
+      // 保存到加入的网络列表（单独存储）
+      const joinedNetworksKey = "joined_networks";
+      const existingJoined = JSON.parse(
+        localStorage.getItem(joinedNetworksKey) || "[]",
+      );
+      existingJoined.unshift(joinedNetwork);
+      localStorage.setItem(joinedNetworksKey, JSON.stringify(existingJoined));
+
+      currentNetwork.value = {
+        config: {
+          name: joinedNetwork.name,
+          networkId: joinedNetwork.id,
+          localIp: joinedNetwork.localIp,
+          create_time: joinedNetwork.createTime,
+        },
+        status: "Active",
+        nodes: {},
+      };
+
+      // 清空表单
+      joinNetworkName.value = "";
+      joinNetworkPassword.value = "";
+      joinLocalIp.value = "10.114.114.2";
+
+      activeTab.value = "status";
+
+      setTimeout(() => {
+        dialog.info({
+          title: "虚拟网络已连接",
+          content: `已成功加入虚拟网络 "${currentNetwork.value.config.name}"\n本地地址：${currentNetwork.value.config.localIp}`,
+          positiveText: "复制本地地址",
+          negativeText: "关闭",
+          onPositiveClick: () => {
+            copyToClipboard(currentNetwork.value.config.localIp);
+            addVirtualNetworkLog("本地地址已复制到剪贴板", "info");
+          },
+        });
+      }, 500);
+    } else {
+      throw new Error("加入失败");
+    }
+  } catch (error) {
+    addVirtualNetworkLog(`加入虚拟网络失败: ${error}`, "error");
+    message.error(`加入失败: ${error}`);
+  } finally {
+    joining.value = false;
+  }
+};
+
 const startNetwork = async (network: NetworkItem) => {
   try {
     const result = await invoke("start_easytire", {
@@ -616,7 +776,6 @@ const startNetwork = async (network: NetworkItem) => {
       id: network.id,
       localIp: network.localIp,
     });
-    console.log(result);
 
     if (Array.isArray(result) && result[0] === "true") {
       addVirtualNetworkLog(`虚拟网络 "${network.name}" 启动成功`, "success");
@@ -636,7 +795,6 @@ const startNetwork = async (network: NetworkItem) => {
       throw new Error("启动失败");
     }
   } catch (error) {
-    console.error("启动虚拟网络失败:", error);
     addVirtualNetworkLog(
       `虚拟网络 "${network.name}" 启动失败: ${error}`,
       "error",
@@ -721,7 +879,6 @@ const checkHasEasyTire = async () => {
           downloading.value = false;
         } catch (error) {
           message.error("easytier下载失败");
-          console.error("easytier下载失败:", error);
           downloading.value = false;
           checkHasEasyTire(); // 失败时重新弹出警告
         }
@@ -743,25 +900,21 @@ const downloadedBytes = ref(0);
 const totalBytes = ref(0);
 
 onMounted(async () => {
-  console.log("Network.vue 组件开始挂载");
   initLocalNetworks();
   checkHasEasyTire();
   addVirtualNetworkLog("虚拟网络管理系统已启动", "info");
 
   try {
-    console.log("开始检查 easytier-core 进程状态...");
     const processRunning = (await invoke(
       "check_easytire_process_running",
     )) as boolean;
-    console.log("进程运行状态:", processRunning);
 
     const networkId = (await invoke("get_active_easytire")) as string | null;
-    console.log("记录的网络ID:", networkId);
 
     if (processRunning && networkId) {
-      console.log("检测到活动网络:", networkId);
       const network = myNetworks.value.find((n) => n.id === networkId);
       if (network) {
+        // 找到已保存的网络配置（创建的网络）
         currentNetwork.value = {
           config: {
             name: network.name,
@@ -774,36 +927,67 @@ onMounted(async () => {
         };
         activeTab.value = "status";
         addVirtualNetworkLog(`已恢复虚拟网络 "${network.name}" 的状态`, "info");
+      } else if (networkId.startsWith("JOIN_")) {
+        // 加入的网络（从 joined_networks 本地存储中查找）
+        const joinedNetworksKey = "joined_networks";
+        const joinedNetworks: NetworkItem[] = JSON.parse(
+          localStorage.getItem(joinedNetworksKey) || "[]",
+        );
+        const joinedNetwork = joinedNetworks.find((n) => n.id === networkId);
+
+        if (joinedNetwork) {
+          currentNetwork.value = {
+            config: {
+              name: joinedNetwork.name,
+              networkId: joinedNetwork.id,
+              localIp: joinedNetwork.localIp,
+              create_time: joinedNetwork.createTime,
+            },
+            status: "Active",
+            nodes: {},
+          };
+          addVirtualNetworkLog(
+            `已恢复到加入的虚拟网络 "${joinedNetwork.name}"`,
+            "info",
+          );
+        } else {
+          currentNetwork.value = {
+            config: {
+              name: "已加入的网络",
+              networkId: networkId,
+              localIp: "未知",
+              create_time: new Date().toLocaleString(),
+            },
+            status: "Active",
+            nodes: {},
+          };
+          addVirtualNetworkLog("已恢复到加入的虚拟网络", "info");
+        }
+        activeTab.value = "status";
       } else {
-        console.log("未找到对应的网络配置");
         addVirtualNetworkLog(
           "检测到进程运行，但未找到对应的网络配置",
           "warning",
         );
       }
     } else if (processRunning && !networkId) {
-      console.log("检测到 easytier-core 进程正在运行，但没有记录的网络ID");
       addVirtualNetworkLog(
         "检测到 easytier-core 进程正在运行，但没有记录的网络ID",
         "warning",
       );
     } else if (!processRunning && networkId) {
-      console.log("检测到记录的网络ID，但进程未运行，清除状态");
       await invoke("stop_easytire", { networkId });
       addVirtualNetworkLog(
         "检测到记录的网络ID，但进程未运行，已清除状态",
         "warning",
       );
     } else {
-      console.log("没有检测到活动的虚拟网络");
     }
   } catch (error) {
-    console.error("检查活动网络失败:", error);
     addVirtualNetworkLog(`检查活动网络失败: ${error}`, "error");
   }
 
   try {
-    console.log("开始监听natter下载进度事件");
     const unlistenProgress = await listen(
       "download-progress-easytier",
       (e: any) => {
@@ -817,10 +1001,8 @@ onMounted(async () => {
     );
     cleanupFunctions.value.push(unlistenProgress);
   } catch (error) {
-    console.error("监听EasyTire下载进度事件失败:", error);
+    // 监听失败不处理
   }
-
-  console.log("Network.vue 组件挂载完成");
 });
 
 // 组件卸载时清理资源
