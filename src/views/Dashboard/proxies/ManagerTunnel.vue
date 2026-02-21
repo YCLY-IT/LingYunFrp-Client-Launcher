@@ -605,6 +605,17 @@
                     @update:value="handleDomainsUpdate"
                   />
                 </NFormItem>
+                <NFormItem
+                  v-if="['stcp', 'xtcp'].includes(editForm.proxyType)"
+                  label="访问密钥"
+                  path="accessKey"
+                  class="advanced-form-item"
+                >
+                  <NInput
+                    v-model:value="editForm.accessKey"
+                    placeholder="请输入访问密钥"
+                  />
+                </NFormItem>
               </NForm>
             </NCollapseItem>
 
@@ -625,29 +636,10 @@
                 :model="editForm"
                 :rules="rules"
                 label-placement="left"
-                label-width="120"
+                label-width="150"
                 require-mark-placement="right-hanging"
                 size="medium"
               >
-                <NFormItem label="访问密钥" path="accessKey">
-                  <NInput
-                    v-model:value="editForm.accessKey"
-                    placeholder="访问密钥已不再支持"
-                    :disabled="true"
-                  />
-                </NFormItem>
-                <NFormItem label="Host Header Rewrite" path="hostHeaderRewrite">
-                  <NInput
-                    v-model:value="editForm.hostHeaderRewrite"
-                    placeholder="请输入 Host 请求头重写值"
-                  />
-                </NFormItem>
-                <NFormItem label="X-From-Where" path="headerXFromWhere">
-                  <NInput
-                    v-model:value="editForm.headerXFromWhere"
-                    placeholder="请输入 X-From-Where 请求头值"
-                  />
-                </NFormItem>
                 <NFormItem label="Proxy Protocol" path="proxyProtocolVersion">
                   <NSelect
                     v-model:value="editForm.proxy_protocol_version"
@@ -1080,10 +1072,7 @@ const handleEdit = (proxy: Proxy) => {
     localPort: proxy.localPort,
     remotePort: proxy.remotePort,
     domain: proxy.domain || "",
-    location: proxy.location || "",
     accessKey: "",
-    hostHeaderRewrite: proxy.hostHeaderRewrite || "",
-    headerXFromWhere: proxy.headerXFromWhere || "",
     use_encryption: proxy.useEncryption || false,
     use_compression: proxy.useCompression || false,
     proxy_protocol_version: (proxy.proxyProtocolVersion || "").trim(),

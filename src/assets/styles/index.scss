@@ -119,6 +119,16 @@ body::before {
   display: none !important;
 }
 
+/* 毛玻璃模式下卡片的操作栏 */
+.frosted-glass-mode .n-card .n-card__action {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.5))
+    saturate(180%) !important;
+  -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.5))
+    saturate(180%) !important;
+}
+
 .frosted-glass-mode .n-card {
   background: #ffffff1a !important;
   backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
@@ -209,6 +219,78 @@ body::before {
   backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
   -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 毛玻璃模式下的输入框 */
+.frosted-glass-mode .n-input {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8))
+    saturate(180%) !important;
+  -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8))
+    saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 毛玻璃模式下的下拉选择器 */
+.frosted-glass-mode .n-select .n-base-selection {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8))
+    saturate(180%) !important;
+  -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8))
+    saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.frosted-glass-mode .n-select .n-base-selection--active {
+  background: #ffffff26 !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1) !important;
+}
+
+.frosted-glass-mode .n-select .n-base-selection-label {
+  background: transparent !important;
+}
+
+/* 毛玻璃模式下多选下拉框的标签 */
+.frosted-glass-mode .n-base-selection-tags {
+  background: transparent !important;
+}
+
+.frosted-glass-mode .n-base-selection-tag-wrapper {
+  background: #ffffff26 !important;
+  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.6))
+    saturate(180%) !important;
+  -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.6))
+    saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
+}
+
+/* 毛玻璃模式下下拉选择器的下拉菜单 */
+.frosted-glass-mode .n-select-menu {
+  background: #ffffff33 !important;
+  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 1.2))
+    saturate(180%) !important;
+  -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 1.2))
+    saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 毛玻璃模式下的单选按钮组 */
+.frosted-glass-mode .n-radio-group {
+  background: #ffffff1a !important;
+  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8))
+    saturate(180%) !important;
+  -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8))
+    saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 8px !important;
+}
+
+.frosted-glass-mode .n-base-selection-tag-wrapper .n-tag {
+  background: transparent !important;
+  border: none !important;
 }
 
 /* 主题切换扩散动画 */

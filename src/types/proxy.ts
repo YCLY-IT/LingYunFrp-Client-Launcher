@@ -7,8 +7,6 @@ export interface CreateProxyArgs {
   domain?: string;
   proxyType: string;
   accessKey?: string;
-  hostHeaderRewrite?: string;
-  headerXFromWhere?: string;
   proxyProtocolVersion?: string;
   useEncryption: boolean;
   useCompression: boolean;
@@ -38,8 +36,6 @@ export interface Proxy {
   accessKey: string;
   lastStartTime: number;
   lastCloseTime: number;
-  hostHeaderRewrite: string;
-  headerXFromWhere: string;
   useEncryption: boolean;
   useCompression: boolean;
   proxyProtocolVersion: string;
