@@ -1,11 +1,11 @@
 {
   "dev": {
-    "api_url": "http://localhost:8081/",
+    "api_url": "http://localhost:8081",
     "version": "0.1.3",
     "debug": true
   },
   "prod": {
-    "api_url": "https://www.lyfrp.cn/api/",
+    "api_url": "https://www.lyfrp.cn/api",
     "version": "0.1.3",
     "debug": false
   }

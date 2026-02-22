@@ -333,9 +333,10 @@ pub async fn start_easytire(app: tauri::AppHandle, name: String, password: Strin
     #[cfg(not(target_os = "windows"))]
     {
         let mut cmd = Command::new("sudo");
+        let local_ip_arg = format!("{}/24", local_ip);
         cmd.args(&[
-            &exe_path.to_string_lossy(),
-            "-i", &format!("{}/24", local_ip),
+            exe_path.to_string_lossy().as_ref(),
+            "-i", &local_ip_arg,
             "--network-name", &name,
             "--network-secret", &password,
             "-p", "tcp://ros.scpsl.com.cn:11010",
@@ -393,7 +394,6 @@ pub async fn start_easytire(app: tauri::AppHandle, name: String, password: Strin
             Ok(None) => {
                 // 进程仍在运行，启动成功
                 *ACTIVE_NETWORK.lock().unwrap() = Some(id.clone());
-                save_active_network(&app, &id);
                 
                 // 在后台监控进程状态
                 tokio::spawn(async move {

@@ -848,3 +848,38 @@ fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), std::io::Error> {
     
     Ok(())
 }
+
+/// TCPing - 测试 TCP 连接延迟
+/// 参数: host - 主机地址(域名或IP), port - 端口号, timeout_ms - 超时时间(毫秒)
+/// 返回: 延迟时间(毫秒), 如果连接失败返回错误信息
+#[tauri::command]
+pub async fn tcping(host: String, port: u16, timeout_ms: u64) -> Result<u64, String> {
+    use std::net::TcpStream;
+    use std::time::{Duration, Instant};
+    use std::net::ToSocketAddrs;
+    
+    // 解析地址
+    let addr = format!("{}:{}", host, port);
+    let socket_addrs: Vec<_> = addr.to_socket_addrs()
+        .map_err(|e| format!("地址解析失败: {}", e))?
+        .collect();
+    
+    if socket_addrs.is_empty() {
+        return Err("无法解析地址".to_string());
+    }
+    
+    let socket_addr = &socket_addrs[0];
+    let timeout = Duration::from_millis(timeout_ms);
+    
+    // 记录开始时间
+    let start = Instant::now();
+    
+    // 尝试连接
+    match TcpStream::connect_timeout(socket_addr, timeout) {
+        Ok(_) => {
+            let elapsed = start.elapsed();
+            Ok(elapsed.as_millis() as u64)
+        }
+        Err(e) => Err(format!("连接失败: {}", e)),
+    }
+}

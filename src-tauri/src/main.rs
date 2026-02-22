@@ -57,7 +57,8 @@ use commands::{
     check_software_file,
     delete_file,
     auto_update,
-    install_and_restart
+    install_and_restart,
+    tcping
 };
 
 // 显示主窗口命令
@@ -182,6 +183,7 @@ fn main() {
         delete_file,
         auto_update,
         install_and_restart,
+        tcping,
         // 新增命令
         show_main_window,
         hide_main_window,
