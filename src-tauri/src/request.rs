@@ -24,7 +24,13 @@ pub async fn forward_request(
     let api_url = if url.starts_with("http://") || url.starts_with("https://") {
         url
     } else {
-        config::api_url().to_string() + url.trim_start_matches('/')
+        let base_url = config::api_url();
+        let path = url.trim_start_matches('/');
+        if base_url.ends_with('/') {
+            format!("{}{}", base_url, path)
+        } else {
+            format!("{}/{}", base_url, path)
+        }
     };
 
     // 检查是否为文件上传

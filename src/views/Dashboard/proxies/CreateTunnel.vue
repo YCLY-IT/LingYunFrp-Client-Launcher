@@ -95,16 +95,37 @@
                     class="node-item"
                   >
                     <div class="node-header">
-                      <div class="node-title">
-                        <NTag type="info" size="small"># {{ node.id }}</NTag>
+                      <div
+                        class="node-title"
+                        style="
+                          display: flex;
+                          align-items: center;
+                          overflow: hidden;
+                        "
+                      >
+                        <NTag type="info" size="small" style="flex-shrink: 0"
+                          ># {{ node.id }}</NTag
+                        >
                         <NText
                           style="
                             white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
                             margin-left: -3px;
                             margin-right: 4px;
+                            flex: 1;
+                            min-width: 0;
                           "
+                          :title="node.name"
                           >{{ node.name }}</NText
                         >
+                        <NTag
+                          :type="getLatencyInfo(node.latency).type"
+                          size="small"
+                          style="flex-shrink: 0"
+                        >
+                          {{ getLatencyInfo(node.latency).text }}
+                        </NTag>
                       </div>
                       <!-- <div class="node-tags">
                         <NTag
@@ -256,16 +277,35 @@
                     class="node-item"
                   >
                     <div class="node-header">
-                      <div class="node-title">
-                        <NTag type="info" size="small"># {{ node.id }}</NTag>
+                      <div
+                        class="node-title"
+                        style="
+                          display: flex;
+                          align-items: center;
+                          overflow: hidden;
+                        "
+                      >
+                        <NTag type="info" size="small" style="flex-shrink: 0"
+                          ># {{ node.id }}</NTag
+                        >
                         <NText
                           style="
                             white-space: nowrap;
-                            margin-left: -3px;
-                            margin-right: 4px;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            flex: 1;
+                            min-width: 0;
                           "
+                          :title="node.name"
                           >{{ node.name }}</NText
                         >
+                        <NTag
+                          :type="getLatencyInfo(node.latency).type"
+                          size="small"
+                          style="flex-shrink: 0"
+                        >
+                          {{ getLatencyInfo(node.latency).text }}
+                        </NTag>
                       </div>
                       <!-- <div class="node-tags">
                         <NTag
@@ -430,16 +470,37 @@
                     class="node-item"
                   >
                     <div class="node-header">
-                      <div class="node-title">
-                        <NTag type="info" size="small"># {{ node.id }}</NTag>
+                      <div
+                        class="node-title"
+                        style="
+                          display: flex;
+                          align-items: center;
+                          overflow: hidden;
+                        "
+                      >
+                        <NTag type="info" size="small" style="flex-shrink: 0"
+                          ># {{ node.id }}</NTag
+                        >
                         <NText
                           style="
                             white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
                             margin-left: -3px;
                             margin-right: 4px;
+                            flex: 1;
+                            min-width: 0;
                           "
+                          :title="node.name"
                           >{{ node.name }}</NText
                         >
+                        <NTag
+                          :type="getLatencyInfo(node.latency).type"
+                          size="small"
+                          style="flex-shrink: 0"
+                        >
+                          {{ getLatencyInfo(node.latency).text }}
+                        </NTag>
                       </div>
                       <!-- <div class="node-tags">
                         <NTag
@@ -586,7 +647,7 @@
     <NModal
       v-model:show="showConfigModal"
       preset="card"
-      title="隧道配置"
+      :title="selectedNode?.name || '隧道配置'"
       style="width: 650px"
       :bordered="false"
       :segmented="{
@@ -867,6 +928,7 @@ import { switchButtonRailStyle } from "../../../constants/theme.ts";
 import { useRouter } from "vue-router";
 import { userApi } from "../../../net";
 import { accessHandle } from "../../../net/base.ts";
+import { invoke } from "@tauri-apps/api/core";
 
 const router = useRouter();
 const message = useMessage();
@@ -964,6 +1026,7 @@ const nodeOptions = ref<
     isDisabled: boolean;
     bandWidth: number;
     location: string;
+    servicePort: number;
     allowedProtocols: string[];
     allowGroups: { name: string; friendlyName: string }[];
     needRealname: boolean;
@@ -971,6 +1034,7 @@ const nodeOptions = ref<
       min: number;
       max: number;
     };
+    latency?: number | null;
   }[]
 >([]);
 // 添加过滤节点的计算属性
@@ -1198,12 +1262,16 @@ const fetchNodes = async () => {
             needRealname: node.needRealname,
             bandWidth: node.bandWidth,
             location: node.location,
+            servicePort: node.servicePort || 7000,
             portRange: {
               min: minPort,
               max: maxPort,
             },
+            latency: null,
           };
         });
+        // 获取节点列表后开始检测延迟
+        checkNodesLatency();
       } else {
         message.error(data.message || "获取节点列表失败");
       }
@@ -1214,6 +1282,49 @@ const fetchNodes = async () => {
       nodeLoading.value = false;
     },
   );
+};
+
+// 检测节点延迟
+const checkNodesLatency = async () => {
+  for (const node of nodeOptions.value) {
+    if (!node.isOnline || node.isDisabled) {
+      node.latency = -1; // 离线或禁用标记为 -1
+      continue;
+    }
+    try {
+      // 使用节点的 servicePort 进行检测
+      const latency = await invoke("tcping", {
+        host: node.hostname,
+        port: node.servicePort,
+        timeoutMs: 3000,
+      });
+      node.latency = latency as number;
+    } catch {
+      node.latency = -1; // 连接失败标记为 -1
+    }
+  }
+};
+
+// 获取延迟显示文本和类型
+const getLatencyInfo = (
+  latency: number | null | undefined,
+): {
+  text: string;
+  type: "default" | "error" | "success" | "warning" | "primary" | "info";
+} => {
+  if (latency === null || latency === undefined) {
+    return { text: "检测中...", type: "default" };
+  }
+  if (latency === -1) {
+    return { text: "超时", type: "error" };
+  }
+  if (latency < 50) {
+    return { text: `${latency}ms`, type: "success" };
+  }
+  if (latency < 100) {
+    return { text: `${latency}ms`, type: "warning" };
+  }
+  return { text: `${latency}ms`, type: "error" };
 };
 
 const selectedNode = ref<{
