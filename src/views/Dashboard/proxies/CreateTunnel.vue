@@ -60,6 +60,21 @@
               placeholder="请选择协议"
             />
           </div>
+          <div class="latency-refresh">
+            <NButton
+              type="primary"
+              size="medium"
+              :loading="refreshingLatency"
+              @click="handleRefreshLatency"
+            >
+              <template #icon>
+                <NIcon>
+                  <RefreshOutline />
+                </NIcon>
+              </template>
+              刷新延迟
+            </NButton>
+          </div>
         </div>
       </NSpace>
     </NCard>
@@ -106,19 +121,24 @@
                         <NTag type="info" size="small" style="flex-shrink: 0"
                           ># {{ node.id }}</NTag
                         >
-                        <NText
-                          style="
-                            white-space: nowrap;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
-                            margin-left: -3px;
-                            margin-right: 4px;
-                            flex: 1;
-                            min-width: 0;
-                          "
-                          :title="node.name"
-                          >{{ node.name }}</NText
-                        >
+                        <NTooltip trigger="hover">
+                          <template #trigger>
+                            <NText
+                              style="
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                margin-left: -3px;
+                                margin-right: 4px;
+                                flex: 1;
+                                min-width: 0;
+                                cursor: pointer;
+                              "
+                              >{{ node.name }}</NText
+                            >
+                          </template>
+                          {{ node.name }}
+                        </NTooltip>
                         <NTag
                           :type="getLatencyInfo(node.latency).type"
                           size="small"
@@ -288,17 +308,22 @@
                         <NTag type="info" size="small" style="flex-shrink: 0"
                           ># {{ node.id }}</NTag
                         >
-                        <NText
-                          style="
-                            white-space: nowrap;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
-                            flex: 1;
-                            min-width: 0;
-                          "
-                          :title="node.name"
-                          >{{ node.name }}</NText
-                        >
+                        <NTooltip trigger="hover">
+                          <template #trigger>
+                            <NText
+                              style="
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                flex: 1;
+                                min-width: 0;
+                                cursor: pointer;
+                              "
+                              >{{ node.name }}</NText
+                            >
+                          </template>
+                          {{ node.name }}
+                        </NTooltip>
                         <NTag
                           :type="getLatencyInfo(node.latency).type"
                           size="small"
@@ -481,19 +506,24 @@
                         <NTag type="info" size="small" style="flex-shrink: 0"
                           ># {{ node.id }}</NTag
                         >
-                        <NText
-                          style="
-                            white-space: nowrap;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
-                            margin-left: -3px;
-                            margin-right: 4px;
-                            flex: 1;
-                            min-width: 0;
-                          "
-                          :title="node.name"
-                          >{{ node.name }}</NText
-                        >
+                        <NTooltip trigger="hover">
+                          <template #trigger>
+                            <NText
+                              style="
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                margin-left: -3px;
+                                margin-right: 4px;
+                                flex: 1;
+                                min-width: 0;
+                                cursor: pointer;
+                              "
+                              >{{ node.name }}</NText
+                            >
+                          </template>
+                          {{ node.name }}
+                        </NTooltip>
                         <NTag
                           :type="getLatencyInfo(node.latency).type"
                           size="small"
@@ -647,7 +677,7 @@
     <NModal
       v-model:show="showConfigModal"
       preset="card"
-      :title="selectedNode?.name || '隧道配置'"
+      :title="modalTitle"
       style="width: 650px"
       :bordered="false"
       :segmented="{
@@ -923,7 +953,11 @@ import {
   NCollapse,
   NCollapseItem,
 } from "naive-ui";
-import { CloudUploadOutline, SearchOutline } from "@vicons/ionicons5";
+import {
+  CloudUploadOutline,
+  SearchOutline,
+  RefreshOutline,
+} from "@vicons/ionicons5";
 import { switchButtonRailStyle } from "../../../constants/theme.ts";
 import { useRouter } from "vue-router";
 import { userApi } from "../../../net";
@@ -935,6 +969,7 @@ const message = useMessage();
 const formRef = ref<FormInst | null>(null);
 const loading = ref(false);
 const nodeLoading = ref(false);
+const refreshingLatency = ref(false);
 
 // ========== 弹窗互斥逻辑 ========== //
 const modalStack = ref<string[]>([]);
@@ -1305,6 +1340,19 @@ const checkNodesLatency = async () => {
   }
 };
 
+// 刷新延迟
+const handleRefreshLatency = async () => {
+  if (refreshingLatency.value) return;
+  refreshingLatency.value = true;
+  // 将所有节点延迟重置为 null（显示检测中...）
+  for (const node of nodeOptions.value) {
+    node.latency = null;
+  }
+  await checkNodesLatency();
+  refreshingLatency.value = false;
+  message.success("延迟检测完成");
+};
+
 // 获取延迟显示文本和类型
 const getLatencyInfo = (
   latency: number | null | undefined,
@@ -1337,6 +1385,7 @@ const selectedNode = ref<{
     min: number;
     max: number;
   };
+  latency: number;
 } | null>(null);
 
 const allowedProxyTypeOptions = computed(() => {
@@ -1344,6 +1393,12 @@ const allowedProxyTypeOptions = computed(() => {
   return protocolOptions.filter((opt) =>
     selectedNode.value?.allowedProtocols.includes(opt.value),
   );
+});
+
+const modalTitle = computed(() => {
+  if (!selectedNode.value) return "隧道配置";
+  const latencyInfo = getLatencyInfo(selectedNode.value.latency);
+  return `${selectedNode.value.name} [${latencyInfo.text}]`;
 });
 
 const domainTags = ref<string[]>([]);
@@ -1397,6 +1452,7 @@ const handleNodeSelect = (node: any) => {
     allowedProtocols: node.allowedProtocols,
     allowGroups: node.allowGroups,
     portRange: node.portRange,
+    latency: node.latency,
   };
   // 设置表单默认值
   formValue.value.nodeId = node.value;
@@ -1706,6 +1762,13 @@ const handleCreateFormCollapseUpdate = (names: string[]) => {
   min-width: 0;
 }
 
+.latency-refresh {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  padding-top: 22px;
+}
+
 .protocol-select {
   width: 100%;
   min-width: 0;
@@ -1721,8 +1784,13 @@ const handleCreateFormCollapseUpdate = (names: string[]) => {
   }
   .region-filter,
   .group-filter,
-  .protocol-filter {
+  .protocol-filter,
+  .latency-refresh {
     width: 100%;
+  }
+  .latency-refresh {
+    align-items: flex-start;
+    padding-bottom: 0;
   }
   .group-select,
   .protocol-select {
@@ -1753,7 +1821,8 @@ const handleCreateFormCollapseUpdate = (names: string[]) => {
     box-sizing: border-box;
   }
   .group-filter,
-  .protocol-filter {
+  .protocol-filter,
+  .latency-refresh {
     width: 100%;
     margin: 0;
   }
