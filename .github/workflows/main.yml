@@ -30,7 +30,6 @@ on:
         type: boolean
 
 jobs:
-  # ==================== macOS ====================
   build-macos-x64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
     runs-on: macos-latest
@@ -128,8 +127,19 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-apple-darwin,aarch64-apple-darwin
+      - name: Download x64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-x64
+          path: artifacts/x64
+      - name: Download arm64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-arm64
+          path: artifacts/arm64
       - name: Build Universal Binary
-        run: pnpm run tauri build --target universal-apple-darwin
+        run: |
+          pnpm run tauri build --target universal-apple-darwin
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -149,7 +159,6 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
-  # ==================== Linux x64 ====================
   build-linux-x64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
     runs-on: ubuntu-latest
@@ -194,6 +203,7 @@ jobs:
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/tar.gz/*.tar.gz
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/flatpak/*.flatpak
           retention-days: 1
       - name: Upload to Release
         if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
@@ -208,66 +218,6 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
-  # ==================== Linux x86 (i686) ====================
-  build-linux-x86:
-    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
-      - name: Install system dependencies
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-dev:i386 \
-            libglib2.0-dev:i386 \
-            pkg-config \
-            gcc-multilib \
-            g++-multilib \
-            libssl-dev:i386 \
-            libwebkit2gtk-4.1-dev:i386 \
-            libjavascriptcoregtk-4.1-dev:i386
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: i686-unknown-linux-gnu
-      - name: Configure Cargo
-        run: |
-          echo '[target.i686-unknown-linux-gnu]' >> ~/.cargo/config.toml
-          echo 'linker = "gcc"' >> ~/.cargo/config.toml
-      - name: Build Tauri (x86)
-        run: pnpm run tauri build --target i686-unknown-linux-gnu
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-x86
-          path: |
-            src-tauri/target/i686-unknown-linux-gnu/release/bundle/deb/*.deb
-            src-tauri/target/i686-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-            src-tauri/target/i686-unknown-linux-gnu/release/bundle/tar.gz/*.tar.gz
-          retention-days: 1
-      - name: Upload to Release
-        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/i686-unknown-linux-gnu/release/bundle/deb/*.deb
-            src-tauri/target/i686-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-            src-tauri/target/i686-unknown-linux-gnu/release/bundle/tar.gz/*.tar.gz
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-  # ==================== Linux ARM64 (aarch64) ====================
   build-linux-arm64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
     runs-on: ubuntu-latest
@@ -303,7 +253,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-unknown-linux-gnu
-      - name: Configure Cargo
+      - name: Configure Cargo for cross compilation
         run: |
           echo '[target.aarch64-unknown-linux-gnu]' >> ~/.cargo/config.toml
           echo 'linker = "aarch64-linux-gnu-gcc"' >> ~/.cargo/config.toml
@@ -332,121 +282,6 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
-  # ==================== Linux ARMv7 (armhf) ====================
-  build-linux-armv7:
-    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
-      - name: Install system dependencies
-        run: |
-          sudo dpkg --add-architecture armhf
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-dev:armhf \
-            libglib2.0-dev:armhf \
-            pkg-config \
-            gcc-arm-linux-gnueabihf \
-            g++-arm-linux-gnueabihf \
-            libssl-dev:armhf \
-            libwebkit2gtk-4.1-dev:armhf \
-            libjavascriptcoregtk-4.1-dev:armhf
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: armv7-unknown-linux-gnueabihf
-      - name: Configure Cargo
-        run: |
-          echo '[target.armv7-unknown-linux-gnueabihf]' >> ~/.cargo/config.toml
-          echo 'linker = "arm-linux-gnueabihf-gcc"' >> ~/.cargo/config.toml
-      - name: Build Tauri (ARMv7)
-        run: pnpm run tauri build --target armv7-unknown-linux-gnueabihf
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-armv7
-          path: |
-            src-tauri/target/armv7-unknown-linux-gnueabihf/release/bundle/deb/*.deb
-            src-tauri/target/armv7-unknown-linux-gnueabihf/release/bundle/appimage/*.AppImage
-            src-tauri/target/armv7-unknown-linux-gnueabihf/release/bundle/tar.gz/*.tar.gz
-          retention-days: 1
-      - name: Upload to Release
-        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/armv7-unknown-linux-gnueabihf/release/bundle/deb/*.deb
-            src-tauri/target/armv7-unknown-linux-gnueabihf/release/bundle/appimage/*.AppImage
-            src-tauri/target/armv7-unknown-linux-gnueabihf/release/bundle/tar.gz/*.tar.gz
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-  # ==================== Linux ARM (armel) ====================
-  build-linux-arm:
-    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
-      - name: Install system dependencies
-        run: |
-          sudo dpkg --add-architecture armel
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-dev:armel \
-            libglib2.0-dev:armel \
-            pkg-config \
-            gcc-arm-linux-gnueabi \
-            g++-arm-linux-gnueabi \
-            libssl-dev:armel
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: arm-unknown-linux-gnueabi
-      - name: Configure Cargo
-        run: |
-          echo '[target.arm-unknown-linux-gnueabi]' >> ~/.cargo/config.toml
-          echo 'linker = "arm-linux-gnueabi-gcc"' >> ~/.cargo/config.toml
-      - name: Build Tauri (ARM)
-        run: pnpm run tauri build --target arm-unknown-linux-gnueabi
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-arm
-          path: |
-            src-tauri/target/arm-unknown-linux-gnueabi/release/bundle/deb/*.deb
-            src-tauri/target/arm-unknown-linux-gnueabi/release/bundle/tar.gz/*.tar.gz
-          retention-days: 1
-      - name: Upload to Release
-        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/arm-unknown-linux-gnueabi/release/bundle/deb/*.deb
-            src-tauri/target/arm-unknown-linux-gnueabi/release/bundle/tar.gz/*.tar.gz
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-  # ==================== Windows x64 ====================
   build-windows-x64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
     runs-on: windows-latest
@@ -488,51 +323,6 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
-  # ==================== Windows x86 (i686) ====================
-  build-windows-x86:
-    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: i686-pc-windows-msvc
-      - name: Add i686 target
-        run: rustup target add i686-pc-windows-msvc
-      - name: Build Tauri (x86)
-        run: pnpm run tauri build --target i686-pc-windows-msvc
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-x86
-          path: |
-            src-tauri/target/i686-pc-windows-msvc/release/bundle/msi/*.msi
-            src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
-            src-tauri/target/i686-pc-windows-msvc/release/bundle/zip/*.zip
-          retention-days: 1
-      - name: Upload to Release
-        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/i686-pc-windows-msvc/release/bundle/msi/*.msi
-            src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
-            src-tauri/target/i686-pc-windows-msvc/release/bundle/zip/*.zip
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-  # ==================== Windows ARM64 ====================
   build-windows-arm64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
     runs-on: windows-latest
@@ -572,50 +362,6 @@ jobs:
             src-tauri/target/aarch64-pc-windows-msvc/release/bundle/msi/*.msi
             src-tauri/target/aarch64-pc-windows-msvc/release/bundle/nsis/*.exe
             src-tauri/target/aarch64-pc-windows-msvc/release/bundle/zip/*.zip
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-  # ==================== Windows ARM (armv7) ====================
-  build-windows-armv7:
-    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: armv7-pc-windows-msvc
-      - name: Add ARMv7 target
-        run: rustup target add armv7-pc-windows-msvc
-      - name: Build Tauri (ARMv7)
-        run: pnpm run tauri build --target armv7-pc-windows-msvc
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-armv7
-          path: |
-            src-tauri/target/armv7-pc-windows-msvc/release/bundle/msi/*.msi
-            src-tauri/target/armv7-pc-windows-msvc/release/bundle/nsis/*.exe
-            src-tauri/target/armv7-pc-windows-msvc/release/bundle/zip/*.zip
-          retention-days: 1
-      - name: Upload to Release
-        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/armv7-pc-windows-msvc/release/bundle/msi/*.msi
-            src-tauri/target/armv7-pc-windows-msvc/release/bundle/nsis/*.exe
-            src-tauri/target/armv7-pc-windows-msvc/release/bundle/zip/*.zip
           draft: false
           prerelease: false
           generate_release_notes: true
