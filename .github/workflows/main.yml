@@ -30,155 +30,112 @@ on:
         type: boolean
 
 jobs:
-  # ==================== macOS x64 ====================
-  build-macos-x64:
+  # ==================== macOS (x64 + ARM64 + Universal) ====================
+  build-macos:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: pnpm/action-setup@v2
         with:
           version: 10
+          
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: "pnpm"
+          
       - name: Install dependencies
         run: pnpm install
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-apple-darwin
-      - name: Build Tauri (x64)
-        run: pnpm run tauri build --target x86_64-apple-darwin
-      - name: Rename x64 dmg
-        run: |
-          cd src-tauri/target/x86_64-apple-darwin/release/bundle/dmg
-          for f in *.dmg; do mv "$f" "${f%.dmg}_x64.dmg"; done
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-x64
-          path: |
-            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*_x64.dmg
-            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz
-          retention-days: 1
-      - name: Upload to Release
-        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*_x64.dmg
-            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-  # ==================== macOS ARM64 ====================
-  build-macos-arm64:
-    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-apple-darwin
-      - name: Build Tauri (ARM64)
-        run: pnpm run tauri build --target aarch64-apple-darwin
-      - name: Rename aarch64 dmg
-        run: |
-          cd src-tauri/target/aarch64-apple-darwin/release/bundle/dmg
-          for f in *.dmg; do mv "$f" "${f%.dmg}_aarch64.dmg"; done
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-arm64
-          path: |
-            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*_aarch64.dmg
-            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
-          retention-days: 1
-      - name: Upload to Release
-        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*_aarch64.dmg
-            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-  # ==================== macOS Universal ====================
-  build-macos-universal:
-    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
-    runs-on: macos-latest
-    needs: [build-macos-x64, build-macos-arm64]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
+        
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-apple-darwin,aarch64-apple-darwin
-      - name: Build Universal Binary
+
+      # Build x64
+      - name: Build Tauri (x64)
+        run: pnpm run tauri build --target x86_64-apple-darwin
+        
+      - name: Rename x64 dmg
+        run: |
+          cd src-tauri/target/x86_64-apple-darwin/release/bundle/dmg
+          for f in *.dmg; do mv "$f" "${f%.dmg}_x64.dmg"; done
+
+      # Build ARM64
+      - name: Build Tauri (ARM64)
+        run: pnpm run tauri build --target aarch64-apple-darwin
+        
+      - name: Rename aarch64 dmg
+        run: |
+          cd src-tauri/target/aarch64-apple-darwin/release/bundle/dmg
+          for f in *.dmg; do mv "$f" "${f%.dmg}_aarch64.dmg"; done
+
+      # Build Universal
+      - name: Build Tauri (Universal)
         run: pnpm run tauri build --target universal-apple-darwin
+        
       - name: Rename universal dmg
         run: |
           cd src-tauri/target/universal-apple-darwin/release/bundle/dmg
           for f in *.dmg; do mv "$f" "${f%.dmg}_universal.dmg"; done
+
+      # Upload all artifacts
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macos-universal
+          name: macos-all
           path: |
+            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*_x64.dmg
+            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*_aarch64.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
             src-tauri/target/universal-apple-darwin/release/bundle/dmg/*_universal.dmg
             src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz
           retention-days: 1
+
       - name: Upload to Release
         if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*_x64.dmg
+            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*_aarch64.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
             src-tauri/target/universal-apple-darwin/release/bundle/dmg/*_universal.dmg
             src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz
           draft: false
           prerelease: false
           generate_release_notes: true
 
-  # ==================== Linux x64 ====================
-  build-linux-x64:
+  # ==================== Linux (x64 + ARM64) ====================
+  build-linux:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
-    runs-on: ubuntu-22.04  # 固定版本避免 24.04 的兼容性问题
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+      
       - uses: pnpm/action-setup@v2
         with:
           version: 10
+          
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: "pnpm"
+          
       - name: Install dependencies
         run: pnpm install
-      - name: Install system dependencies
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
+
+      # ==================== Build x64 ====================
+      - name: Install system dependencies (x64)
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -192,13 +149,11 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-gnu
+
       - name: Build Tauri (x64)
         run: pnpm run tauri build --target x86_64-unknown-linux-gnu
-      - name: Upload Artifacts
+
+      - name: Upload x64 Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-x64
@@ -208,112 +163,83 @@ jobs:
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/tar.gz/*.tar.gz
           retention-days: 1
-      - name: Upload to Release
-        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
-            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm
-            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/tar.gz/*.tar.gz
-          draft: false
-          prerelease: false
-          generate_release_notes: true
 
-  # ==================== Linux ARM64 (修复版) ====================
-  build-linux-arm64:
-    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
-    runs-on: ubuntu-22.04  # 使用 22.04 获得更好的交叉编译支持
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
-      
-      # 关键修复：使用交叉编译工具链 + 手动编译 OpenSSL
+      # ==================== Build ARM64 ====================
       - name: Setup ARM64 cross compilation
         run: |
           sudo dpkg --add-architecture arm64
+          sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
+          sudo tee /etc/apt/sources.list > /dev/null <<'EOF'
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu jammy main restricted universe multiverse
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu jammy-backports main restricted universe multiverse
+          deb [arch=amd64] http://security.ubuntu.com/ubuntu jammy-security main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-backports main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse
+          EOF
           sudo apt-get update
           sudo apt-get install -y \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
             pkg-config-aarch64-linux-gnu \
             libc6-dev-arm64-cross \
-            libgcc-s1-arm64-cross \
             patchelf \
-            perl
-            
-      # 手动编译 ARM64 版本的 OpenSSL，避免系统包冲突
+            perl \
+            wget
+
       - name: Build OpenSSL for ARM64
         run: |
           OPENSSL_VERSION="3.2.1"
-          wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
+          wget -q https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
           tar xzf openssl-${OPENSSL_VERSION}.tar.gz
           cd openssl-${OPENSSL_VERSION}
-          
           export CC=aarch64-linux-gnu-gcc
           export CXX=aarch64-linux-gnu-g++
           ./Configure linux-aarch64 shared --prefix=/opt/openssl-arm64 --openssldir=/opt/openssl-arm64
           make -j$(nproc)
           sudo make install
-          
-          # 设置环境变量供后续步骤使用
           echo "OPENSSL_DIR=/opt/openssl-arm64" >> $GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=/opt/openssl-arm64/include" >> $GITHUB_ENV
           echo "OPENSSL_LIB_DIR=/opt/openssl-arm64/lib" >> $GITHUB_ENV
-          
-          # 创建 pkg-config 文件
           sudo mkdir -p /opt/openssl-arm64/lib/pkgconfig
           sudo tee /opt/openssl-arm64/lib/pkgconfig/openssl.pc > /dev/null <<EOF
           prefix=/opt/openssl-arm64
           exec_prefix=\${prefix}
           libdir=\${exec_prefix}/lib
           includedir=\${prefix}/include
-          
           Name: OpenSSL
           Description: Secure Sockets Layer and cryptography libraries and tools
-          Version: ${OPENSSL_VERSION}
+          Version: 3.2.1
           Libs: -L\${libdir} -lssl -lcrypto
           Cflags: -I\${includedir}
           EOF
-          
           sudo tee /opt/openssl-arm64/lib/pkgconfig/libssl.pc > /dev/null <<EOF
           prefix=/opt/openssl-arm64
           exec_prefix=\${prefix}
           libdir=\${exec_prefix}/lib
           includedir=\${prefix}/include
-          
           Name: OpenSSL-libssl
           Description: Secure Sockets Layer and cryptography libraries
-          Version: ${OPENSSL_VERSION}
+          Version: 3.2.1
           Libs: -L\${libdir} -lssl
           Cflags: -I\${includedir}
           EOF
-          
           sudo tee /opt/openssl-arm64/lib/pkgconfig/libcrypto.pc > /dev/null <<EOF
           prefix=/opt/openssl-arm64
           exec_prefix=\${prefix}
           libdir=\${exec_prefix}/lib
           includedir=\${prefix}/include
-          
           Name: OpenSSL-libcrypto
           Description: OpenSSL cryptography library
-          Version: ${OPENSSL_VERSION}
+          Version: 3.2.1
           Libs: -L\${libdir} -lcrypto
           Cflags: -I\${includedir}
           EOF
 
-      - name: Install Tauri system dependencies (ARM64)
+      - name: Install Tauri dependencies (ARM64)
         run: |
-          # 安装 ARM64 架构的库（用于链接）
           sudo apt-get install -y \
             libgtk-3-dev:arm64 \
             libglib2.0-dev:arm64 \
@@ -322,20 +248,14 @@ jobs:
             libjavascriptcoregtk-4.1-dev:arm64 \
             libayatana-appindicator3-dev:arm64 \
             librsvg2-dev:arm64 \
-            libssl-dev:arm64 || true  # 允许失败，因为我们使用自定义 OpenSSL
+            libssl-dev:arm64 || true
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-unknown-linux-gnu
-
-      - name: Configure Cargo for cross compilation
+      - name: Configure Cargo for ARM64
         run: |
           mkdir -p ~/.cargo
           cat > ~/.cargo/config.toml << 'EOF'
           [target.aarch64-unknown-linux-gnu]
           linker = "aarch64-linux-gnu-gcc"
-          
           [env]
           PKG_CONFIG_ALLOW_CROSS = "1"
           PKG_CONFIG_SYSROOT_DIR = "/usr/aarch64-linux-gnu"
@@ -343,7 +263,7 @@ jobs:
           OPENSSL_DIR = "/opt/openssl-arm64"
           OPENSSL_INCLUDE_DIR = "/opt/openssl-arm64/include"
           OPENSSL_LIB_DIR = "/opt/openssl-arm64/lib"
-          PKG_CONFIG_PATH = "/opt/openssl-arm64/lib/pkgconfig"
+          PKG_CONFIG_PATH = "/opt/openssl-arm64/lib/pkgconfig:/usr/lib/aarch64-linux-gnu/pkgconfig"
           EOF
 
       - name: Build Tauri (ARM64)
@@ -359,7 +279,7 @@ jobs:
           CC: aarch64-linux-gnu-gcc
           CXX: aarch64-linux-gnu-g++
 
-      - name: Upload Artifacts
+      - name: Upload ARM64 Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-arm64
@@ -375,6 +295,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/tar.gz/*.tar.gz
             src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/deb/*.deb
             src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
             src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/rpm/*.rpm
@@ -383,28 +307,35 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
-  # ==================== Windows x64 ====================
-  build-windows-x64:
+  # ==================== Windows (x64 + x86 + ARM64) ====================
+  build-windows:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: pnpm/action-setup@v2
         with:
           version: 10
+          
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: "pnpm"
+          
       - name: Install dependencies
         run: pnpm install
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-pc-windows-msvc
+          targets: x86_64-pc-windows-msvc,i686-pc-windows-msvc,aarch64-pc-windows-msvc
+
+      # Build x64
       - name: Build Tauri (x64)
         run: pnpm run tauri build --target x86_64-pc-windows-msvc
-      - name: Upload Artifacts
+
+      - name: Upload x64 Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-x64
@@ -413,42 +344,12 @@ jobs:
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
             src-tauri/target/x86_64-pc-windows-msvc/release/bundle/zip/*.zip
           retention-days: 1
-      - name: Upload to Release
-        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
-            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/zip/*.zip
-          draft: false
-          prerelease: false
-          generate_release_notes: true
 
-  # ==================== Windows x86 ====================
-  build-windows-x86:
-    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: i686-pc-windows-msvc
-      - name: Add i686 target
-        run: rustup target add i686-pc-windows-msvc
+      # Build x86
       - name: Build Tauri (x86)
         run: pnpm run tauri build --target i686-pc-windows-msvc
-      - name: Upload Artifacts
+
+      - name: Upload x86 Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-x86
@@ -457,42 +358,12 @@ jobs:
             src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
             src-tauri/target/i686-pc-windows-msvc/release/bundle/zip/*.zip
           retention-days: 1
-      - name: Upload to Release
-        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/i686-pc-windows-msvc/release/bundle/msi/*.msi
-            src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
-            src-tauri/target/i686-pc-windows-msvc/release/bundle/zip/*.zip
-          draft: false
-          prerelease: false
-          generate_release_notes: true
 
-  # ==================== Windows ARM64 ====================
-  build-windows-arm64:
-    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-pc-windows-msvc
-      - name: Add ARM64 target
-        run: rustup target add aarch64-pc-windows-msvc
+      # Build ARM64
       - name: Build Tauri (ARM64)
         run: pnpm run tauri build --target aarch64-pc-windows-msvc
-      - name: Upload Artifacts
+
+      - name: Upload ARM64 Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-arm64
@@ -501,11 +372,18 @@ jobs:
             src-tauri/target/aarch64-pc-windows-msvc/release/bundle/nsis/*.exe
             src-tauri/target/aarch64-pc-windows-msvc/release/bundle/zip/*.zip
           retention-days: 1
+
       - name: Upload to Release
         if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/zip/*.zip
+            src-tauri/target/i686-pc-windows-msvc/release/bundle/msi/*.msi
+            src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
+            src-tauri/target/i686-pc-windows-msvc/release/bundle/zip/*.zip
             src-tauri/target/aarch64-pc-windows-msvc/release/bundle/msi/*.msi
             src-tauri/target/aarch64-pc-windows-msvc/release/bundle/nsis/*.exe
             src-tauri/target/aarch64-pc-windows-msvc/release/bundle/zip/*.zip
