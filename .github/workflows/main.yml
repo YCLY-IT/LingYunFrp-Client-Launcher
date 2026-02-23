@@ -30,6 +30,7 @@ on:
         type: boolean
 
 jobs:
+  # ==================== macOS x64 ====================
   build-macos-x64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
     runs-on: macos-latest
@@ -50,12 +51,16 @@ jobs:
           targets: x86_64-apple-darwin
       - name: Build Tauri (x64)
         run: pnpm run tauri build --target x86_64-apple-darwin
+      - name: Rename x64 dmg
+        run: |
+          cd src-tauri/target/x86_64-apple-darwin/release/bundle/dmg
+          for f in *.dmg; do mv "$f" "${f%.dmg}_x64.dmg"; done
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-x64
           path: |
-            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*_x64.dmg
             src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz
           retention-days: 1
       - name: Upload to Release
@@ -63,12 +68,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*_x64.dmg
             src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app.tar.gz
           draft: false
           prerelease: false
           generate_release_notes: true
 
+  # ==================== macOS ARM64 ====================
   build-macos-arm64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
     runs-on: macos-latest
@@ -89,12 +95,16 @@ jobs:
           targets: aarch64-apple-darwin
       - name: Build Tauri (ARM64)
         run: pnpm run tauri build --target aarch64-apple-darwin
+      - name: Rename aarch64 dmg
+        run: |
+          cd src-tauri/target/aarch64-apple-darwin/release/bundle/dmg
+          for f in *.dmg; do mv "$f" "${f%.dmg}_aarch64.dmg"; done
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-arm64
           path: |
-            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*_aarch64.dmg
             src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
           retention-days: 1
       - name: Upload to Release
@@ -102,12 +112,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*_aarch64.dmg
             src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
           draft: false
           prerelease: false
           generate_release_notes: true
 
+  # ==================== macOS Universal ====================
   build-macos-universal:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
     runs-on: macos-latest
@@ -127,25 +138,18 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-apple-darwin,aarch64-apple-darwin
-      - name: Download x64 artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-x64
-          path: artifacts/x64
-      - name: Download arm64 artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-arm64
-          path: artifacts/arm64
       - name: Build Universal Binary
+        run: pnpm run tauri build --target universal-apple-darwin
+      - name: Rename universal dmg
         run: |
-          pnpm run tauri build --target universal-apple-darwin
+          cd src-tauri/target/universal-apple-darwin/release/bundle/dmg
+          for f in *.dmg; do mv "$f" "${f%.dmg}_universal.dmg"; done
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-universal
           path: |
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*_universal.dmg
             src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz
           retention-days: 1
       - name: Upload to Release
@@ -153,12 +157,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*_universal.dmg
             src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz
           draft: false
           prerelease: false
           generate_release_notes: true
 
+  # ==================== Linux x64 ====================
   build-linux-x64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
     runs-on: ubuntu-latest
@@ -184,10 +189,9 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libjavascriptcoregtk-4.1-dev \
             libssl-dev \
-            libappindicator3-dev \
+            libayatana-appindicator3-dev \
             librsvg2-dev \
-            patchelf \
-            libayatana-appindicator3-dev
+            patchelf
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -203,7 +207,6 @@ jobs:
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/tar.gz/*.tar.gz
-            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/flatpak/*.flatpak
           retention-days: 1
       - name: Upload to Release
         if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
@@ -218,6 +221,7 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
+  # ==================== Linux ARM64 ====================
   build-linux-arm64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
     runs-on: ubuntu-latest
@@ -243,22 +247,29 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libjavascriptcoregtk-4.1-dev \
             libssl-dev \
-            libappindicator3-dev \
+            libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf \
-            libayatana-appindicator3-dev \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-unknown-linux-gnu
-      - name: Configure Cargo for cross compilation
+      - name: Configure Cargo
         run: |
-          echo '[target.aarch64-unknown-linux-gnu]' >> ~/.cargo/config.toml
-          echo 'linker = "aarch64-linux-gnu-gcc"' >> ~/.cargo/config.toml
+          mkdir -p ~/.cargo
+          cat > ~/.cargo/config.toml << 'EOF'
+          [target.aarch64-unknown-linux-gnu]
+          linker = "aarch64-linux-gnu-gcc"
+          
+          [env]
+          PKG_CONFIG_ALLOW_CROSS = "1"
+          EOF
       - name: Build Tauri (ARM64)
         run: pnpm run tauri build --target aarch64-unknown-linux-gnu
+        env:
+          PKG_CONFIG_ALLOW_CROSS: "1"
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -282,6 +293,7 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
+  # ==================== Windows x64 ====================
   build-windows-x64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
     runs-on: windows-latest
@@ -323,6 +335,51 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
+  # ==================== Windows x86 ====================
+  build-windows-x86:
+    if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: i686-pc-windows-msvc
+      - name: Add i686 target
+        run: rustup target add i686-pc-windows-msvc
+      - name: Build Tauri (x86)
+        run: pnpm run tauri build --target i686-pc-windows-msvc
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86
+          path: |
+            src-tauri/target/i686-pc-windows-msvc/release/bundle/msi/*.msi
+            src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
+            src-tauri/target/i686-pc-windows-msvc/release/bundle/zip/*.zip
+          retention-days: 1
+      - name: Upload to Release
+        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || github.event.inputs.create_release == true }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/i686-pc-windows-msvc/release/bundle/msi/*.msi
+            src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
+            src-tauri/target/i686-pc-windows-msvc/release/bundle/zip/*.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  # ==================== Windows ARM64 ====================
   build-windows-arm64:
     if: ${{ github.event_name == 'push' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
     runs-on: windows-latest
