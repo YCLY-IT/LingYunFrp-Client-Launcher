@@ -134,10 +134,20 @@
                                 min-width: 0;
                                 cursor: pointer;
                               "
-                              >{{ node.name }}</NText
+                              >{{ node.name
+                              }}<span
+                                :style="{
+                                  color: getLoadStatusColor(node.loadStatus),
+                                }"
+                                >({{
+                                  getLoadStatusText(node.loadStatus)
+                                }})</span
+                              ></NText
                             >
                           </template>
-                          {{ node.name }}
+                          {{ node.name }} ({{
+                            getLoadStatusTooltip(node.loadStatus)
+                          }})
                         </NTooltip>
                         <NTag
                           :type="getLatencyInfo(node.latency).type"
@@ -319,10 +329,20 @@
                                 min-width: 0;
                                 cursor: pointer;
                               "
-                              >{{ node.name }}</NText
+                              >{{ node.name
+                              }}<span
+                                :style="{
+                                  color: getLoadStatusColor(node.loadStatus),
+                                }"
+                                >({{
+                                  getLoadStatusText(node.loadStatus)
+                                }})</span
+                              ></NText
                             >
                           </template>
-                          {{ node.name }}
+                          {{ node.name }} ({{
+                            getLoadStatusTooltip(node.loadStatus)
+                          }})
                         </NTooltip>
                         <NTag
                           :type="getLatencyInfo(node.latency).type"
@@ -519,10 +539,20 @@
                                 min-width: 0;
                                 cursor: pointer;
                               "
-                              >{{ node.name }}</NText
+                              >{{ node.name
+                              }}<span
+                                :style="{
+                                  color: getLoadStatusColor(node.loadStatus),
+                                }"
+                                >({{
+                                  getLoadStatusText(node.loadStatus)
+                                }})</span
+                              ></NText
                             >
                           </template>
-                          {{ node.name }}
+                          {{ node.name }} ({{
+                            getLoadStatusTooltip(node.loadStatus)
+                          }})
                         </NTooltip>
                         <NTag
                           :type="getLatencyInfo(node.latency).type"
@@ -1070,12 +1100,17 @@ const nodeOptions = ref<
       max: number;
     };
     latency?: number | null;
+    loadStatus?: string;
   }[]
 >([]);
 // 添加过滤节点的计算属性
 const filteredNodes = computed(() => {
   return nodeOptions.value
     .filter((node) => {
+      // 隐藏超载节点
+      if (node.loadStatus === "overload") {
+        return false;
+      }
       // 用户组多选筛选
       if (!selectedGroup.value.includes("all")) {
         const groupNames = node.allowGroups.map((g) => g.name);
@@ -1303,6 +1338,7 @@ const fetchNodes = async () => {
               max: maxPort,
             },
             latency: null,
+            loadStatus: node.loadStatus,
           };
         });
         // 获取节点列表后开始检测延迟
@@ -1373,6 +1409,84 @@ const getLatencyInfo = (
     return { text: `${latency}ms`, type: "warning" };
   }
   return { text: `${latency}ms`, type: "error" };
+};
+
+/**
+ * loadStatus 取值说明：
+ * - low: 低负载（综合评分 < 30%）
+ * - normal: 正常（综合评分 30%~60%）
+ * - high: 高负载（综合评分 60%~80%）
+ * - overload: 超载（综合评分 >= 80%）
+ * - offline: 节点离线
+ * - disabled: 节点被禁用
+ * - unknown: 状态未知
+ */
+
+// 获取负载状态颜色
+const getLoadStatusColor = (loadStatus: string | undefined): string => {
+  console.log(loadStatus);
+  switch (loadStatus) {
+    case "low":
+      return "#18a058"; // 绿色
+    case "normal":
+      return "#2080f0"; // 蓝色
+    case "high":
+      return "#f0a020"; // 橙色
+    case "overload":
+      return "#d03050"; // 红色
+    case "offline":
+      return "#8c8c8c"; // 灰色
+    case "disabled":
+      return "#8c8c8c"; // 灰色
+    case "unknown":
+      return "#8c8c8c"; // 灰色
+    default:
+      return "#8c8c8c"; // 灰色
+  }
+};
+
+// 获取负载状态显示文本
+const getLoadStatusText = (loadStatus: string | undefined): string => {
+  switch (loadStatus) {
+    case "low":
+      return "低负载";
+    case "normal":
+      return "正常";
+    case "high":
+      return "高负载";
+    case "overload":
+      return "超载";
+    case "offline":
+      return "离线";
+    case "disabled":
+      return "禁用";
+    case "unknown":
+      return "未知";
+    default:
+      return "未知";
+  }
+};
+
+// 获取负载状态提示信息
+const getLoadStatusTooltip = (loadStatus: string | undefined): string => {
+  switch (loadStatus) {
+    case "low":
+      return "低负载（综合评分 < 30%）";
+    case "normal":
+      return "正常（综合评分 30%~60%）";
+    case "high":
+      return "高负载（综合评分 60%~80%）";
+    case "overload":
+      return "超载（综合评分 >= 80%）";
+    case "offline":
+      return "节点离线";
+    case "disabled":
+      return "节点被禁用";
+    case "unknown":
+      return "状态未知";
+    default:
+      return "状态未知";
+  }
 };
 
 const selectedNode = ref<{
