@@ -64,7 +64,7 @@ interface Props {
   showUserInfo?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   showUserInfo: false,
 });
 
