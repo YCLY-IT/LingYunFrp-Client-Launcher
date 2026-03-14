@@ -141,6 +141,33 @@
           </div>
         </n-card>
 
+        <!-- 侧边栏设置卡片 -->
+        <n-card class="setting-card" size="small">
+          <template #header>
+            <div class="card-header">
+              <n-icon :component="MenuOutline" :size="20" />
+              <span>侧边栏</span>
+            </div>
+          </template>
+          <div class="setting-content">
+            <div class="setting-item">
+              <div class="setting-label">
+                <n-icon :component="PersonOutline" :size="18" />
+                <span>经典模式</span>
+              </div>
+              <n-switch
+                size="large"
+                v-model:value="sidebarUserInfoMode"
+                :checked-value="true"
+                :unchecked-value="false"
+              >
+                <template #checked>经典</template>
+                <template #unchecked>简洁</template>
+              </n-switch>
+            </div>
+          </div>
+        </n-card>
+
         <!-- 无障碍设置卡片 -->
         <n-card class="setting-card" size="small">
           <template #header>
@@ -327,6 +354,8 @@ import {
   TrashOutline,
   WaterOutline,
   CheckmarkCircleOutline,
+  MenuOutline,
+  PersonOutline,
 } from "@vicons/ionicons5";
 
 const themeStore = useThemeStore();
@@ -344,6 +373,7 @@ const colorBlindMode = ref(themeStore.colorBlindMode);
 const highContrastMode = ref(themeStore.highContrastMode);
 const frostedGlassMode = ref(themeStore.frostedGlassMode);
 const frostedGlassIntensity = ref(themeStore.frostedGlassIntensity || 15);
+const sidebarUserInfoMode = ref(themeStore.sidebarUserInfoMode);
 const isBackgroundLoading = ref(false);
 const BACKGROUND_IMAGE_FILENAME = "background_image";
 
@@ -425,6 +455,10 @@ watch(isAutoTheme, (newVal) => {
 
 watch(isRGBMode, (newVal) => {
   setRGBMode(newVal);
+});
+
+watch(sidebarUserInfoMode, (newVal) => {
+  themeStore.setSidebarUserInfoMode(newVal);
 });
 
 const setColorBlindMode = (enabled: boolean) => {

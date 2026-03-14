@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import packageData from "../../../package.json";
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed, onUnmounted } from "vue";
 import {
   useMessage,
   useDialog,
@@ -12,18 +12,31 @@ import {
   NFormItem,
   NSwitch,
   NInput,
-  NCollapse,
-  NCollapseItem,
-  NText,
-  NScrollbar,
   NDrawer,
   NDrawerContent,
+  NIcon,
 } from "naive-ui";
+import {
+  RefreshOutline,
+  FolderOpenOutline,
+  DownloadOutline,
+  TerminalOutline,
+  SettingsOutline,
+  SkullOutline,
+  EyeOutline,
+  EyeOffOutline,
+  CheckmarkOutline,
+  PinOutline,
+  ServerOutline,
+  PowerOutline,
+  WifiOutline,
+} from "@vicons/ionicons5";
 import { onBeforeRouteLeave } from "vue-router";
 import { invoke } from "@tauri-apps/api/core";
 import { checkUpdate } from "../../utils/update";
-import { listen } from "@tauri-apps/api/event";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { loadAppSystemInfo, loadAppVersion } from "../../utils/localInfo";
+import { useSystemStore } from "../../stores/system";
 
 const message = useMessage();
 const dialog = useDialog();
@@ -32,17 +45,34 @@ const logs = ref("");
 
 const currentVersion = ref("获取中...");
 const checking = ref(false);
-const autoStart = ref(false);
-const autoRestoreTunnels = ref(true);
-const saveToTray = ref(false);
-const skipSystemProxy = ref(true);
-const activeNames = ref<string[]>(["2"]);
 const downloadProgress = ref(0);
 const downloadedBytes = ref(0);
 const totalBytes = ref(0);
-const BOOT_SETTINGS_KEY = "boot_settings";
 const buildTime = ref(__BUILD_TIME__ || "开发模式");
 const buildFingerprint = ref(__BUILD_FINGERPRINT__ || "dev");
+
+// 使用系统store
+const systemStore = useSystemStore();
+const autoStart = computed({
+  get: () => systemStore.autoStart,
+  set: (value) => (systemStore.autoStart = !value),
+});
+const autoRestoreTunnels = computed({
+  get: () => systemStore.autoRestoreTunnels,
+  set: (value) => systemStore.setAutoRestoreTunnels(value),
+});
+const saveToTray = computed({
+  get: () => systemStore.saveToTray,
+  set: (value) => systemStore.setSaveToTray(value),
+});
+const skipSystemProxy = computed({
+  get: () => systemStore.skipSystemProxy,
+  set: (value) => systemStore.setSkipSystemProxy(value),
+});
+
+// 存储事件监听器的取消函数
+let unlistenAutoStartChange: UnlistenFn | null = null;
+let unlistenSettingsChange: UnlistenFn | null = null;
 
 const clientVersion = await loadAppVersion();
 const systemInfo = await loadAppSystemInfo();
@@ -91,9 +121,8 @@ const checkAppUpdate = async () => {
 
 const toggleAutoStart = async () => {
   try {
-    await invoke("toggle_auto_start", { enable: autoStart.value });
-    message.success(`${autoStart.value ? "启用" : "禁用"}开机自启动成功`);
-    saveBootSettings();
+    await systemStore.toggleAutoStart();
+    message.success(`${systemStore.autoStart ? "启用" : "禁用"}开机自启动成功`);
   } catch (e) {
     message.error(`设置开机自启动失败: ${e}`);
   }
@@ -102,7 +131,6 @@ const toggleAutoStart = async () => {
 const toggleAutoRestoreTunnels = (value: boolean) => {
   autoRestoreTunnels.value = value;
   message.success(`${value ? "启用" : "禁用"}开机恢复隧道成功`);
-  saveBootSettings();
   if (!value && autoStart.value) {
     setTimeout(() => {
       message.warning("已禁用恢复隧道，程序将在启动后不会自动启动隧道");
@@ -113,13 +141,11 @@ const toggleAutoRestoreTunnels = (value: boolean) => {
 const toggleSaveToTray = (value: boolean) => {
   saveToTray.value = value;
   message.success(`${value ? "启用" : "禁用"}保存到托盘成功`);
-  saveBootSettings();
 };
 
 const toggleSkipSystemProxy = (value: boolean) => {
   skipSystemProxy.value = value;
   message.success(`${value ? "启用" : "禁用"}跳过系统代理成功`);
-  saveBootSettings();
 };
 
 onBeforeRouteLeave((_to, _from, next) => {
@@ -318,28 +344,10 @@ const getExpectedFrpcInfo = async () => {
   }
 };
 
-const saveBootSettings = () => {
-  localStorage.setItem(
-    BOOT_SETTINGS_KEY,
-    JSON.stringify({
-      autoStart: autoStart.value,
-      autoRestoreTunnels: autoRestoreTunnels.value,
-      saveToTray: saveToTray.value,
-      skipSystemProxy: skipSystemProxy.value,
-    }),
-  );
-};
-
 onMounted(async () => {
   try {
-    const str = localStorage.getItem(BOOT_SETTINGS_KEY);
-    if (str) {
-      const cfg = JSON.parse(str);
-      autoStart.value = Boolean(cfg.autoStart);
-      autoRestoreTunnels.value = Boolean(cfg.autoRestoreTunnels);
-      saveToTray.value = Boolean(cfg.saveToTray);
-      skipSystemProxy.value = Boolean(cfg.skipSystemProxy);
-    }
+    // 从系统获取自启动状态并加载所有设置
+    await systemStore.loadAutoStartStatus();
   } catch {
     /* 忽略解析错误 */
   }
@@ -365,6 +373,52 @@ onMounted(async () => {
     });
   } catch (e) {
     console.error("监听下载进度失败:", e);
+  }
+
+  try {
+    unlistenAutoStartChange = await listen(
+      "system-auto-start-changed",
+      (e: any) => {
+        if (e.payload && e.payload.autoStart !== undefined) {
+          systemStore.$patch({
+            autoStart: e.payload.autoStart,
+          });
+        }
+      },
+    );
+  } catch (e) {
+    console.error("监听自启动状态变化失败:", e);
+  }
+
+  try {
+    unlistenSettingsChange = await listen(
+      "system-settings-changed",
+      (e: any) => {
+        if (e.payload) {
+          systemStore.$patch({
+            autoStart: e.payload.autoStart,
+            autoRestoreTunnels: e.payload.autoRestoreTunnels,
+            saveToTray: e.payload.saveToTray,
+            skipSystemProxy: e.payload.skipSystemProxy,
+          });
+        }
+      },
+    );
+  } catch (e) {
+    console.error("监听设置变化失败:", e);
+  }
+});
+
+onUnmounted(() => {
+  // 移除自启动状态变化事件监听
+  if (unlistenAutoStartChange) {
+    unlistenAutoStartChange();
+    unlistenAutoStartChange = null;
+  }
+  // 移除设置变化事件监听
+  if (unlistenSettingsChange) {
+    unlistenSettingsChange();
+    unlistenSettingsChange = null;
   }
 });
 
@@ -399,109 +453,158 @@ const disableUpdateNotification = () => {
 <template>
   <div class="settings">
     <n-scrollbar>
-      <n-space vertical>
-        <n-card title="设置">
+      <n-space vertical :size="20">
+        <!-- 版本信息卡片 -->
+        <n-card>
+          <template #header>
+            <n-space>
+              <n-icon :component="PinOutline" />
+              <span>版本信息</span>
+            </n-space>
+          </template>
           <n-space vertical>
-            <n-collapse v-model:expanded-names="activeNames" accordion>
-              <n-collapse-item title="版本信息" name="2">
-                <n-space vertical>
-                  <n-text>当前版本：Beta v{{ currentVersion }}</n-text>
-                  <n-text>构建时间：{{ buildTime }}</n-text>
-                  <n-text>构建指纹：{{ buildFingerprint }}</n-text>
-                  <n-space>
-                    <n-button @click="checkAppUpdate()" :loading="checking">
-                      {{ checking ? "检查中..." : "检查更新" }}
-                    </n-button>
-                    <n-button @click="openAppDataDir">
-                      打开软件数据目录
-                    </n-button>
-                    <n-button
-                      tertiary
-                      type="warning"
-                      @click="disableUpdateNotification"
-                    >
-                      禁用更新提示
-                    </n-button>
-                    <n-button
-                      tertiary
-                      type="info"
-                      @click="restoreUpdateNotification"
-                    >
-                      恢复更新提示
-                    </n-button>
-                  </n-space>
-                </n-space>
-              </n-collapse-item>
-              <n-collapse-item title="Frpc 管理" name="1">
-                <template #header-extra>
-                  首次使用请在这里下载或配置 Frpc
+            <n-text>当前版本：Beta v{{ currentVersion }}</n-text>
+            <n-text>构建时间：{{ buildTime }}</n-text>
+            <n-text>构建指纹：{{ buildFingerprint }}</n-text>
+            <n-space>
+              <n-button @click="checkAppUpdate()" :loading="checking">
+                <template #icon>
+                  <n-icon :component="RefreshOutline" />
                 </template>
-                <n-space>
-                  <n-button
-                    @click="checkHasFrpcAndUpdate"
-                    :loading="downloading"
-                    :disabled="downloading"
-                  >
-                    {{ downloading ? "正在进行操作..." : "自动下载/更新 Frpc" }}
-                  </n-button>
-                  <n-button @click="getFrpcVersion" :disabled="downloading"
-                    >获取本地 Frpc 版本</n-button
-                  >
-                  <n-button @click="showManualMode" :disabled="downloading">
-                    手动配置 Frpc 可执行文件
-                  </n-button>
-                  <n-button
-                    type="warning"
-                    :disabled="downloading"
-                    @click="killAllProcesses"
-                  >
-                    终止所有 Frpc 进程
-                  </n-button>
-                </n-space>
-                <br />
-                <n-card title="运行日志" class="mt-4">
-                  <n-log :rows="10" :log="logs" :loading="false" trim />
-                </n-card>
-              </n-collapse-item>
-              <n-collapse-item title="启动设置" name="3">
-                <n-space vertical>
-                  <n-space
-                    style="display: flex; margin-bottom: 10px; margin-top: 5px"
-                  >
-                    <n-switch
-                      v-model:value="autoStart"
-                      @update:value="toggleAutoStart"
-                    />
-                    <span>开机自启动</span>
-                  </n-space>
-                  <n-space style="display: flex">
-                    <n-switch
-                      v-model:value="autoRestoreTunnels"
-                      @update:value="toggleAutoRestoreTunnels"
-                    />
-                    <span>打开上次未关闭的隧道</span>
-                  </n-space>
-                  <n-space style="display: flex">
-                    <n-switch
-                      v-model:value="saveToTray"
-                      @update:value="toggleSaveToTray"
-                    />
-                    <span>关闭时保存到托盘</span>
-                  </n-space>
-                </n-space>
-              </n-collapse-item>
-              <n-collapse-item title="网络设置" name="4">
-                <n-space vertical>
-                  <n-space style="display: flex">
-                    <n-switch
-                      v-model:value="skipSystemProxy"
-                      @update:value="toggleSkipSystemProxy"
-                    />
-                    <span>跳过系统代理</span>
-                  </n-space>
-                </n-space>
-              </n-collapse-item>
-            </n-collapse>
+                {{ checking ? "检查中..." : "检查更新" }}
+              </n-button>
+              <n-button @click="openAppDataDir">
+                <template #icon>
+                  <n-icon :component="FolderOpenOutline" />
+                </template>
+                打开软件数据目录
+              </n-button>
+              <n-button
+                tertiary
+                type="warning"
+                @click="disableUpdateNotification"
+              >
+                <template #icon>
+                  <n-icon :component="EyeOffOutline" />
+                </template>
+                禁用更新提示
+              </n-button>
+              <n-button tertiary type="info" @click="restoreUpdateNotification">
+                <template #icon>
+                  <n-icon :component="EyeOutline" />
+                </template>
+                恢复更新提示
+              </n-button>
+            </n-space>
+          </n-space>
+        </n-card>
+
+        <!-- Frpc 管理卡片 -->
+        <n-card>
+          <template #header>
+            <n-space>
+              <n-icon :component="ServerOutline" />
+              <span>Frpc 管理</span>
+            </n-space>
+          </template>
+          <template #header-extra> 首次使用请在这里下载或配置 Frpc </template>
+          <n-space>
+            <n-button
+              @click="checkHasFrpcAndUpdate"
+              :loading="downloading"
+              :disabled="downloading"
+            >
+              <template #icon>
+                <n-icon :component="DownloadOutline" />
+              </template>
+              {{ downloading ? "正在进行操作..." : "自动下载/更新 Frpc" }}
+            </n-button>
+            <n-button @click="getFrpcVersion" :disabled="downloading">
+              <template #icon>
+                <n-icon :component="TerminalOutline" />
+              </template>
+              获取本地 Frpc 版本
+            </n-button>
+            <n-button @click="showManualMode" :disabled="downloading">
+              <template #icon>
+                <n-icon :component="SettingsOutline" />
+              </template>
+              手动配置 Frpc 可执行文件
+            </n-button>
+            <n-button
+              type="warning"
+              :disabled="downloading"
+              @click="killAllProcesses"
+            >
+              <template #icon>
+                <n-icon :component="SkullOutline" />
+              </template>
+              终止所有 Frpc 进程
+            </n-button>
+          </n-space>
+          <br />
+          <n-card class="mt-4">
+            <template #header>
+              <n-space>
+                <n-icon :component="TerminalOutline" />
+                <span>运行日志</span>
+              </n-space>
+            </template>
+            <n-log :rows="10" :log="logs" :loading="false" trim />
+          </n-card>
+        </n-card>
+
+        <!-- 启动设置卡片 -->
+        <n-card>
+          <template #header>
+            <n-space>
+              <n-icon :component="PowerOutline" />
+              <span>启动设置</span>
+            </n-space>
+          </template>
+          <n-space vertical>
+            <n-space
+              style="display: flex; margin-bottom: 10px; margin-top: 5px"
+            >
+              <n-switch
+                v-model:value="autoStart"
+                @update:value="toggleAutoStart"
+              />
+              <span>开机自启动</span>
+            </n-space>
+            <n-space style="display: flex">
+              <n-switch
+                v-model:value="autoRestoreTunnels"
+                @update:value="toggleAutoRestoreTunnels"
+              />
+              <span>打开上次未关闭的隧道</span>
+            </n-space>
+            <n-space style="display: flex">
+              <n-switch
+                v-model:value="saveToTray"
+                @update:value="toggleSaveToTray"
+              />
+              <span>关闭时保存到托盘</span>
+            </n-space>
+          </n-space>
+        </n-card>
+
+        <!-- 网络设置卡片 -->
+        <n-card>
+          <template #header>
+            <n-space>
+              <n-icon :component="WifiOutline" />
+              <span>网络设置</span>
+            </n-space>
+          </template>
+          <n-space vertical>
+            <n-space style="display: flex">
+              <n-switch
+                v-model:value="skipSystemProxy"
+                @update:value="toggleSkipSystemProxy"
+              />
+              <span>跳过系统代理</span>
+            </n-space>
           </n-space>
         </n-card>
       </n-space>
@@ -535,7 +638,12 @@ const disableUpdateNotification = () => {
           </n-space>
           <template #footer
             ><n-space justify="end">
-              <n-button @click="manualModeVisible = false"> 关闭 </n-button>
+              <n-button @click="manualModeVisible = false">
+                <template #icon>
+                  <n-icon :component="EyeOffOutline" />
+                </template>
+                关闭
+              </n-button>
               <n-button
                 type="primary"
                 @click="
@@ -543,6 +651,9 @@ const disableUpdateNotification = () => {
                   manualModeVisible = false;
                 "
               >
+                <template #icon>
+                  <n-icon :component="CheckmarkOutline" />
+                </template>
                 完成并检查
               </n-button>
             </n-space></template

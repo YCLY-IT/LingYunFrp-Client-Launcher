@@ -3,9 +3,14 @@ import { darkTheme } from "naive-ui";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import LeftMenu from "../components/LeftMenu.vue";
 import TopMenu from "../components/TopMenu.vue";
+import { useThemeStore } from "../stores/theme";
 
+const themeStore = useThemeStore();
 const collapsed = ref(false);
 const isMobile = ref(window.innerWidth <= 768);
+
+// 侧边栏显示模式：从 themeStore 读取
+const showUserInfoInSidebar = computed(() => themeStore.sidebarUserInfoMode);
 
 const contentStyle = computed(() => ({
   padding: isMobile.value ? "16px" : "24px",
@@ -42,11 +47,11 @@ defineExpose({
           :collapsed-width="64"
           :width="240"
           :collapsed="collapsed"
-          :native-scrollbar="false"
+          :native-scrollbar="true"
           show-trigger
           @update:collapsed="collapsed = $event"
         >
-          <LeftMenu />
+          <LeftMenu :show-user-info="showUserInfoInSidebar" />
         </NLayoutSider>
         <NLayout :native-scrollbar="false">
           <NLayoutContent :style="contentStyle">

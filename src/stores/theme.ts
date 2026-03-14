@@ -13,6 +13,7 @@ interface ThemeState {
   highContrastMode: boolean;
   frostedGlassMode: boolean;
   frostedGlassIntensity: number;
+  sidebarUserInfoMode: boolean;
 }
 
 const THEME_KEY = "app-theme";
@@ -27,6 +28,7 @@ const COLOR_BLIND_MODE_KEY = "app-color-blind-mode";
 const HIGH_CONTRAST_MODE_KEY = "app-high-contrast-mode";
 const FROSTED_GLASS_MODE_KEY = "app-frosted-glass-mode";
 const FROSTED_GLASS_INTENSITY_KEY = "app-frosted-glass-intensity";
+const SIDEBAR_USER_INFO_MODE_KEY = "app-sidebar-user-info-mode";
 
 export const useThemeStore = defineStore("theme", {
   state: (): ThemeState => ({
@@ -53,6 +55,9 @@ export const useThemeStore = defineStore("theme", {
       localStorage.getItem(FROSTED_GLASS_MODE_KEY) === "true" || false,
     frostedGlassIntensity:
       Number(localStorage.getItem(FROSTED_GLASS_INTENSITY_KEY)) || 15,
+    sidebarUserInfoMode:
+      localStorage.getItem(SIDEBAR_USER_INFO_MODE_KEY) === "true" ||
+      localStorage.getItem(SIDEBAR_USER_INFO_MODE_KEY) === null,
   }),
   actions: {
     setTheme(theme: string) {
@@ -107,6 +112,10 @@ export const useThemeStore = defineStore("theme", {
     setFrostedGlassIntensity(intensity: number) {
       this.frostedGlassIntensity = intensity;
       localStorage.setItem(FROSTED_GLASS_INTENSITY_KEY, intensity.toString());
+    },
+    setSidebarUserInfoMode(enabled: boolean) {
+      this.sidebarUserInfoMode = enabled;
+      localStorage.setItem(SIDEBAR_USER_INFO_MODE_KEY, enabled.toString());
     },
   },
 });
