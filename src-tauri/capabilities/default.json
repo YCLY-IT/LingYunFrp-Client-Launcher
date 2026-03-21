@@ -34,6 +34,15 @@
       "identifier": "fs:allow-remove",
       "allow": [{ "path": "$APPDATA/**" }]
     },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$DESKTOP/**" },
+        { "path": "$HOME/**" },
+        { "path": "$APPDATA/**" }
+      ]
+    },
     "core:path:allow-resolve-directory",
     "core:window:allow-start-dragging",
     "core:window:allow-is-visible"

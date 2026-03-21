@@ -15,6 +15,9 @@ import {
   NDrawer,
   NDrawerContent,
   NIcon,
+  NSelect,
+  NProgress,
+  NText,
 } from "naive-ui";
 import {
   RefreshOutline,
@@ -36,7 +39,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { checkUpdate } from "../../utils/update";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { loadAppSystemInfo, loadAppVersion } from "../../utils/localInfo";
-import { useSystemStore } from "../../stores/system";
+import { useSystemStore, type LogLevel } from "../../stores/system";
+import { useUpdateManager } from "../../composables/useUpdateManager";
 
 const message = useMessage();
 const dialog = useDialog();
@@ -50,6 +54,16 @@ const downloadedBytes = ref(0);
 const totalBytes = ref(0);
 const buildTime = ref(__BUILD_TIME__ || "开发模式");
 const buildFingerprint = ref(__BUILD_FINGERPRINT__ || "dev");
+
+const isAppReady = ref(true);
+const {
+  performAutoUpdate,
+  updateModalVisible,
+  updateProgress,
+  updateStatus,
+  updateDownloaded,
+  updateTotal,
+} = useUpdateManager(isAppReady);
 
 // 使用系统store
 const systemStore = useSystemStore();
@@ -69,6 +83,18 @@ const skipSystemProxy = computed({
   get: () => systemStore.skipSystemProxy,
   set: (value) => systemStore.setSkipSystemProxy(value),
 });
+
+const consoleLogLevel = computed({
+  get: () => systemStore.consoleLogLevel,
+  set: (value: LogLevel) => systemStore.setConsoleLogLevel(value),
+});
+
+const logLevelOptions = [
+  { label: "调试 - 显示所有日志", value: "debug" },
+  { label: "信息 - 显示 info 及以上", value: "info" },
+  { label: "警告 - 显示 warn 及以上", value: "warn" },
+  { label: "错误 - 仅显示错误", value: "error" },
+];
 
 // 存储事件监听器的取消函数
 let unlistenAutoStartChange: UnlistenFn | null = null;
@@ -104,13 +130,25 @@ const checkAppUpdate = async () => {
       return;
     }
     if (result.success) {
-      (window as any).$notification?.success({
-        title: "更新提示",
-        description: result.message,
-        duration: 3000,
+      const downloadUrl = result.url;
+      const fileName = downloadUrl.split("/").pop() || "update.exe";
+      dialog.success({
+        title: `发现新版本 ${result.version}`,
+        content: result.message,
+        positiveText: "立即更新",
+        negativeText: "暂不更新",
+        onPositiveClick: () => {
+          setTimeout(() => {
+            performAutoUpdate(downloadUrl, fileName);
+          }, 100);
+        },
       });
     } else {
-      message.success(result.message);
+      dialog.info({
+        title: "检查更新",
+        content: result.message,
+        positiveText: "确定",
+      });
     }
   } catch (e) {
     message.error(e);
@@ -564,27 +602,45 @@ const disableUpdateNotification = () => {
           </template>
           <n-space vertical>
             <n-space
-              style="display: flex; margin-bottom: 10px; margin-top: 5px"
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+                margin-top: 5px;
+              "
             >
+              <span>开机自启动</span>
               <n-switch
                 v-model:value="autoStart"
                 @update:value="toggleAutoStart"
               />
-              <span>开机自启动</span>
             </n-space>
-            <n-space style="display: flex">
+            <n-space
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <span>打开上次未关闭的隧道</span>
               <n-switch
                 v-model:value="autoRestoreTunnels"
                 @update:value="toggleAutoRestoreTunnels"
               />
-              <span>打开上次未关闭的隧道</span>
             </n-space>
-            <n-space style="display: flex">
+            <n-space
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <span>关闭时保存到托盘</span>
               <n-switch
                 v-model:value="saveToTray"
                 @update:value="toggleSaveToTray"
               />
-              <span>关闭时保存到托盘</span>
             </n-space>
           </n-space>
         </n-card>
@@ -598,12 +654,32 @@ const disableUpdateNotification = () => {
             </n-space>
           </template>
           <n-space vertical>
-            <n-space style="display: flex">
+            <n-space
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <span>跳过系统代理</span>
               <n-switch
                 v-model:value="skipSystemProxy"
                 @update:value="toggleSkipSystemProxy"
               />
-              <span>跳过系统代理</span>
+            </n-space>
+            <n-space
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <span>日志级别</span>
+              <n-select
+                v-model:value="consoleLogLevel"
+                :options="logLevelOptions"
+                style="width: 200px"
+              />
             </n-space>
           </n-space>
         </n-card>
@@ -679,6 +755,36 @@ const disableUpdateNotification = () => {
           downloadProgress
         }}%)
       </div>
+    </n-modal>
+    <n-modal
+      v-model:show="updateModalVisible"
+      :mask-closable="false"
+      :closable="false"
+      :trap-focus="false"
+      :auto-focus="false"
+    >
+      <n-space vertical style="padding: 24px; min-width: 400px">
+        <n-text style="font-size: 18px; font-weight: bold">正在更新应用</n-text>
+        <n-text>{{ updateStatus }}</n-text>
+        <n-progress
+          type="line"
+          :percentage="updateProgress"
+          :show-indicator="true"
+        />
+        <n-space justify="space-between">
+          <n-text style="font-size: 12px; color: #999">
+            已下载: {{ (updateDownloaded / 1024 / 1024).toFixed(2) }} MB
+          </n-text>
+          <n-text style="font-size: 12px; color: #999">
+            总大小:
+            {{
+              updateTotal > 0
+                ? (updateTotal / 1024 / 1024).toFixed(2) + " MB"
+                : "未知"
+            }}
+          </n-text>
+        </n-space>
+      </n-space>
     </n-modal>
   </div>
 </template>

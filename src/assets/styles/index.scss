@@ -277,6 +277,17 @@ body::before {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
 }
 
+/* 毛玻璃模式下左侧菜单用户信息区域 */
+.frosted-glass-mode .user-info-section {
+  background: #ffffff00 !important;
+  backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 1.2))
+    saturate(180%) !important;
+  -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 1.2))
+    saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
 /* 毛玻璃模式下的单选按钮组 */
 .frosted-glass-mode .n-radio-group {
   background: #ffffff1a !important;

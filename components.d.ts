@@ -51,6 +51,7 @@ declare module 'vue' {
     ThemeToggle: typeof import('./src/components/ThemeToggle.vue')['default']
     ThemeTransition: typeof import('./src/components/ThemeTransition.vue')['default']
     TopMenu: typeof import('./src/components/TopMenu.vue')['default']
+    UpdateProgressModal: typeof import('./src/components/UpdateProgressModal.vue')['default']
     UserInfo: typeof import('./src/components/UserInfo.vue')['default']
     WelcomeCard: typeof import('./src/components/WelcomeCard.vue')['default']
   }

@@ -68,7 +68,7 @@ export function useUpdateManager(isAppReady: Ref<boolean>) {
                 positiveText: "立即更新",
                 negativeText: "退出应用",
                 onPositiveClick: async () => {
-                  await performAutoUpdate(downloadUrl, fileName);
+                  await performAutoUpdate(downloadUrl, fileName, true);
                 },
                 onNegativeClick: () => {
                   invoke("quit_window", { isKeep: false });
@@ -159,7 +159,11 @@ export function useUpdateManager(isAppReady: Ref<boolean>) {
     }
   };
 
-  const performAutoUpdate = async (downloadUrl: string, fileName: string) => {
+  const performAutoUpdate = async (
+    downloadUrl: string,
+    fileName: string,
+    isForceUpdate: boolean = false,
+  ) => {
     try {
       updateModalVisible.value = true;
       updateProgress.value = 0;
@@ -207,6 +211,9 @@ export function useUpdateManager(isAppReady: Ref<boolean>) {
             } catch (error) {
               console.error("安装失败:", error);
               updateStatus.value = "安装失败";
+              if (!isForceUpdate) {
+                updateModalVisible.value = false;
+              }
               window.$notification?.error({
                 title: "安装失败",
                 content: "自动安装失败，请手动下载安装包进行更新",
@@ -224,6 +231,9 @@ export function useUpdateManager(isAppReady: Ref<boolean>) {
     } catch (error) {
       console.error("自动更新失败:", error);
       updateStatus.value = "更新失败";
+      if (!isForceUpdate) {
+        updateModalVisible.value = false;
+      }
       window.$notification?.error({
         title: "更新失败",
         content: "自动更新失败，请手动下载安装包进行更新",

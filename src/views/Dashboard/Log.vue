@@ -9,11 +9,18 @@ import {
   NButton,
   useMessage,
 } from "naive-ui";
-import { logStore, clearLogs } from "../../utils/log.ts";
+import {
+  logStore,
+  clearLogs,
+  consoleLogStore,
+  clearConsoleLogs,
+} from "../../utils/log.ts";
+import { useSystemStore, type LogLevel } from "../../stores/system";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 
 const message = useMessage();
+const systemStore = useSystemStore();
 
 const selectedCategory = ref("all");
 const selectedTunnel = ref("all");
@@ -25,6 +32,7 @@ const categoryOptions = [
   { label: "系统日志", value: "system" },
   { label: "FRP 日志", value: "frp" },
   { label: "虚拟网络日志", value: "virtual_network" },
+  { label: "控制台日志", value: "console" },
 ];
 
 const tunnelOptions = computed(() => {
@@ -52,10 +60,42 @@ const logs = computed(() => {
     }
   } else if (selectedCategory.value === "virtual_network") {
     src = logStore.virtualNetworkLogs;
+  } else if (selectedCategory.value === "console") {
+    src = filterConsoleLogsByLevel(
+      consoleLogStore.logs,
+      systemStore.consoleLogLevel,
+    );
   }
 
   return src.join("\n");
 });
+
+const LOG_LEVEL_PRIORITY: Record<string, number> = {
+  DEBUG: 0,
+  LOG: 1,
+  INFO: 1,
+  WARN: 2,
+  ERROR: 3,
+};
+
+const LEVEL_PRIORITY: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
+
+function filterConsoleLogsByLevel(logs: string[], level: LogLevel): string[] {
+  const minPriority = LEVEL_PRIORITY[level];
+  return logs.filter((log) => {
+    const match = log.match(/\[(DEBUG|LOG|INFO|WARN|ERROR)\]/);
+    if (match) {
+      const logPriority = LOG_LEVEL_PRIORITY[match[1]] ?? 0;
+      return logPriority >= minPriority;
+    }
+    return true;
+  });
+}
 
 const showTunnelSelect = computed(() => selectedCategory.value === "frp");
 
@@ -66,12 +106,20 @@ const handleScroll = ({ scrollTop, scrollHeight, containerHeight }: any) => {
 const scrollBottom = () =>
   nextTick(() => logInst.value?.scrollTo({ position: "bottom", silent: true }));
 
+const handleClearLogs = () => {
+  if (selectedCategory.value === "console") {
+    clearConsoleLogs();
+  } else {
+    clearLogs();
+  }
+};
+
 const exportLogs = async () => {
   const tempDiv = document.createElement("div");
   tempDiv.innerHTML = logs.value;
   const plainText = tempDiv.innerText || tempDiv.textContent || "";
 
-  if (!plainText.trim()) {
+  if (!plainText.trim() && !logs.value.trim()) {
     message.warning("当前没有可导出的日志");
     return;
   }
@@ -84,24 +132,75 @@ const exportLogs = async () => {
         ? "FRP日志"
         : `FRP日志_${selectedTunnel.value}`,
     virtual_network: "虚拟网络日志",
+    console: "控制台日志",
   };
 
-  const defaultFileName = `${categoryLabels[selectedCategory.value]}_${new Date().toISOString().split("T")[0]}.txt`;
+  const defaultFileName = `${categoryLabels[selectedCategory.value]}_${new Date().toISOString().split("T")[0]}`;
 
   try {
     const filePath = await save({
       filters: [
         {
-          name: "文本文件",
+          name: "纯文本文件",
           extensions: ["txt"],
+        },
+        {
+          name: "HTML 文件",
+          extensions: ["html"],
+        },
+        {
+          name: "JSON 文件",
+          extensions: ["json"],
         },
       ],
       defaultPath: defaultFileName,
     });
 
     if (filePath) {
-      await writeTextFile(filePath, plainText);
-      message.success("日志导出成功");
+      const ext = filePath.split(".").pop()?.toLowerCase();
+      let content = "";
+      let actualExt = ext;
+
+      if (ext === "html") {
+        content = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>${categoryLabels[selectedCategory.value]}</title>
+  <style>
+    body { background: #1a1a1a; color: #fff; font-family: 'Consolas', 'Monaco', monospace; padding: 20px; }
+    .log-line { margin: 2px 0; }
+  </style>
+</head>
+<body>
+${logs.value
+  .split("\n")
+  .map((line) => `<div class="log-line">${line}</div>`)
+  .join("\n")}
+</body>
+</html>`;
+      } else if (ext === "json") {
+        const logLines =
+          selectedCategory.value === "console"
+            ? consoleLogStore.logs
+            : logStore.allLogs;
+        content = JSON.stringify(
+          {
+            category: selectedCategory.value,
+            exportTime: new Date().toISOString(),
+            count: logLines.length,
+            logs: logLines,
+          },
+          null,
+          2,
+        );
+      } else {
+        content = plainText;
+        actualExt = "txt";
+      }
+
+      await writeTextFile(filePath, content);
+      message.success(`日志导出成功 (${actualExt?.toUpperCase() || "TXT"})`);
     }
   } catch (error) {
     message.error("日志导出失败");
@@ -151,7 +250,7 @@ watch(logs, () => autoScroll.value && scrollBottom(), { flush: "post" });
             style="margin-top: 7px"
             text
             type="primary"
-            @click="clearLogs"
+            @click="handleClearLogs"
             >清除日志</n-button
           >
         </n-space>

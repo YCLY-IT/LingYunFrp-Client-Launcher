@@ -2,11 +2,14 @@ import { defineStore } from "pinia";
 import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 
+export type LogLevel = "debug" | "info" | "warn" | "error";
+
 interface SystemState {
   autoStart: boolean;
   autoRestoreTunnels: boolean;
   saveToTray: boolean;
   skipSystemProxy: boolean;
+  consoleLogLevel: LogLevel;
 }
 
 const BOOT_SETTINGS_KEY = "boot_settings";
@@ -22,6 +25,7 @@ export const useSystemStore = defineStore("system", {
           autoRestoreTunnels: Boolean(settings.autoRestoreTunnels),
           saveToTray: Boolean(settings.saveToTray),
           skipSystemProxy: Boolean(settings.skipSystemProxy),
+          consoleLogLevel: settings.consoleLogLevel || "info",
         };
       } catch {
         // 解析失败，使用默认值
@@ -32,6 +36,7 @@ export const useSystemStore = defineStore("system", {
       autoRestoreTunnels: true,
       saveToTray: false,
       skipSystemProxy: true,
+      consoleLogLevel: "info",
     };
   },
   actions: {
@@ -70,6 +75,11 @@ export const useSystemStore = defineStore("system", {
       this.saveSettings();
       this.notifySettingsChange();
     },
+    setConsoleLogLevel(value: LogLevel) {
+      this.consoleLogLevel = value;
+      this.saveSettings();
+      this.notifySettingsChange();
+    },
     saveSettings() {
       localStorage.setItem(
         BOOT_SETTINGS_KEY,
@@ -78,6 +88,7 @@ export const useSystemStore = defineStore("system", {
           autoRestoreTunnels: this.autoRestoreTunnels,
           saveToTray: this.saveToTray,
           skipSystemProxy: this.skipSystemProxy,
+          consoleLogLevel: this.consoleLogLevel,
         }),
       );
     },
@@ -90,6 +101,7 @@ export const useSystemStore = defineStore("system", {
         autoRestoreTunnels: this.autoRestoreTunnels,
         saveToTray: this.saveToTray,
         skipSystemProxy: this.skipSystemProxy,
+        consoleLogLevel: this.consoleLogLevel,
       });
     },
   },

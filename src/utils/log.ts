@@ -12,6 +12,7 @@ const PALETTE = {
   time: "color:#9ca3af",
   system: "color:#60a5fa",
   tunnel: "color:#a855f7",
+  console: "color:#a78bfa",
 };
 
 const ansi = new AnsiToHtml({
@@ -93,9 +94,156 @@ export const clearLogs = () => {
 };
 
 let inited = false;
+
+// 控制台日志存储
+export const consoleLogStore = reactive<{
+  logs: string[];
+}>({
+  logs: [],
+});
+
+const MAX_CONSOLE_LOG_COUNT = 5000;
+
+const CONSOLE_LEVEL_STYLES: Record<string, string> = {
+  debug: "color:#9ca3af",
+  log: "color:#e5e5e5",
+  info: "color:#60a5fa",
+  warn: "color:#fb923c",
+  error: "color:#f87171",
+};
+
+const IGNORED_CONSOLE_PATTERNS = [
+  /\[naive\/code\]: hljs is not set/,
+  /<Suspense> is an experimental feature/,
+];
+
+function getCallerInfo(): string {
+  const stack = new Error().stack || "";
+  const lines = stack.split("\n");
+  for (const line of lines) {
+    if (line.includes("log.ts") || line.includes("console.")) continue;
+    const match = line.match(/(?:at\s+)?(?:.*?\s+\()?(.+?):(\d+):(\d+)\)?/);
+    if (match) {
+      const [, path, lineNum] = match;
+      const fileName = path.split("/").pop()?.split("\\").pop() || path;
+      return `${fileName}:${lineNum}`;
+    }
+  }
+  return "";
+}
+
+// 添加控制台日志
+function addConsoleLog(level: string, args: any[]) {
+  const t = new Date().toLocaleString();
+  const messages = args
+    .map((arg) => {
+      if (typeof arg === "object") {
+        try {
+          return JSON.stringify(arg);
+        } catch {
+          return String(arg);
+        }
+      }
+      return String(arg);
+    })
+    .join(" ");
+
+  // 过滤忽略的日志
+  if (IGNORED_CONSOLE_PATTERNS.some((pattern) => pattern.test(messages))) {
+    return;
+  }
+
+  const callerInfo = getCallerInfo();
+  const location = callerInfo
+    ? `<span style="color:#a855f7">[${callerInfo}]</span> `
+    : "";
+
+  const levelStyle = CONSOLE_LEVEL_STYLES[level] || CONSOLE_LEVEL_STYLES.log;
+  const html = ansi.toHtml(messages);
+  const logEntry = `<span style="${PALETTE.time}">[${t}]</span> <span style="${PALETTE.console}">[控制台]</span> <span style="${levelStyle}">[${level.toUpperCase()}]</span> ${location}<span style="${levelStyle}">${html}</span>`;
+
+  consoleLogStore.logs.push(logEntry);
+  if (consoleLogStore.logs.length > MAX_CONSOLE_LOG_COUNT) {
+    consoleLogStore.logs.splice(0, 1);
+  }
+
+  // 保存到 localStorage
+  localStorage.setItem("consoleLogs", consoleLogStore.logs.join("\n"));
+}
+
+// 初始化控制台日志监听
+function initConsoleLogCapture() {
+  const originalLog = console.log;
+  const originalError = console.error;
+  const originalWarn = console.warn;
+  const originalInfo = console.info;
+  const originalDebug = console.debug;
+
+  console.log = function (...args: any[]) {
+    addConsoleLog("log", args);
+    originalLog.apply(console, args);
+  };
+
+  console.error = function (...args: any[]) {
+    addConsoleLog("error", args);
+    originalError.apply(console, args);
+  };
+
+  console.warn = function (...args: any[]) {
+    addConsoleLog("warn", args);
+    originalWarn.apply(console, args);
+  };
+
+  console.info = function (...args: any[]) {
+    addConsoleLog("info", args);
+    originalInfo.apply(console, args);
+  };
+
+  console.debug = function (...args: any[]) {
+    addConsoleLog("debug", args);
+    originalDebug.apply(console, args);
+  };
+
+  // 监听未捕获的错误
+  window.addEventListener("error", (event) => {
+    addConsoleLog("error", [
+      `[未捕获错误] ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`,
+    ]);
+  });
+
+  // 监听未处理的 Promise 拒绝
+  window.addEventListener("unhandledrejection", (event) => {
+    const reason = event.reason;
+    if (reason instanceof Error) {
+      addConsoleLog("error", [
+        `[未处理的 Promise 拒绝] ${reason.message}\n${reason.stack}`,
+      ]);
+    } else {
+      addConsoleLog("error", [`[未处理的 Promise 拒绝] ${String(reason)}`]);
+    }
+  });
+}
+
+// 清空控制台日志
+export const clearConsoleLogs = () => {
+  consoleLogStore.logs = [];
+  localStorage.removeItem("consoleLogs");
+};
+
+// 导出控制台日志为文件
+export const exportConsoleLogs = (): string => {
+  return consoleLogStore.logs.join("\n");
+};
+
 export const initLogService = async () => {
   if (inited) return;
   inited = true;
+
+  // 清空旧的控制台日志，不恢复
+  localStorage.removeItem("consoleLogs");
+
+  // 初始化控制台日志捕获
+  initConsoleLogCapture();
 
   const saved = localStorage.getItem("frpcLogs");
   if (saved) saved.split("\n").forEach((log) => addLog(log, "system"));

@@ -138,17 +138,26 @@ watch(
 <style scoped lang="scss">
 .left-menu-wrapper {
   height: 100%;
+  overflow: hidden;
 }
 
 .left-menu-container {
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .menu-main-area {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .user-info-section {
@@ -233,22 +242,25 @@ watch(
 }
 
 // 折叠状态下的样式调整
-:deep(.n-menu--collapsed) {
-  & + .user-info-section {
-    .user-info-content {
-      justify-content: center;
+.menu-main-area:has(.n-menu--collapsed) + .user-info-section {
+  .divider {
+    display: none;
+  }
 
-      .user-details,
-      .settings-btn {
-        display: none;
-      }
+  .user-info-content {
+    justify-content: center;
+    padding: 8px 0;
 
-      .user-avatar {
-        .avatar-img,
-        .avatar-placeholder {
-          width: 36px;
-          height: 36px;
-        }
+    .user-details,
+    .settings-btn {
+      display: none;
+    }
+
+    .user-avatar {
+      .avatar-img,
+      .avatar-placeholder {
+        width: 36px;
+        height: 36px;
       }
     }
   }

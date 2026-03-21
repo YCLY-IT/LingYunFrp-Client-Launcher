@@ -150,6 +150,15 @@ select {
   font-family: "Lato", "Fira Code", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+}
+
+html,
+body {
+  overscroll-behavior: none;
+  touch-action: pan-y;
+  overflow: hidden;
 }
 
 /* 确保SVG滤镜不占用空间 */
