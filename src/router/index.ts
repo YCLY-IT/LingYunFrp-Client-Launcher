@@ -108,41 +108,26 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to) => {
   //需要登录的路由校验
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (unauthorized()) {
-      next({
+      return {
         name: "login",
         query: { redirect: to.fullPath }, // 携带跳转路径参数
-      });
-    } else {
-      next();
+      };
     }
+    return true;
   }
   // 已登录用户禁止访问登录/注册页
-  else if (to.name === "login" && !unauthorized()) {
-    next({ name: "dashboard" });
+  if (to.name === "login" && !unauthorized()) {
+    return { name: "dashboard" };
   }
   // 其他情况直接放行
-  else if (to.matched.length === 0) {
-    next("/dashboard");
-  } else {
-    next();
+  if (to.matched.length === 0) {
+    return "/dashboard";
   }
-});
-
-// 添加路由导航守卫
-router.beforeEach(() => {
-  window.$loadingBar?.start();
-});
-
-router.afterEach(() => {
-  window.$loadingBar?.finish();
-});
-
-router.onError(() => {
-  window.$loadingBar?.error();
+  return true;
 });
 
 export default router;

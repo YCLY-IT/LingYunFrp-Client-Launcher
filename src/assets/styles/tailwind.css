@@ -1,0 +1,422 @@
+@import "tailwindcss";
+
+@theme {
+  /* 主色调 */
+  --color-primary: #2196f3;
+  --color-primary-hover: #42a5f5;
+  --color-primary-pressed: #1976d2;
+  --color-primary-suppl: #90caf9;
+
+  /* 边框 / 分割线 */
+  --color-border-base: #e0e0e0;
+  --color-divider: #dcdcdc;
+
+  /* 阴影 */
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-card-light: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-card-dark: 0 4px 8px rgba(0, 0, 0, 0.25);
+  --shadow-card-dark-mode: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.2);
+
+  /* 缓动 */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* 复用动画 */
+  --animate-rise-in: rise-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+  --animate-pop-in: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-float: float 3.2s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-gradient-pan: gradient-pan 6s ease infinite;
+  --animate-pulse-glow: pulse-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #app {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .n-config-provider {
+    height: 100%;
+  }
+
+  body {
+    background-image: var(--background-image, none);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    position: relative;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: var(--background-image, none);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    filter: blur(var(--background-blur, 0px));
+    opacity: var(--background-opacity, 1);
+    z-index: -1;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  html,
+  body {
+    overscroll-behavior: none;
+    touch-action: pan-y;
+    overflow: hidden;
+  }
+
+  #app {
+    font-family: "Lato", "Fira Code", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+    touch-action: pan-y;
+  }
+}
+
+@layer components {
+  .route-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    z-index: 9999;
+    pointer-events: none;
+    transition:
+      width 0.18s ease,
+      opacity 0.3s ease;
+  }
+
+  /* 全局圆角覆盖 */
+  .n-card {
+    border-radius: 15px !important;
+  }
+
+  .n-message {
+    border-radius: 12px !important;
+  }
+
+  .n-tag {
+    border-radius: 3px !important;
+  }
+
+  .n-alert {
+    border-radius: 6px !important;
+  }
+
+  .n-dialog {
+    border-radius: 13px !important;
+  }
+
+  .n-notification {
+    border-radius: 13px !important;
+  }
+
+  .n-button {
+    border-radius: 15px !important;
+  }
+
+  .n-base-selection {
+    border-radius: 15px !important;
+  }
+
+  /* 对话框模糊效果 */
+  .n-modal-mask,
+  .n-dialog-mask {
+    backdrop-filter: blur(var(--modal-filter, 10px)) !important;
+    -webkit-backdrop-filter: blur(var(--modal-filter, 10px)) !important;
+  }
+
+  /* 色弱模式 */
+  .color-blind-mode {
+    filter: var(--color-blind-filter, none) !important;
+  }
+
+  /* 高对比度模式 */
+  .high-contrast-mode {
+    filter: contrast(1.2) saturate(1.2) !important;
+  }
+
+  /* 色弱模式 + 高对比度模式 */
+  .color-blind-mode.high-contrast-mode {
+    filter: var(--color-blind-filter, none) contrast(1.2) saturate(1.2) !important;
+  }
+
+  .high-contrast-mode .n-card,
+  .high-contrast-mode .n-button,
+  .high-contrast-mode .n-input,
+  .high-contrast-mode .n-select,
+  .high-contrast-mode .n-switch {
+    border-width: 2px !important;
+    border-color: currentColor !important;
+  }
+
+  /* 元素透明度模式 */
+  .element-opacity-mode .n-card,
+  .element-opacity-mode .n-layout-sider,
+  .element-opacity-mode .n-layout-header,
+  .element-opacity-mode .n-layout-content,
+  .element-opacity-mode .n-modal,
+  .element-opacity-mode .n-drawer,
+  .element-opacity-mode .n-dialog,
+  .element-opacity-mode .n-popover,
+  .element-opacity-mode .n-notification,
+  .element-opacity-mode .n-message,
+  .element-opacity-mode .n-base-selection,
+  .element-opacity-mode .n-upload-dragger {
+    opacity: var(--element-opacity, 1) !important;
+  }
+
+  .frosted-glass-mode {
+    background: #ffffff1a !important;
+    backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px))
+      saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    overflow: hidden !important;
+  }
+
+  .frosted-glass-mode .n-layout-sider .n-layout-sider__border {
+    display: none !important;
+  }
+
+  .frosted-glass-mode .n-card .n-card__action {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.5))
+      saturate(180%) !important;
+    -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.5))
+      saturate(180%) !important;
+  }
+
+  .frosted-glass-mode .n-card,
+  .frosted-glass-mode .n-modal .n-card,
+  .frosted-glass-mode .n-layout-sider,
+  .frosted-glass-mode .n-layout-header,
+  .frosted-glass-mode .n-layout-content,
+  .frosted-glass-mode .n-base-selection,
+  .frosted-glass-mode .n-select .n-base-selection,
+  .frosted-glass-mode .n-notification,
+  .frosted-glass-mode .n-message,
+  .frosted-glass-mode .n-dialog,
+  .frosted-glass-mode .n-drawer,
+  .frosted-glass-mode .n-popover,
+  .frosted-glass-mode .n-upload-dragger,
+  .frosted-glass-mode .custom-context-menu {
+    background: #ffffff1a !important;
+    backdrop-filter: blur(var(--frosted-glass-blur, 10px)) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(var(--frosted-glass-blur, 10px))
+      saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+
+  .frosted-glass-mode .n-input,
+  .frosted-glass-mode .n-select .n-base-selection {
+    background: #ffffff1a !important;
+    backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8))
+      saturate(180%) !important;
+    -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8))
+      saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  }
+
+  .frosted-glass-mode .n-select .n-base-selection--active {
+    background: #ffffff26 !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .frosted-glass-mode .n-select .n-base-selection-label,
+  .frosted-glass-mode .n-base-selection-tags {
+    background: transparent !important;
+  }
+
+  .frosted-glass-mode .n-base-selection-tag-wrapper {
+    background: #ffffff26 !important;
+    backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.6))
+      saturate(180%) !important;
+    -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.6))
+      saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 4px !important;
+  }
+
+  .frosted-glass-mode .n-select-menu {
+    background: #ffffff33 !important;
+    backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 1.2))
+      saturate(180%) !important;
+    -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 1.2))
+      saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .frosted-glass-mode .user-info-section {
+    background: #ffffff00 !important;
+    backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 1.2))
+      saturate(180%) !important;
+    -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 1.2))
+      saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .frosted-glass-mode .n-radio-group {
+    background: #ffffff1a !important;
+    backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8))
+      saturate(180%) !important;
+    -webkit-backdrop-filter: blur(calc(var(--frosted-glass-blur, 10px) * 0.8))
+      saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 8px !important;
+  }
+
+  .frosted-glass-mode .n-base-selection-tag-wrapper .n-tag {
+    background: transparent !important;
+    border: none !important;
+  }
+}
+
+@layer components {
+  .cropper-view-box,
+  .cropper-face {
+    border-radius: 50%;
+  }
+
+  .cropper-view-box {
+    outline: 0;
+  }
+
+  .modal-actions .n-button + .n-button {
+    margin-left: 16px;
+  }
+}
+
+@layer utilities {
+  /* 确保 SVG 滤镜不占用空间 */
+  .defs-only {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .n-layout .n-layout-scroll-container {
+    overflow: hidden;
+  }
+
+  /* 主题切换扩散动画 */
+  .theme-transition-overlay {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition:
+      width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+      height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* View Transition API 主题切换动画 */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  ::view-transition-old(root) {
+    z-index: 1;
+  }
+
+  ::view-transition-new(root) {
+    z-index: 9999;
+  }
+
+  .view-transition-active {
+    pointer-events: none;
+  }
+
+  ::view-transition-group(root) {
+    animation-duration: 0.6s;
+  }
+}

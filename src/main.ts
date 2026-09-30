@@ -2,12 +2,20 @@ import { createApp } from "vue";
 import { createPinia } from "pinia";
 import App from "./App.vue";
 import router from "./router";
+import "./assets/styles/tailwind.css";
 
 import { invoke } from "@tauri-apps/api/core";
 import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
 
 async function getIsDebug() {
-  return await invoke<boolean>("get_now_mode");
+  try {
+    return await invoke<boolean>("get_now_mode");
+  } catch {
+    // 非 Tauri 环境（例如直接用浏览器打开 dev server）无法调用 IPC。
+    // 这里必须兜底，否则顶层 await 会抛错，导致下面的 app.mount 永远不会执行，
+    // 页面会一直停留在 index.html 的初始加载界面。
+    return true;
+  }
 }
 const isDebug = await getIsDebug();
 if (!isDebug) {
@@ -34,17 +42,20 @@ router.isReady().then(() => {
   app.mount("#app");
 
   // 立即隐藏初始加载界面
-  // const initialLoading = document.getElementById("initial-loading");
-  // if (initialLoading) {
-  //   initialLoading.classList.add("hidden");
-  //   setTimeout(() => {
-  //     initialLoading.remove();
-  //   }, 300);
-  // }
+  const initialLoading = document.getElementById("initial-loading");
+  if (initialLoading) {
+    initialLoading.classList.add("hidden");
+    setTimeout(() => {
+      initialLoading.remove();
+    }, 300);
+  }
 });
 
-await onOpenUrl((event) => {
-  console.log(event);
-});
-
-/* 哥哥太厉害了>w<, 以后每天都要跟咱问声好哦, 嘿嘿（★＞U＜★） 2025/09/06 16:15:06 */
+try {
+  await onOpenUrl((event) => {
+    console.log(event);
+  });
+} catch (err) {
+  // 同样是非 Tauri 环境下的兜底，避免顶层 await 抛错影响应用挂载
+  console.warn("deep-link 插件不可用（非 Tauri 环境）:", err);
+}

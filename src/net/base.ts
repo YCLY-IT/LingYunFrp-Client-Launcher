@@ -73,7 +73,7 @@ const messageDeduplicator = MessageDeduplicator.getInstance();
 const defaultFailure = (messageText: string) => {
   //! TODO: only console warning, don't show message here
   messageDeduplicator.showMessage(messageText, "warning");
-  window.$loadingBar?.error();
+  
 };
 
 const defaultError = (err: any) => {
@@ -85,7 +85,7 @@ const defaultError = (err: any) => {
     }
   }
   messageDeduplicator.showMessage("请求失败，网络可能存在问题", "error");
-  window.$loadingBar?.error();
+  
 };
 
 //! TODO: Specifies the params and return value type
@@ -157,7 +157,6 @@ async function post(
   failure = defaultFailure,
   error = defaultError,
 ) {
-  window.$loadingBar?.start();
   const postHeaders = {
     ...headers,
     ClientVersion: await getClientVersion(),
@@ -174,7 +173,6 @@ async function post(
     .then((data: any) => {
       if (data.code === 0) {
         success(data);
-        window.$loadingBar?.finish();
       } else if (data.code === 2) {
         dialogDeduplicator.showDialog({
           title: "提示",
@@ -188,10 +186,10 @@ async function post(
         });
 
         failure(data.message);
-        window.$loadingBar?.error();
+        
       } else if (data.code === 1) {
         failure(data.message);
-        window.$loadingBar?.error();
+        
       }
     })
     .catch((err) => {
@@ -207,7 +205,7 @@ async function get(
   failure = defaultFailure,
   error = defaultError,
 ) {
-  window.$loadingBar?.start();
+  
   const getHeaders = {
     ...headers,
     ClientVersion: await getClientVersion(),
@@ -223,11 +221,9 @@ async function get(
     .then((data: any) => {
       // 检查是否是完整的URL（外部API）
       if (url.startsWith("http://") || url.startsWith("https://")) {
-        window.$loadingBar?.finish();
         success(data);
       } else {
         if (data.code === 0) {
-          window.$loadingBar?.finish();
           success(data);
         } else if (data.code === 2) {
           dialogDeduplicator.showDialog({
@@ -241,9 +237,9 @@ async function get(
             },
           });
           failure(data.message);
-          window.$loadingBar?.error();
+          
         } else if (data.code === 1) {
-          window.$loadingBar?.error();
+          
           failure(data.message);
         }
       }
@@ -262,7 +258,6 @@ async function patch(
   failure = defaultFailure,
   error = defaultError,
 ) {
-  window.$loadingBar?.start();
   const patchHeaders = {
     ...headers,
     ClientVersion: await getClientVersion(),
@@ -278,7 +273,7 @@ async function patch(
     .then((data: any) => {
       if (data.code === 0) {
         success(data);
-        window.$loadingBar?.finish();
+        
       } else if (data.code === 2) {
         dialogDeduplicator.showDialog({
           title: "提示",
@@ -292,10 +287,10 @@ async function patch(
         });
 
         failure(data.message);
-        window.$loadingBar?.error();
+        
       } else if (data.code === 1) {
         failure(data.message);
-        window.$loadingBar?.error();
+        
       }
     })
     .catch((err) => {
@@ -312,7 +307,7 @@ async function put(
   failure = defaultFailure,
   error = defaultError,
 ) {
-  window.$loadingBar?.start();
+  
   const putHeaders = {
     ...headers,
     ClientVersion: await getClientVersion(),
@@ -328,7 +323,7 @@ async function put(
     .then((data: any) => {
       if (data.code === 0) {
         success(data);
-        window.$loadingBar?.finish();
+        
       } else if (data.code === 2) {
         dialogDeduplicator.showDialog({
           title: "提示",
@@ -342,10 +337,10 @@ async function put(
         });
 
         failure(data.message);
-        window.$loadingBar?.error();
+        
       } else if (data.code === 1) {
         failure(data.message);
-        window.$loadingBar?.error();
+        
       }
     })
     .catch((err) => {
@@ -362,7 +357,7 @@ async function del(
   failure = defaultFailure,
   error = defaultError,
 ) {
-  window.$loadingBar?.start();
+  
   const deleteHeaders = {
     ...headers,
     ClientVersion: await getClientVersion(),
@@ -378,7 +373,7 @@ async function del(
     .then((data: any) => {
       if (data.code === 0) {
         success(data);
-        window.$loadingBar?.finish();
+        
       } else if (data.code === 2) {
         dialogDeduplicator.showDialog({
           title: "提示",
@@ -392,10 +387,10 @@ async function del(
         });
 
         failure(data.message);
-        window.$loadingBar?.error();
+        
       } else if (data.code === 1) {
         failure(data.message);
-        window.$loadingBar?.error();
+        
       }
     })
     .catch((err) => {

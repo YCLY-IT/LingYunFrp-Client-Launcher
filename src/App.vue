@@ -6,6 +6,7 @@
           <NNotificationProvider>
             <NLoadingBarProvider>
               <AppContent />
+              <RouteProgress />
               <CustomContextMenu ref="contextMenuRef" />
 
               <NModal
@@ -13,22 +14,29 @@
                 :mask-closable="false"
                 :closable="false"
               >
-                <NSpace vertical style="padding: 24px; min-width: 400px">
-                  <NText style="font-size: 18px; font-weight: bold"
-                    >正在更新应用</NText
-                  >
+                <motion.div
+                  :initial="{ opacity: 0, scale: 0.9, y: 24 }"
+                  :animate="{ opacity: 1, scale: 1, y: 0 }"
+                  :transition="{
+                    type: 'spring',
+                    stiffness: 260,
+                    damping: 24,
+                  }"
+                  class="flex min-w-[400px] flex-col gap-4 p-6"
+                >
+                  <NText class="text-lg font-bold">正在更新应用</NText>
                   <NText>{{ updateStatus }}</NText>
                   <NProgress
                     type="line"
                     :percentage="updateProgress"
                     :show-indicator="true"
                   />
-                  <NSpace justify="space-between">
-                    <NText style="font-size: 12px; color: #999">
+                  <div class="flex justify-between">
+                    <NText class="text-xs text-[#999]">
                       已下载:
                       {{ (updateDownloaded / 1024 / 1024).toFixed(2) }} MB
                     </NText>
-                    <NText style="font-size: 12px; color: #999">
+                    <NText class="text-xs text-[#999]">
                       总大小:
                       {{
                         updateTotal > 0
@@ -36,8 +44,8 @@
                           : "未知"
                       }}
                     </NText>
-                  </NSpace>
-                </NSpace>
+                  </div>
+                </motion.div>
               </NModal>
             </NLoadingBarProvider>
           </NNotificationProvider>
@@ -70,12 +78,13 @@ import {
   NNotificationProvider,
   NLoadingBarProvider,
   NModal,
-  NSpace,
   NText,
   NProgress,
 } from "naive-ui";
+import { motion } from "motion-v";
 import AppContent from "./components/AppContent.vue";
 import CustomContextMenu from "./components/CustomContextMenu.vue";
+import RouteProgress from "./components/RouteProgress.vue";
 import { useAppInitialization } from "./composables/useAppInitialization";
 import { useThemeStore } from "./stores/theme";
 
@@ -129,48 +138,3 @@ onUnmounted(() => {
   cleanup();
 });
 </script>
-
-<style lang="scss">
-@use "./assets/styles/transitions.scss";
-@use "./assets/styles/index.scss";
-input,
-textarea,
-select {
-  font-size: 16px !important;
-}
-
-@media screen and (max-width: 768px) {
-  input,
-  textarea,
-  select {
-    font-size: 16px !important;
-  }
-}
-#app {
-  font-family: "Lato", "Fira Code", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overscroll-behavior: none;
-  touch-action: pan-y;
-}
-
-html,
-body {
-  overscroll-behavior: none;
-  touch-action: pan-y;
-  overflow: hidden;
-}
-
-/* 确保SVG滤镜不占用空间 */
-.defs-only {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.n-layout .n-layout-scroll-container {
-  overflow: hidden;
-}
-</style>

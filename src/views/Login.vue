@@ -1,62 +1,108 @@
 <template>
-  <div class="login">
-    <NCard class="auth-card">
-      <div class="auth-header">
-        <div class="title-with-icon">
-          <NIcon size="32" :component="LogInOutline" />
-          <h1>{{ packageData.title }}</h1>
-          <span>后台管理系统</span>
-        </div>
-        <br />
-        <hr />
-      </div>
-      <NForm ref="formRef" :model="formValue" :rules="rules">
-        <NFormItem path="username" label="用户名/邮箱">
-          <NInput
-            v-model:value="formValue.username"
-            placeholder="请输入用户名或邮箱"
-          />
-        </NFormItem>
-        <NFormItem path="password" label="密码">
-          <NInput
-            v-model:value="formValue.password"
-            type="password"
-            placeholder="请输入密码"
-            show-password-on="click"
-          />
-        </NFormItem>
-        <div class="checkbox-forgot">
-          <a
-            href="#"
-            class="forgot-link"
-            @click.prevent="OpenBrowser(packageData.url + '/forget')"
-            >忘记密码？</a
-          >
-          <p></p>
-        </div>
-        <NButton
-          :loading="loading"
-          type="primary"
-          block
-          secondary
-          strong
-          @click="handleSubmit"
-        >
-          登录
-        </NButton>
-        <div style="display: flex; align-items: center; gap: 8px">
-          <div class="register-link">
-            <span>还没有账号？</span>
-            <a href="#" @click.prevent="OpenBrowser(packageData.url + '/login')"
-              >立即注册</a
+  <div
+    class="login relative flex h-screen items-center justify-center overflow-hidden px-5"
+  >
+    <motion.div
+      class="w-full max-w-[420px]"
+      :initial="{ opacity: 0, y: 44, scale: 0.94 }"
+      :animate="{ opacity: 1, y: 0, scale: 1 }"
+      :transition="{ type: 'spring', stiffness: 210, damping: 22, delay: 0.04 }"
+    >
+      <NCard class="auth-card rounded-l-none! rounded-r-[15px]!">
+        <div class="mb-6 text-center">
+          <div class="flex flex-col items-center justify-center gap-3">
+            <motion.div
+              class="text-primary"
+              :animate="{ y: [0, -6, 0] }"
+              :transition="{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }"
             >
+              <NIcon size="32" :component="LogInOutline" />
+            </motion.div>
+            <h1
+              class="m-0 bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-2xl font-bold text-transparent"
+            >
+              {{ packageData.title }}
+            </h1>
+            <span class="text-[var(--n-text-color-2)]">后台管理系统</span>
           </div>
-          <div class="register-link" style="position: absolute; right: 25px">
-            <a href="#" @click.prevent="clientLogin">网页端登录</a>
-          </div>
+          <br />
+          <hr />
         </div>
-      </NForm>
-    </NCard>
+        <NForm ref="formRef" :model="formValue" :rules="rules">
+          <NFormItem
+            path="username"
+            label="用户名/邮箱"
+            class="animate-rise-in [animation-delay:80ms]"
+          >
+            <NInput
+              v-model:value="formValue.username"
+              placeholder="请输入用户名或邮箱"
+            />
+          </NFormItem>
+          <NFormItem
+            path="password"
+            label="密码"
+            class="animate-rise-in [animation-delay:160ms]"
+          >
+            <NInput
+              v-model:value="formValue.password"
+              type="password"
+              placeholder="请输入密码"
+              show-password-on="click"
+            />
+          </NFormItem>
+          <div
+            class="checkbox-forgot animate-rise-in -mt-2 mb-4 flex justify-end [animation-delay:220ms]"
+          >
+            <a
+              href="#"
+              class="text-sm text-[var(--n-text-color-2)] no-underline transition-colors duration-200 hover:text-primary"
+              @click.prevent="OpenBrowser(packageData.url + '/forget')"
+              >忘记密码？</a
+            >
+            <p></p>
+          </div>
+          <div class="animate-rise-in [animation-delay:280ms]">
+            <NButton
+              :loading="loading"
+              type="primary"
+              block
+              secondary
+              strong
+              class="transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              @click="handleSubmit"
+            >
+              登录
+            </NButton>
+          </div>
+          <div
+            class="animate-rise-in mt-4 flex items-center gap-2 [animation-delay:340ms]"
+          >
+            <div class="flex items-center justify-center gap-2">
+              <span class="text-[var(--n-text-color-2)]">还没有账号？</span>
+              <a
+                href="#"
+                class="font-medium text-primary no-underline transition-colors duration-200 hover:text-primary-pressed"
+                @click.prevent="OpenBrowser(packageData.url + '/login')"
+                >立即注册</a
+              >
+            </div>
+            <div class="absolute right-[25px]">
+              <a
+                href="#"
+                class="text-sm text-[var(--n-text-color-2)] no-underline transition-colors duration-200 hover:text-primary"
+                @click.prevent="clientLogin"
+                >网页端登录</a
+              >
+            </div>
+          </div>
+        </NForm>
+      </NCard>
+    </motion.div>
   </div>
 </template>
 
@@ -64,6 +110,7 @@
 import packageData from "../../package.json";
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { motion } from "motion-v";
 import {
   NForm,
   NFormItem,
@@ -206,13 +253,3 @@ onUnmounted(() => {
   unlisten();
 });
 </script>
-
-<style lang="scss" scoped>
-@use "../assets/styles/login.scss";
-.login {
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  position: relative;
-}
-</style>

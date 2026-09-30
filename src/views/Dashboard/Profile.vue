@@ -1,65 +1,62 @@
 <template>
-  <div class="profile-container">
-    <!-- 欢迎横幅 -->
-    <div class="welcome-banner">个人资料设置</div>
-
-    <div class="content-grid">
+  <div class="profile-container [&_.n-button]:mr-[1em]">
+    <div class="content-grid grid grid-cols-1 items-start gap-5 md:grid-cols-2 max-[480px]:gap-4">
       <!-- 左侧设置区域 -->
-      <div class="left-column">
-        <n-card title="账户设置" class="settings-card">
-          <div class="settings-grid">
+      <div class="left-column flex flex-col gap-4 self-start">
+        <n-card title="账户设置" class="settings-card w-full animate-rise-in shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)] transition-all duration-200 [animation-delay:80ms] hover:shadow-[var(--n-box-shadow-hover)] [&_.n-card__content]:p-4">
+          <div class="settings-grid flex flex-col gap-3 [&>*:nth-child(1)]:[animation-delay:0ms] [&>*:nth-child(2)]:[animation-delay:60ms] [&>*:nth-child(3)]:[animation-delay:120ms] [&>*:nth-child(4)]:[animation-delay:180ms] [&>*:nth-child(5)]:[animation-delay:240ms] [&>*:nth-child(6)]:[animation-delay:300ms]">
             <!-- 修改用户名 -->
-            <div class="setting-item" @click="showModal('changeUsername')">
-              <div class="setting-icon">
+            <div class="group flex cursor-pointer items-center gap-4 rounded-lg border border-transparent p-2.5 transition-all duration-200 hover:-translate-y-px hover:border-[var(--n-border-color)] hover:bg-[var(--n-color-hover)] max-md:gap-3 max-md:p-3 max-[480px]:p-2.5" @click="showModal('changeUsername')">
+              <div class="setting-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#90caf9] text-primary max-md:h-10 max-md:w-10 [&_svg]:h-6 [&_svg]:w-6 max-md:[&_svg]:h-5 max-md:[&_svg]:w-5">
                 <UserIcon />
               </div>
-              <div class="setting-content">
-                <h3 class="setting-title">修改用户名</h3>
-                <p class="setting-desc">点击这里可以修改您的用户名</p>
+              <div class="setting-content min-w-0 flex-1">
+                <h3 class="setting-title m-0 mb-1 text-base font-medium text-[var(--n-text-color)] max-md:text-[15px]">修改用户名</h3>
+                <p class="setting-desc m-0 text-sm leading-[1.4] text-[var(--n-text-color-2)] max-md:text-[13px]">点击这里可以修改您的用户名</p>
               </div>
-              <div class="setting-arrow">
+              <div class="setting-arrow text-[var(--n-text-color-3)] transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary [&_svg]:h-5 [&_svg]:w-5">
                 <n-icon><ChevronRightIcon /></n-icon>
               </div>
             </div>
 
             <!-- 更换昵称 -->
-            <div class="setting-item" @click="showModal('changeNickname')">
-              <div class="setting-icon">
+            <div class="group flex cursor-pointer items-center gap-4 rounded-lg border border-transparent p-2.5 transition-all duration-200 hover:-translate-y-px hover:border-[var(--n-border-color)] hover:bg-[var(--n-color-hover)] max-md:gap-3 max-md:p-3 max-[480px]:p-2.5" @click="showModal('changeNickname')">
+              <div class="setting-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#90caf9] text-primary max-md:h-10 max-md:w-10 [&_svg]:h-6 [&_svg]:w-6 max-md:[&_svg]:h-5 max-md:[&_svg]:w-5">
                 <UserIcon />
               </div>
-              <div class="setting-content">
-                <h3 class="setting-title">更换昵称</h3>
-                <p class="setting-desc">点击这里可以修改您的昵称</p>
+              <div class="setting-content min-w-0 flex-1">
+                <h3 class="setting-title m-0 mb-1 text-base font-medium text-[var(--n-text-color)] max-md:text-[15px]">更换昵称</h3>
+                <p class="setting-desc m-0 text-sm leading-[1.4] text-[var(--n-text-color-2)] max-md:text-[13px]">点击这里可以修改您的昵称</p>
               </div>
-              <div class="setting-arrow">
+              <div class="setting-arrow text-[var(--n-text-color-3)] transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary [&_svg]:h-5 [&_svg]:w-5">
                 <n-icon><ChevronRightIcon /></n-icon>
               </div>
             </div>
 
             <!-- 更改头像 -->
-            <div class="setting-item" @click="showModal('changeAvatar')">
-              <div class="setting-icon">
+            <div class="group flex cursor-pointer items-center gap-4 rounded-lg border border-transparent p-2.5 transition-all duration-200 hover:-translate-y-px hover:border-[var(--n-border-color)] hover:bg-[var(--n-color-hover)] max-md:gap-3 max-md:p-3 max-[480px]:p-2.5" @click="showModal('changeAvatar')">
+              <div class="setting-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#90caf9] text-primary max-md:h-10 max-md:w-10 [&_svg]:h-6 [&_svg]:w-6 max-md:[&_svg]:h-5 max-md:[&_svg]:w-5">
                 <ImageUpIcon />
               </div>
-              <div class="setting-content">
-                <h3 class="setting-title">更改头像</h3>
-                <p class="setting-desc">点击这里上传图片，可以更换您的头像</p>
+              <div class="setting-content min-w-0 flex-1">
+                <h3 class="setting-title m-0 mb-1 text-base font-medium text-[var(--n-text-color)] max-md:text-[15px]">更改头像</h3>
+                <p class="setting-desc m-0 text-sm leading-[1.4] text-[var(--n-text-color-2)] max-md:text-[13px]">点击这里上传图片，可以更换您的头像</p>
               </div>
-              <div class="setting-arrow">
+              <div class="setting-arrow text-[var(--n-text-color-3)] transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary [&_svg]:h-5 [&_svg]:w-5">
                 <n-icon><ChevronRightIcon /></n-icon>
               </div>
             </div>
 
             <!-- 修改密码 -->
-            <div class="setting-item" @click="showModal('changePassword')">
-              <div class="setting-icon">
+            <div class="group flex cursor-pointer items-center gap-4 rounded-lg border border-transparent p-2.5 transition-all duration-200 hover:-translate-y-px hover:border-[var(--n-border-color)] hover:bg-[var(--n-color-hover)] max-md:gap-3 max-md:p-3 max-[480px]:p-2.5" @click="showModal('changePassword')">
+              <div class="setting-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#90caf9] text-primary max-md:h-10 max-md:w-10 [&_svg]:h-6 [&_svg]:w-6 max-md:[&_svg]:h-5 max-md:[&_svg]:w-5">
                 <LockIcon />
               </div>
-              <div class="setting-content">
-                <h3 class="setting-title">修改密码</h3>
-                <p class="setting-desc">点击这里可以修改您的登录密码</p>
+              <div class="setting-content min-w-0 flex-1">
+                <h3 class="setting-title m-0 mb-1 text-base font-medium text-[var(--n-text-color)] max-md:text-[15px]">修改密码</h3>
+                <p class="setting-desc m-0 text-sm leading-[1.4] text-[var(--n-text-color-2)] max-md:text-[13px]">点击这里可以修改您的登录密码</p>
               </div>
-              <div class="setting-arrow">
+              <div class="setting-arrow text-[var(--n-text-color-3)] transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary [&_svg]:h-5 [&_svg]:w-5">
                 <n-icon><ChevronRightIcon /></n-icon>
               </div>
             </div>
@@ -67,46 +64,46 @@
             <!-- 实人认证 -->
             <div
               v-if="!UserInfo.isRealname"
-              class="setting-item setting-item-warning"
+              class="group flex cursor-pointer items-center gap-4 rounded-lg border border-transparent p-2.5 transition-all duration-200 hover:-translate-y-px hover:border-[var(--n-border-color)] hover:bg-[var(--n-color-hover)] max-md:gap-3 max-md:p-3 max-[480px]:p-2.5 setting-item-warning border-l-4 border-l-[#faad14] bg-[rgba(250,173,20,0.05)] hover:bg-[rgba(250,173,20,0.1)]"
               @click="openRealnameVerification"
             >
-              <div class="setting-icon">
+              <div class="setting-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#90caf9] text-primary max-md:h-10 max-md:w-10 [&_svg]:h-6 [&_svg]:w-6 max-md:[&_svg]:h-5 max-md:[&_svg]:w-5">
                 <BadgeCheckIcon />
               </div>
-              <div class="setting-content">
-                <h3 class="setting-title">实人认证</h3>
-                <p class="setting-desc">点击这里可以实人认证哦</p>
+              <div class="setting-content min-w-0 flex-1">
+                <h3 class="setting-title m-0 mb-1 text-base font-medium text-[var(--n-text-color)] max-md:text-[15px]">实人认证</h3>
+                <p class="setting-desc m-0 text-sm leading-[1.4] text-[var(--n-text-color-2)] max-md:text-[13px]">点击这里可以实人认证哦</p>
               </div>
-              <div class="setting-arrow">
+              <div class="setting-arrow text-[var(--n-text-color-3)] transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary [&_svg]:h-5 [&_svg]:w-5">
                 <n-icon><ChevronRightIcon /></n-icon>
               </div>
             </div>
             <!-- 重置Token -->
-            <div class="setting-item" @click="showModal('changeResetToken')">
-              <div class="setting-icon">
+            <div class="group flex cursor-pointer items-center gap-4 rounded-lg border border-transparent p-2.5 transition-all duration-200 hover:-translate-y-px hover:border-[var(--n-border-color)] hover:bg-[var(--n-color-hover)] max-md:gap-3 max-md:p-3 max-[480px]:p-2.5" @click="showModal('changeResetToken')">
+              <div class="setting-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#90caf9] text-primary max-md:h-10 max-md:w-10 [&_svg]:h-6 [&_svg]:w-6 max-md:[&_svg]:h-5 max-md:[&_svg]:w-5">
                 <KeyIcon />
               </div>
-              <div class="setting-content">
-                <h3 class="setting-title">重置Token</h3>
-                <p class="setting-desc">点击这里可以重置您的Token (退出登录)</p>
+              <div class="setting-content min-w-0 flex-1">
+                <h3 class="setting-title m-0 mb-1 text-base font-medium text-[var(--n-text-color)] max-md:text-[15px]">重置Token</h3>
+                <p class="setting-desc m-0 text-sm leading-[1.4] text-[var(--n-text-color-2)] max-md:text-[13px]">点击这里可以重置您的Token (退出登录)</p>
               </div>
-              <div class="setting-arrow">
+              <div class="setting-arrow text-[var(--n-text-color-3)] transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary [&_svg]:h-5 [&_svg]:w-5">
                 <n-icon><ChevronRightIcon /></n-icon>
               </div>
             </div>
           </div>
         </n-card>
-        <div class="welcome-card-container">
+        <div class="welcome-card-container w-full">
           <WelcomeCard />
         </div>
       </div>
 
       <!-- 右侧账户详情区域 -->
-      <div class="right-column">
-        <n-card title="账户详情" class="account-card">
-          <div class="user-profile-all" style="margin-left: 10px">
-            <div class="user-profile">
-              <div class="user-avatar">
+      <div class="right-column flex flex-col gap-4 self-start">
+        <n-card title="账户详情" class="account-card w-full animate-rise-in shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)] transition-all duration-200 [animation-delay:160ms] hover:shadow-[var(--n-box-shadow-hover)] [&_.n-card__content]:p-4">
+          <div class="user-profile-all ml-2.5">
+            <div class="user-profile mb-6 flex items-center gap-4 max-md:flex-col max-md:gap-4 max-md:text-center max-[480px]:p-4">
+              <div class="user-avatar mx-2.5 h-20 w-20 overflow-hidden [&_img]:h-full [&_img]:w-full [&_img]:object-cover">
                 <div
                   :style="{
                     backgroundImage: `url(${UserInfo.avatar})`,
@@ -119,16 +116,16 @@
                   alt="User Avatar"
                 />
               </div>
-              <div class="user-info">
-                <h3 class="user-greeting">Hi, {{ UserInfo.nickname }}</h3>
+              <div class="user-info flex-1">
+                <h3 class="user-greeting m-0 mb-1 text-lg font-medium">Hi, {{ UserInfo.nickname }}</h3>
                 <span style="display: flex; font-size: 17px"
                   >今天过的还好吗</span
                 >
-                <p class="user-email">{{ UserInfo.email }}</p>
+                <p class="user-email m-0 text-sm text-[#666]">{{ UserInfo.email }}</p>
               </div>
             </div>
 
-            <div class="account-info-grid">
+            <div class="account-info-grid grid gap-4 rounded-lg p-4">
               <userInfo ref="userInfoRef" />
             </div>
           </div>
@@ -142,7 +139,7 @@
       v-model:show="modals.changeUsername"
       preset="card"
       title="修改用户名"
-      style="width: 500px"
+      class="w-[500px]! max-w-[92vw]!"
     >
       <n-form
         ref="usernameFormRef"
@@ -165,7 +162,7 @@
           />
         </n-form-item>
         <n-form-item label="验证码" path="emailCode">
-          <div style="display: flex; gap: 8px">
+          <div class="flex gap-2">
             <n-input
               v-model:value="forms.username.emailCode"
               placeholder="请输入验证码"
@@ -181,9 +178,9 @@
           </div>
         </n-form-item>
       </n-form>
-      <div class="modal-actions">
+      <div class="modal-actions mt-6 flex justify-end border-t border-[var(--n-border-color)] pt-4 [&_.n-button]:ml-4 [&_.n-button]:min-w-20 [&_.n-button:first-child]:ml-0">
         <n-button
-          style="margin-right: 16px"
+          class="mr-4"
           @click="modals.changeUsername = false"
           >取消</n-button
         >
@@ -201,7 +198,7 @@
       v-model:show="modals.changeNickname"
       preset="card"
       title="更换昵称"
-      style="width: 500px"
+      class="w-[500px]! max-w-[92vw]!"
     >
       <n-form
         :model="forms.nickname"
@@ -214,14 +211,14 @@
         <n-alert type="info" title="提示">
           在我们称呼你时将会使用该昵称。
         </n-alert>
-        <n-form-item label="当前昵称" style="margin-top: 20px">
+        <n-form-item label="当前昵称" class="mt-5">
           <n-input
             v-model:value="UserInfo.nickname"
             readonly
-            style="cursor: default"
+            class="cursor-default"
           />
         </n-form-item>
-        <n-form-item label="新的昵称" style="margin-top: 20px">
+        <n-form-item label="新的昵称" class="mt-5">
           <n-input
             v-model:value="forms.nickname.newNickname"
             placeholder="请输入新的昵称"
@@ -229,9 +226,9 @@
         </n-form-item>
         <br />
       </n-form>
-      <div class="modal-actions">
+      <div class="modal-actions mt-6 flex justify-end border-t border-[var(--n-border-color)] pt-4 [&_.n-button]:ml-4 [&_.n-button]:min-w-20 [&_.n-button:first-child]:ml-0">
         <n-button
-          style="margin-right: 16px"
+          class="mr-4"
           @click="modals.changeNickname = false"
           >取消</n-button
         >
@@ -249,7 +246,7 @@
       v-model:show="modals.changeAvatar"
       preset="card"
       title="更改头像"
-      style="width: 500px"
+      class="w-[500px]! max-w-[92vw]!"
     >
       <n-form ref="avatarFormRef" :model="forms.avatar">
         <n-tabs v-model:value="forms.avatar.avatarMode">
@@ -279,7 +276,7 @@
           </n-tab-pane>
         </n-tabs>
         <n-form-item label="预览">
-          <div class="avatar-preview">
+          <div class="avatar-preview mx-auto flex h-[120px] w-full items-center justify-center">
             <template v-if="forms.avatar.avatarMode === 'upload'">
               <div
                 :style="{
@@ -335,7 +332,7 @@
           </div>
         </n-form-item>
       </n-form>
-      <div class="modal-actions">
+      <div class="modal-actions mt-6 flex justify-end border-t border-[var(--n-border-color)] pt-4 [&_.n-button]:ml-4 [&_.n-button]:min-w-20 [&_.n-button:first-child]:ml-0">
         <n-button @click="modals.changeAvatar = false">取消</n-button>
         <n-button :loading="loading" type="primary" @click="handleChangeAvatar"
           >确认修改</n-button
@@ -348,7 +345,7 @@
       v-model:show="modals.changePassword"
       preset="card"
       title="修改密码"
-      style="width: 500px"
+      class="w-[500px]! max-w-[92vw]!"
     >
       <n-form
         ref="passwordFormRef"
@@ -377,9 +374,9 @@
           />
         </n-form-item>
       </n-form>
-      <div class="modal-actions">
+      <div class="modal-actions mt-6 flex justify-end border-t border-[var(--n-border-color)] pt-4 [&_.n-button]:ml-4 [&_.n-button]:min-w-20 [&_.n-button:first-child]:ml-0">
         <n-button
-          style="margin-right: 16px"
+          class="mr-4"
           @click="modals.changePassword = false"
           >取消</n-button
         >
@@ -397,9 +394,9 @@
       v-model:show="cropperVisible"
       preset="card"
       title="裁剪头像"
-      style="width: 500px"
+      class="w-[500px]! max-w-[92vw]!"
     >
-      <div class="cropper-container" style="height: 360px">
+      <div class="cropper-container relative mb-5 h-[300px] w-full [&_.vue-advanced-cropper]:h-[300px]! [&_.vue-advanced-cropper__image]:opacity-100! [&_.vue-circle-stencil]:max-h-[200px] [&_.vue-circle-stencil]:max-w-[200px] [&_.vue-circle-stencil]:shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" style="height: 360px">
         <Cropper
           ref="cropperRef"
           :src="cropperImg"
@@ -425,7 +422,7 @@
           style="height: 300px"
         />
       </div>
-      <div class="modal-actions">
+      <div class="modal-actions mt-6 flex justify-end border-t border-[var(--n-border-color)] pt-4 [&_.n-button]:ml-4 [&_.n-button]:min-w-20 [&_.n-button:first-child]:ml-0">
         <n-button @click="handleCropCancel">取消</n-button>
         <n-button type="primary" @click="handleCropConfirm">确认</n-button>
       </div>
@@ -435,12 +432,12 @@
       type="warning"
       preset="dialog"
       title="重置密钥"
-      style="width: 500px"
+      class="w-[500px]! max-w-[92vw]!"
     >
       <div style="margin-bottom: 24px">
         此操作将重置您的Token（密钥），这将可能导致你的服务全部中断，并会导致当前账号强制退出登录。请确认是否继续？
       </div>
-      <div class="modal-actions">
+      <div class="modal-actions mt-6 flex justify-end border-t border-[var(--n-border-color)] pt-4 [&_.n-button]:ml-4 [&_.n-button]:min-w-20 [&_.n-button:first-child]:ml-0">
         <n-button @click="modals.changeResetToken = false">取消</n-button>
         <n-button type="error" @click="handleResetToken" :loading="loading"
           >确认重置</n-button
@@ -924,350 +921,3 @@ const handleChangePassword = async () => {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-@use "../../assets/styles/variables" as *;
-.n-button {
-  margin-right: 1em;
-}
-
-.profile-container {
-  .welcome-banner {
-    user-select: none;
-    font-size: 1.5em;
-    margin-bottom: 20px;
-    padding: 12px 16px;
-    background-color: $bg-color-hover;
-    border-radius: 8px;
-    font-weight: 500;
-    color: $text-color;
-  }
-
-  .content-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    align-items: start; // 保证顶部对齐
-  }
-
-  .left-column,
-  .right-column {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    align-self: flex-start;
-  }
-
-  .settings-card,
-  .account-card {
-    width: 100%;
-    box-shadow: $box-shadow;
-    transition: $transition-all;
-
-    &:hover {
-      box-shadow: $box-shadow-hover;
-    }
-
-    :deep(.n-card__content) {
-      padding: 16px;
-    }
-  }
-
-  .welcome-card-container {
-    width: 100%;
-  }
-
-  .settings-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .setting-item {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: $transition-all;
-    border: 1px solid transparent;
-
-    &:hover {
-      background-color: $bg-color-hover;
-      border-color: $border-color;
-      transform: translateY(-1px);
-    }
-
-    &.setting-item-warning {
-      border-left: 4px solid #faad14;
-      background-color: rgba(250, 173, 20, 0.05);
-
-      &:hover {
-        background-color: rgba(250, 173, 20, 0.1);
-      }
-    }
-  }
-
-  .setting-icon {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: $primary-suppl;
-    border-radius: 12px;
-    color: $primary-color;
-    flex-shrink: 0;
-
-    svg {
-      width: 24px;
-      height: 24px;
-    }
-  }
-
-  .setting-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .setting-title {
-    font-size: 16px;
-    font-weight: 500;
-    margin: 0 0 4px 0;
-    color: $text-color;
-  }
-
-  .setting-desc {
-    font-size: 14px;
-    color: $text-color-2;
-    margin: 0;
-    line-height: 1.4;
-  }
-
-  .setting-arrow {
-    color: $text-color-3;
-    transition: $transition-all;
-
-    svg {
-      width: 20px;
-      height: 20px;
-    }
-  }
-
-  .setting-item:hover .setting-arrow {
-    color: $primary-color;
-    transform: translateX(2px);
-  }
-
-  .user-profile {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .user-avatar {
-    width: 80px;
-    height: 80px;
-    margin: 0px 10px 0px 10px;
-    overflow: hidden;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  }
-
-  .user-info {
-    flex: 1;
-  }
-
-  .user-greeting {
-    font-size: 18px;
-    font-weight: 500;
-    margin: 0 0 4px 0;
-
-    .user-id {
-      font-weight: normal;
-      opacity: 0.7;
-    }
-  }
-
-  .user-email {
-    font-size: 14px;
-    color: #666;
-    margin: 0;
-  }
-
-  .account-info-grid {
-    display: grid;
-    gap: 16px;
-    border-radius: 8px;
-    padding: 16px;
-  }
-
-  .info-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .info-label {
-    font-size: 14px;
-    color: #666;
-  }
-
-  .info-value {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  // 模态窗口样式
-  .modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid $border-color;
-
-    .n-button {
-      min-width: 80px;
-      margin-left: 16px;
-
-      &:first-child {
-        margin-left: 0;
-      }
-    }
-  }
-
-  .avatar-preview {
-    width: 100%;
-    height: 120px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  // 响应式设计
-  @media (max-width: 768px) {
-    .welcome-banner {
-      font-size: 1.2em;
-      padding: 10px 12px;
-    }
-
-    .user-profile {
-      flex-direction: column;
-      text-align: center;
-      gap: 16px;
-    }
-
-    .setting-item {
-      padding: 12px;
-      gap: 12px;
-    }
-
-    .setting-icon {
-      width: 40px;
-      height: 40px;
-
-      svg {
-        width: 20px;
-        height: 20px;
-      }
-    }
-
-    .setting-title {
-      font-size: 15px;
-    }
-
-    .setting-desc {
-      font-size: 13px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .content-grid {
-      gap: 16px;
-    }
-
-    .setting-item {
-      padding: 10px;
-    }
-
-    .user-profile {
-      padding: 16px;
-    }
-
-    .user-greeting {
-      font-size: 18px;
-    }
-
-    .user-subtitle {
-      font-size: 14px;
-    }
-  }
-}
-
-.profile-container .modal-actions {
-  display: flex !important;
-  justify-content: flex-end !important;
-}
-
-// 裁剪器容器样式
-.cropper-container {
-  width: 100%;
-  height: 300px;
-  position: relative;
-  margin-bottom: 20px;
-
-  :deep(.vue-advanced-cropper) {
-    height: 300px !important;
-
-    .vue-advanced-cropper__image {
-      opacity: 1 !important;
-    }
-
-    .vue-circle-stencil {
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-      max-width: 200px;
-      max-height: 200px;
-    }
-  }
-}
-
-.preview-container {
-  margin-top: 20px;
-
-  .cropper-preview {
-    border: 2px solid #eee;
-  }
-}
-
-// 确保裁剪区域是圆形的
-:deep(.cropper-view-box),
-:deep(.cropper-face) {
-  border-radius: 50%;
-}
-
-:deep(.cropper-view-box) {
-  outline: 0;
-}
-
-// 确保所有模态窗口的按钮样式一致
-:deep(.n-modal) {
-  .modal-actions {
-    .n-button + .n-button {
-      margin-left: 16px;
-    }
-  }
-}
-
-:deep(.n-form-item) {
-  .n-form-item-label {
-    font-size: 16px;
-  }
-}
-</style>

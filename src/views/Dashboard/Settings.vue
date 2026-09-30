@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import packageData from "../../../package.json";
 import { ref, onMounted, computed, onUnmounted } from "vue";
+import { motion } from "motion-v";
 import {
   useMessage,
   useDialog,
@@ -186,23 +187,22 @@ const toggleSkipSystemProxy = (value: boolean) => {
   message.success(`${value ? "启用" : "禁用"}跳过系统代理成功`);
 };
 
-onBeforeRouteLeave((_to, _from, next) => {
-  if (downloading.value) {
+onBeforeRouteLeave(() => {
+  if (!downloading.value) return true;
+
+  // 返回 Promise：解析为 false 阻止离开，解析为 true 放行
+  return new Promise<boolean>((resolve) => {
     dialog.warning({
       title: "提示",
       content: "正在下载 frpc，离开页面将中断下载。确定要离开吗？",
       positiveText: "继续下载",
       negativeText: "离开",
-      onPositiveClick: () => {
-        next(false);
-      },
-      onNegativeClick: () => {
-        next();
-      },
+      onPositiveClick: () => resolve(false),
+      onNegativeClick: () => resolve(true),
+      onClose: () => resolve(true),
+      onMaskClick: () => resolve(true),
     });
-  } else {
-    next();
-  }
+  });
 });
 
 onMounted(async () => {
@@ -489,7 +489,12 @@ const disableUpdateNotification = () => {
 </script>
 
 <template>
-  <div class="settings">
+  <motion.div
+    class="settings"
+    :initial="{ opacity: 0, y: 20 }"
+    :animate="{ opacity: 1, y: 0 }"
+    :transition="{ type: 'spring', stiffness: 220, damping: 24 }"
+  >
     <n-scrollbar>
       <n-space vertical :size="20">
         <!-- 版本信息卡片 -->
@@ -786,5 +791,5 @@ const disableUpdateNotification = () => {
         </n-space>
       </n-space>
     </n-modal>
-  </div>
+  </motion.div>
 </template>

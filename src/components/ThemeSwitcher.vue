@@ -7,23 +7,23 @@
 -->
 
 <template>
-  <div class="theme-switcher">
+  <div class="theme-switcher h-full [&_.n-scrollbar]:h-full [&_.n-scrollbar]:overflow-visible">
     <n-scrollbar
       class="container-scrollbar"
       :vertical-rail-style="{ right: '-15px' }"
     >
-      <div class="container">
+      <div class="container flex flex-col gap-4 py-2 [&>.n-card]:animate-rise-in [&>:nth-child(1)]:[animation-delay:0ms] [&>:nth-child(2)]:[animation-delay:80ms] [&>:nth-child(3)]:[animation-delay:160ms] [&>:nth-child(4)]:[animation-delay:240ms] [&>:nth-child(5)]:[animation-delay:320ms] [&>:nth-child(6)]:[animation-delay:400ms]">
         <!-- 主题设置卡片 -->
-        <n-card class="setting-card" size="small">
+        <n-card class="setting-card transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]" size="small">
           <template #header>
-            <div class="card-header">
+            <div class="card-header flex items-center gap-2 text-[15px] font-semibold">
               <n-icon :component="ColorPaletteOutline" :size="20" />
               <span>主题设置</span>
             </div>
           </template>
-          <div class="setting-content">
-            <div class="setting-item">
-              <div class="setting-label">
+          <div class="setting-content flex flex-col gap-4 py-1">
+            <div class="setting-item flex items-center justify-between py-2 transition-all duration-200 hover:pl-1">
+              <div class="setting-label flex items-center gap-2 text-sm text-[var(--text-color-1)]">
                 <n-icon :component="SyncOutline" :size="18" />
                 <span>自动切换主题</span>
               </div>
@@ -38,8 +38,8 @@
                 <template #unchecked>手动切换</template>
               </n-switch>
             </div>
-            <div class="setting-item" v-if="!isAutoTheme">
-              <div class="setting-label">
+            <div class="setting-item flex items-center justify-between py-2 transition-all duration-200 hover:pl-1" v-if="!isAutoTheme">
+              <div class="setting-label flex items-center gap-2 text-sm text-[var(--text-color-1)]">
                 <n-icon
                   :component="isDarkTheme ? Sparkles : Sunny"
                   :size="18"
@@ -69,15 +69,15 @@
         </n-card>
 
         <!-- 主题色设置卡片 -->
-        <n-card class="setting-card" size="small">
+        <n-card class="setting-card transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]" size="small">
           <template #header>
-            <div class="card-header">
+            <div class="card-header flex items-center gap-2 text-[15px] font-semibold">
               <n-icon :component="BrushOutline" :size="20" />
               <span>主题色</span>
             </div>
           </template>
-          <div class="setting-content">
-            <div class="color-picker-wrapper">
+          <div class="setting-content flex flex-col gap-4 py-1">
+            <div class="color-picker-wrapper mb-3 flex justify-center">
               <n-color-picker
                 v-model:value="primaryColor"
                 :show-preview="true"
@@ -85,13 +85,22 @@
                 size="large"
               />
             </div>
-            <div class="preset-colors">
-              <div
-                v-for="color in presetColors"
+            <div class="preset-colors grid max-w-full grid-cols-5 justify-center gap-3 py-2 max-md:gap-2.5">
+              <motion.div
+                v-for="(color, index) in presetColors"
                 :key="color"
                 :style="{ backgroundColor: color }"
-                class="preset-color"
-                :class="{ active: primaryColor === color }"
+                class="preset-color relative flex h-[25px] w-[25px] cursor-pointer items-center justify-center overflow-hidden rounded-full border-[3px] transition-all duration-300 before:pointer-events-none before:absolute before:inset-0 before:rounded-full before:bg-[linear-gradient(135deg,rgba(255,255,255,0.3),rgba(0,0,0,0.1))] before:opacity-0 before:transition-opacity before:duration-300 max-md:h-8 max-md:w-8"
+                :class="
+                  primaryColor === color
+                    ? 'scale-110 border-[var(--primary-color,#18a058)] shadow-[0_0_0_2px_var(--primary-color,#18a058),0_4px_12px_rgba(0,0,0,0.25)]'
+                    : 'border-transparent shadow-[0_2px_8px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.25)] hover:before:opacity-100'
+                "
+                :initial="{ opacity: 0, scale: 0.4 }"
+                :animate="{ opacity: 1, scale: primaryColor === color ? 1.1 : 1 }"
+                :transition="{ delay: index * 0.04, type: 'spring', stiffness: 320, damping: 20 }"
+                :while-hover="{ scale: 1.18, rotate: 8 }"
+                :while-tap="{ scale: 0.9 }"
                 @click="setPresetColor(color)"
               >
                 <n-icon
@@ -100,22 +109,22 @@
                   :size="16"
                   color="#fff"
                 />
-              </div>
+              </motion.div>
             </div>
           </div>
         </n-card>
 
         <!-- 视觉效果设置卡片 -->
-        <n-card class="setting-card" size="small">
+        <n-card class="setting-card transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]" size="small">
           <template #header>
-            <div class="card-header">
+            <div class="card-header flex items-center gap-2 text-[15px] font-semibold">
               <n-icon :component="EyeOutline" :size="20" />
               <span>视觉效果</span>
             </div>
           </template>
-          <div class="setting-content">
-            <div class="setting-item">
-              <div class="setting-label">
+          <div class="setting-content flex flex-col gap-4 py-1">
+            <div class="setting-item flex items-center justify-between py-2 transition-all duration-200 hover:pl-1">
+              <div class="setting-label flex items-center gap-2 text-sm text-[var(--text-color-1)]">
                 <n-icon :component="ColorFilterOutline" :size="18" />
                 <span>RGB模式</span>
               </div>
@@ -126,8 +135,8 @@
                 :unchecked-value="false"
               />
             </div>
-            <div class="setting-item">
-              <div class="setting-label">
+            <div class="setting-item flex items-center justify-between py-2 transition-all duration-200 hover:pl-1">
+              <div class="setting-label flex items-center gap-2 text-sm text-[var(--text-color-1)]">
                 <n-icon :component="LayersOutline" :size="18" />
                 <span>对话框模糊</span>
               </div>
@@ -142,16 +151,16 @@
         </n-card>
 
         <!-- 侧边栏设置卡片 -->
-        <n-card class="setting-card" size="small">
+        <n-card class="setting-card transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]" size="small">
           <template #header>
-            <div class="card-header">
+            <div class="card-header flex items-center gap-2 text-[15px] font-semibold">
               <n-icon :component="MenuOutline" :size="20" />
               <span>侧边栏</span>
             </div>
           </template>
-          <div class="setting-content">
-            <div class="setting-item">
-              <div class="setting-label">
+          <div class="setting-content flex flex-col gap-4 py-1">
+            <div class="setting-item flex items-center justify-between py-2 transition-all duration-200 hover:pl-1">
+              <div class="setting-label flex items-center gap-2 text-sm text-[var(--text-color-1)]">
                 <n-icon :component="PersonOutline" :size="18" />
                 <span>经典模式</span>
               </div>
@@ -169,16 +178,16 @@
         </n-card>
 
         <!-- 无障碍设置卡片 -->
-        <n-card class="setting-card" size="small">
+        <n-card class="setting-card transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]" size="small">
           <template #header>
-            <div class="card-header">
+            <div class="card-header flex items-center gap-2 text-[15px] font-semibold">
               <n-icon :component="AccessibilityOutline" :size="20" />
               <span>无障碍</span>
             </div>
           </template>
-          <div class="setting-content">
-            <div class="setting-item">
-              <div class="setting-label">
+          <div class="setting-content flex flex-col gap-4 py-1">
+            <div class="setting-item flex items-center justify-between py-2 transition-all duration-200 hover:pl-1">
+              <div class="setting-label flex items-center gap-2 text-sm text-[var(--text-color-1)]">
                 <n-icon :component="ColorWandOutline" :size="18" />
                 <span>色弱模式</span>
               </div>
@@ -189,8 +198,8 @@
                 :unchecked-value="false"
               />
             </div>
-            <div class="setting-item">
-              <div class="setting-label">
+            <div class="setting-item flex items-center justify-between py-2 transition-all duration-200 hover:pl-1">
+              <div class="setting-label flex items-center gap-2 text-sm text-[var(--text-color-1)]">
                 <n-icon :component="ContrastOutline" :size="18" />
                 <span>高对比度模式</span>
               </div>
@@ -205,15 +214,15 @@
         </n-card>
 
         <!-- 背景图设置卡片 -->
-        <n-card class="setting-card" size="small">
+        <n-card class="setting-card transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]" size="small">
           <template #header>
-            <div class="card-header">
+            <div class="card-header flex items-center gap-2 text-[15px] font-semibold">
               <n-icon :component="ImageOutline" :size="20" />
               <span>背景图</span>
             </div>
           </template>
-          <div class="setting-content">
-            <div class="background-settings">
+          <div class="setting-content flex flex-col gap-4 py-1">
+            <div class="background-settings flex w-full flex-col gap-3">
               <n-upload
                 :file-list="[]"
                 :show-file-list="false"
@@ -231,7 +240,7 @@
               <n-input
                 v-model:value="backgroundImageUrl"
                 placeholder="输入网络图片链接"
-                class="background-input"
+                class="background-input mt-0"
                 @update:value="handleImageUrlChange"
                 clearable
               >
@@ -241,15 +250,15 @@
               </n-input>
               <div
                 v-if="backgroundImageUrl || backgroundImage"
-                class="image-preview"
+                class="image-preview mt-2 flex w-full flex-col gap-4"
               >
-                <div class="preview-wrapper">
+                <div class="preview-wrapper group relative w-full overflow-hidden rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition-all duration-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.15)]">
                   <img
                     :src="backgroundImageUrl || backgroundImage"
                     alt="背景预览"
-                    class="preview-image"
+                    class="preview-image block max-h-[180px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                   />
-                  <div class="preview-overlay">
+                  <div class="preview-overlay absolute inset-0 flex items-start justify-end bg-[linear-gradient(to_bottom,rgba(0,0,0,0.4),transparent)] p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                     <n-button
                       size="small"
                       type="error"
@@ -262,8 +271,8 @@
                     </n-button>
                   </div>
                 </div>
-                <div class="slider-control" v-if="!frostedGlassMode">
-                  <div class="slider-label">
+                <div class="slider-control flex w-full flex-col gap-2" v-if="!frostedGlassMode">
+                  <div class="slider-label flex items-center gap-1.5 text-[13px] font-medium text-[var(--text-color-2)]">
                     <n-icon :component="LayersOutline" :size="16" />
                     <span>模糊深度: {{ backgroundBlur }}px</span>
                   </div>
@@ -275,8 +284,8 @@
                     @update:value="handleBlurChange"
                   />
                 </div>
-                <div class="slider-control" v-if="!frostedGlassMode">
-                  <div class="slider-label">
+                <div class="slider-control flex w-full flex-col gap-2" v-if="!frostedGlassMode">
+                  <div class="slider-label flex items-center gap-1.5 text-[13px] font-medium text-[var(--text-color-2)]">
                     <n-icon :component="WaterOutline" :size="16" />
                     <span>元素不透明度: {{ backgroundOpacity || 100 }}%</span>
                   </div>
@@ -288,8 +297,8 @@
                     @update:value="handleOpacityChange"
                   />
                 </div>
-                <div class="slider-control" v-else>
-                  <div class="slider-label">
+                <div class="slider-control flex w-full flex-col gap-2" v-else>
+                  <div class="slider-label flex items-center gap-1.5 text-[13px] font-medium text-[var(--text-color-2)]">
                     <n-icon :component="WaterOutline" :size="16" />
                     <span>毛玻璃强度: {{ backgroundOpacity }}px</span>
                   </div>
@@ -301,8 +310,8 @@
                     @update:value="handleOpacityChange"
                   />
                 </div>
-                <div class="setting-item" style="margin-top: 12px">
-                  <div class="setting-label">
+                <div class="setting-item mt-3 flex items-center justify-between py-2 transition-all duration-200 hover:pl-1">
+                  <div class="setting-label flex items-center gap-2 text-sm text-[var(--text-color-1)]">
                     <n-icon :component="LayersOutline" :size="18" />
                     <span>毛玻璃模式</span>
                   </div>
@@ -325,6 +334,7 @@
 
 <script lang="ts" setup>
 import { CSSProperties, ref, onMounted, watch } from "vue";
+import { motion } from "motion-v";
 import { invoke } from "@tauri-apps/api/core";
 import {
   readFile,
@@ -895,227 +905,3 @@ onMounted(async () => {
   updateElementOpacityStyle();
 });
 </script>
-
-<style lang="scss" scoped>
-.theme-switcher {
-  height: 100%;
-}
-
-.theme-switcher :deep(.n-scrollbar) {
-  height: 100%;
-  overflow: visible;
-}
-
-.container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 8px 0;
-}
-
-.setting-card {
-  transition: all 0.3s ease;
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 15px;
-}
-
-.setting-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 4px 0;
-}
-
-.setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  transition: all 0.2s ease;
-
-  &:hover {
-    padding-left: 4px;
-  }
-}
-
-.setting-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--text-color-1);
-}
-
-.color-picker-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 12px;
-}
-
-.preset-colors {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-  justify-content: center;
-  max-width: 100%;
-  padding: 8px 0;
-}
-
-.preset-color {
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 3px solid transparent;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    padding: 2px;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.3),
-      rgba(0, 0, 0, 0.1)
-    );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  &:hover {
-    transform: scale(1.15);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-
-    &::before {
-      opacity: 1;
-    }
-  }
-
-  &.active {
-    border-color: var(--primary-color, #18a058);
-    box-shadow:
-      0 0 0 2px var(--primary-color, #18a058),
-      0 4px 12px rgba(0, 0, 0, 0.25);
-    transform: scale(1.1);
-  }
-}
-
-.background-settings {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-}
-
-.background-input {
-  margin-top: 0;
-}
-
-.image-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-  margin-top: 8px;
-}
-
-.preview-wrapper {
-  position: relative;
-  width: 100%;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-
-  &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-
-    .preview-overlay {
-      opacity: 1;
-    }
-  }
-}
-
-.preview-image {
-  width: 100%;
-  max-height: 180px;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.3s ease;
-
-  .preview-wrapper:hover & {
-    transform: scale(1.02);
-  }
-}
-
-.preview-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), transparent);
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 12px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.slider-control {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-}
-
-.slider-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-color-2);
-  font-weight: 500;
-}
-
-// 响应式设计
-@media (max-width: 768px) {
-  .preset-colors {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-  }
-
-  .preset-color {
-    width: 32px;
-    height: 32px;
-  }
-}
-</style>

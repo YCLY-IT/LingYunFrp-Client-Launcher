@@ -1,10 +1,10 @@
 <template>
   <div class="proxies">
     <NConfigProvider :locale="zhCN">
-      <NCard title="隧道管理" class="tunnel-manager-card">
+      <NCard title="隧道管理" class="tunnel-manager-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
         <n-spin size="large" :show="loading">
-          <div class="toolbar">
-            <div class="search-box">
+          <div class="toolbar mb-6 flex flex-wrap items-center justify-between gap-4 max-md:flex-col max-md:items-stretch max-md:gap-3">
+            <div class="search-box min-w-[200px] flex-1">
               <NInput
                 v-model:value="searchText"
                 placeholder="搜索隧道..."
@@ -19,7 +19,7 @@
               </NInput>
             </div>
 
-            <div class="toolbar-right">
+            <div class="toolbar-right flex shrink-0 items-center gap-3 max-md:justify-between">
               <NButtonGroup>
                 <NButton
                   :type="viewMode === 'grid' ? 'primary' : 'default'"
@@ -32,7 +32,7 @@
                     </NIcon>
                   </template>
                   <span class="view-text">网格</span
-                  ><span class="view-suffix">视图</span>
+                  ><span class="view-suffix max-md:hidden">视图</span>
                 </NButton>
                 <NButton
                   :type="viewMode === 'list' ? 'primary' : 'default'"
@@ -45,7 +45,7 @@
                     </NIcon>
                   </template>
                   <span class="view-text">列表</span
-                  ><span class="view-suffix">视图</span>
+                  ><span class="view-suffix max-md:hidden">视图</span>
                 </NButton>
               </NButtonGroup>
 
@@ -60,17 +60,17 @@
           </div>
 
           <!-- 网格视图 -->
-          <div v-if="viewMode === 'grid'" class="proxy-grid">
+          <div v-if="viewMode === 'grid'" class="proxy-grid grid min-h-[200px] grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5 max-md:grid-cols-1 [&>*:nth-child(1)]:[animation-delay:0ms] [&>*:nth-child(2)]:[animation-delay:60ms] [&>*:nth-child(3)]:[animation-delay:120ms] [&>*:nth-child(4)]:[animation-delay:180ms] [&>*:nth-child(5)]:[animation-delay:240ms] [&>*:nth-child(6)]:[animation-delay:300ms] [&>*:nth-child(7)]:[animation-delay:360ms] [&>*:nth-child(8)]:[animation-delay:420ms]">
             <template v-if="filteredProxies.length">
               <NCard
                 v-for="proxy in pagedProxies"
                 :key="proxy.proxyId"
-                class="tunnel-card"
+                class="tunnel-card animate-rise-in rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
                 hoverable
               >
                 <template #header>
-                  <div class="tunnel-header">
-                    <NText class="tunnel-title" strong>
+                  <div class="tunnel-header flex items-start justify-between gap-3 max-[480px]:flex-col max-[480px]:items-start max-[480px]:gap-2">
+                    <NText class="tunnel-title flex-1 text-base font-semibold [word-break:break-word]" strong>
                       隧道: {{ proxy.proxyName }}
                     </NText>
                     <NSpace size="small">
@@ -164,7 +164,7 @@
                             type="info"
                             size="small"
                             round
-                            style="cursor: pointer"
+                            class="cursor-pointer"
                             @click="() => openUrl(proxy.proxyType, domain)"
                           >
                             {{ domain }}
@@ -210,7 +210,7 @@
                 </template>
               </NCard>
             </template>
-            <div v-else class="empty-state">
+            <div v-else class="empty-state col-span-full flex min-h-[300px] items-center justify-center">
               <NEmpty description="暂无隧道" size="large">
                 <template #extra>
                   <NButton
@@ -269,10 +269,10 @@
               :bordered="false"
               :single-line="false"
               size="medium"
-              class="tunnel-table"
+              class="tunnel-table rounded-lg"
             />
 
-            <div v-else v-if="viewMode === 'list'" class="empty-state">
+            <div v-else v-if="viewMode === 'list'" class="empty-state col-span-full flex min-h-[300px] items-center justify-center">
               <NEmpty description="暂无隧道" size="large">
                 <template #extra>
                   <NButton
@@ -328,21 +328,21 @@
           v-model:show="showModal"
           preset="dialog"
           title="隧道详细信息"
-          style="width: 800px; max-width: 90vw"
+          class="w-[800px] max-w-[90vw]"
         >
           <template #header>
             <div>隧道详细信息</div>
           </template>
           <div
             v-if="selectedProxy"
-            style="padding: 16px 0"
+            class="py-4"
             :class="{
               'proxy-detail-container':
                 selectedProxy.proxyType === 'http' ||
                 selectedProxy.proxyType === 'https',
             }"
           >
-            <div class="proxy-detail-left">
+            <div class="proxy-detail-left flex-[1.2]">
               <NDescriptions
                 :column="1"
                 size="medium"
@@ -410,7 +410,7 @@
                       :key="domain"
                       type="info"
                       round
-                      style="cursor: pointer"
+                      class="cursor-pointer"
                       @click="
                         selectedProxy &&
                         openUrl(selectedProxy.proxyType, domain)
@@ -449,9 +449,9 @@
                 selectedProxy.proxyType === 'https'
               "
             >
-              <div class="proxy-detail-right">
+              <div class="proxy-detail-right min-w-[300px] flex-[1.5] max-md:min-w-0">
                 <NCard title="域名解析配置" size="small">
-                  <NAlert type="info" style="margin-bottom: 16px">
+                  <NAlert type="info" class="mb-4">
                     添加以下信息至您的域名解析配置后，服务才会生效。
                   </NAlert>
                   <NDataTable
@@ -504,7 +504,7 @@
           v-model:show="showDeleteModal"
           preset="dialog"
           title="是否删除此隧道？"
-          style="width: 400px"
+          class="w-[400px]"
         >
           <template #header>
             <div>删除确认</div>
@@ -531,7 +531,7 @@
           v-model:show="showEditModal"
           preset="dialog"
           title="编辑隧道"
-          style="width: 800px; max-width: 90vw"
+          class="min-w-[600px] max-w-[90vw]"
         >
           <NCollapse v-model:expanded-names="expandedNames" accordion>
             <NCollapseItem title="基本配置" name="basic">
@@ -622,11 +622,11 @@
             <NCollapseItem title="高级配置" name="advanced">
               <template #header>
                 <NText>高级配置</NText>
-                <NText depth="3" style="margin-left: 8px; font-size: 12px">
+                <NText depth="3" class="ml-2 text-xs">
                   (仅推荐技术用户使用)
                 </NText>
               </template>
-              <NText depth="3" style="padding-bottom: 15px; display: block">
+              <NText depth="3" class="block pb-[15px]">
                 提示：仅推荐技术用户使用,
                 一般用户请勿随意填写。请确保您的配置正确, 否则隧道可能无法启动。
               </NText>
@@ -657,7 +657,7 @@
                       v-model:value="editForm.ipLimitIn"
                       :min="0"
                       placeholder="请输入速率值"
-                      style="width: 200px"
+                      class="w-[200px]"
                     />
                     <NSelect
                       v-model:value="editForm.ipLimitInUnit"
@@ -666,7 +666,7 @@
                         { label: 'MB/s', value: 'MB' },
                         { label: 'Mbps', value: 'Mbps' },
                       ]"
-                      style="width: 100px"
+                      class="w-[100px]"
                     />
                   </NSpace>
                 </NFormItem>
@@ -676,7 +676,7 @@
                       v-model:value="editForm.ipLimitOut"
                       :min="0"
                       placeholder="请输入速率值"
-                      style="width: 200px"
+                      class="w-[200px]"
                     />
                     <NSelect
                       v-model:value="editForm.ipLimitOutUnit"
@@ -685,7 +685,7 @@
                         { label: 'MB/s', value: 'MB' },
                         { label: 'Mbps', value: 'Mbps' },
                       ]"
-                      style="width: 100px"
+                      class="w-[100px]"
                     />
                   </NSpace>
                 </NFormItem>
@@ -730,7 +730,7 @@
         <NModal
           v-model:show="showToggleModal"
           preset="dialog"
-          style="width: 400px"
+          class="w-[400px]"
         >
           <template #header>
             <div>{{ toggleModalTitle }}</div>
@@ -1696,124 +1696,3 @@ const checkFrpcHas = async () => {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-.tunnel-manager-card {
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.toolbar {
-  margin-bottom: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.search-box {
-  flex: 1;
-  min-width: 200px;
-}
-
-.toolbar-right {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.proxy-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
-  min-height: 200px;
-}
-
-.tunnel-card {
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.tunnel-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.tunnel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.tunnel-title {
-  font-size: 16px;
-  font-weight: 600;
-  flex: 1;
-  word-break: break-word;
-}
-
-.empty-state {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 300px;
-}
-
-.tunnel-table {
-  border-radius: 8px;
-}
-
-.proxy-detail-container {
-  display: flex;
-  gap: 24px;
-}
-
-.proxy-detail-left {
-  flex: 1.2;
-}
-
-.proxy-detail-right {
-  flex: 1.5;
-  min-width: 300px;
-}
-
-@media (max-width: 768px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .toolbar-right {
-    justify-content: space-between;
-  }
-
-  .proxy-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .proxy-detail-container {
-    flex-direction: column;
-  }
-
-  .proxy-detail-right {
-    min-width: unset;
-  }
-
-  .view-suffix {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .tunnel-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-}
-</style>

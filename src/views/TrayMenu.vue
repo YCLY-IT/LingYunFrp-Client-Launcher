@@ -1,71 +1,151 @@
 <template>
   <div
-    class="tray-menu-container"
-    :class="{ dark: isDark, 'frosted-glass': frostedGlassMode }"
+    class="tray-menu-container relative z-999999 w-full[240px] overflow-hidden border border-black/5 p-3 text-[13px] select-none shadow-[0_8px_32px_rgba(0,0,0,0.15),0_2px_8px_rgba(0,0,0,0.1)] [-webkit-app-region:no-drag] pointer-events-auto"
+    :class="[
+      isDark ? 'border-white/10 text-white' : '',
+      frostedGlassMode ? 'border-white/20' : '',
+      frostedGlassMode && isDark ? 'border-white/15' : '',
+    ]"
     :style="trayContainerStyle"
   >
-    <div class="menu-header">
-      <img src="/favicon.ico" alt="logo" class="logo" />
-      <span class="app-name">LingYunFRP</span>
+    <div class="menu-header mb-2 flex items-center gap-2.5 px-3 py-2">
+      <img
+        src="/favicon.ico"
+        alt="logo"
+        class="logo h-6 w-6 rounded-md transition-transform duration-200 hover:rotate-12 hover:scale-110"
+      />
+      <span
+        class="app-name text-sm font-semibold"
+        :class="isDark ? 'text-white' : 'text-[#333]'"
+        >LingYunFRP</span
+      >
     </div>
 
-    <div class="menu-divider"></div>
+    <div
+      class="menu-divider my-2 h-px"
+      :class="
+        isDark
+          ? 'bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)]'
+          : 'bg-[linear-gradient(90deg,transparent,rgba(0,0,0,0.1),transparent)]'
+      "
+    ></div>
 
-    <div class="menu-list">
-      <div class="menu-item" @click="handleToggleWindow">
-        <div class="menu-icon">
+    <div class="menu-list flex flex-col gap-0.5">
+      <div
+        class="menu-item flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-[transform,background-color] duration-200 hover:translate-x-1"
+        :class="
+          isDark
+            ? 'text-[#e0e0e0] hover:bg-white/10'
+            : 'text-[#333] hover:bg-black/5'
+        "
+        @click="handleToggleWindow"
+      >
+        <div class="menu-icon flex h-5 w-5 items-center justify-center opacity-80">
           <n-icon v-if="!isWindowVisible" :component="EyeOutline" size="18" />
           <n-icon v-else :component="EyeOffOutline" size="18" />
         </div>
-        <span class="menu-label">{{
+        <span class="menu-label flex-1 text-[13px]">{{
           isWindowVisible ? "隐藏主窗口" : "显示主窗口"
         }}</span>
       </div>
     </div>
 
-    <div class="menu-divider"></div>
+    <div
+      class="menu-divider my-2 h-px"
+      :class="
+        isDark
+          ? 'bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)]'
+          : 'bg-[linear-gradient(90deg,transparent,rgba(0,0,0,0.1),transparent)]'
+      "
+    ></div>
 
-    <div class="menu-list">
-      <div class="menu-item" @click="handleSettings">
-        <div class="menu-icon">
+    <div class="menu-list flex flex-col gap-0.5">
+      <div
+        class="menu-item flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-[transform,background-color] duration-200 hover:translate-x-1"
+        :class="
+          isDark
+            ? 'text-[#e0e0e0] hover:bg-white/10'
+            : 'text-[#333] hover:bg-black/5'
+        "
+        @click="handleSettings"
+      >
+        <div class="menu-icon flex h-5 w-5 items-center justify-center opacity-80">
           <n-icon :component="SettingsOutline" size="18" />
         </div>
-        <span class="menu-label">设置</span>
+        <span class="menu-label flex-1 text-[13px]">设置</span>
       </div>
 
-      <div class="menu-item" @click="handleAutoStart">
-        <div class="menu-icon">
+      <div
+        class="menu-item flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-[transform,background-color] duration-200 hover:translate-x-1"
+        :class="
+          isDark
+            ? 'text-[#e0e0e0] hover:bg-white/10'
+            : 'text-[#333] hover:bg-black/5'
+        "
+        @click="handleAutoStart"
+      >
+        <div class="menu-icon flex h-5 w-5 items-center justify-center opacity-80">
           <n-icon :component="CheckmarkOutline" size="18" />
         </div>
-        <span class="menu-label">开/关闭自启</span>
-        <span class="status-badge" :class="{ active: autoStartEnabled }">
+        <span class="menu-label flex-1 text-[13px]">开/关闭自启</span>
+        <span
+          class="status-badge rounded-[10px] px-2 py-0.5 text-[11px] transition-colors duration-200"
+          :class="
+            autoStartEnabled
+              ? 'bg-[rgba(82,196,26,0.15)] text-[#52c41a]'
+              : isDark
+                ? 'bg-white/10 text-[#999]'
+                : 'bg-black/6 text-[#999]'
+          "
+        >
           {{ autoStartEnabled ? "已开启" : "已关闭" }}
         </span>
       </div>
 
-      <div class="menu-item" @click="handleOpenDataDir">
-        <div class="menu-icon">
+      <div
+        class="menu-item flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-[transform,background-color] duration-200 hover:translate-x-1"
+        :class="
+          isDark
+            ? 'text-[#e0e0e0] hover:bg-white/10'
+            : 'text-[#333] hover:bg-black/5'
+        "
+        @click="handleOpenDataDir"
+      >
+        <div class="menu-icon flex h-5 w-5 items-center justify-center opacity-80">
           <n-icon :component="FolderOpenOutline" size="18" />
         </div>
-        <span class="menu-label">打开数据目录</span>
+        <span class="menu-label flex-1 text-[13px]">打开数据目录</span>
       </div>
     </div>
 
-    <div class="menu-divider"></div>
+    <div
+      class="menu-divider my-2 h-px"
+      :class="
+        isDark
+          ? 'bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)]'
+          : 'bg-[linear-gradient(90deg,transparent,rgba(0,0,0,0.1),transparent)]'
+      "
+    ></div>
 
-    <div class="menu-list">
-      <div class="menu-item warning" @click="handleQuitWithoutFrpc">
-        <div class="menu-icon">
+    <div class="menu-list flex flex-col gap-0.5">
+      <div
+        class="menu-item flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-[#faad14] transition-[transform,background-color] duration-200 hover:translate-x-1 hover:bg-[rgba(250,173,20,0.1)]"
+        @click="handleQuitWithoutFrpc"
+      >
+        <div class="menu-icon flex h-5 w-5 items-center justify-center opacity-80">
           <n-icon :component="PowerOutline" size="18" />
         </div>
-        <span class="menu-label">退出但不关闭FRPC</span>
+        <span class="menu-label flex-1 text-[13px]">退出但不关闭FRPC</span>
       </div>
 
-      <div class="menu-item danger" @click="handleQuit">
-        <div class="menu-icon">
+      <div
+        class="menu-item flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-[#ff4d4f] transition-[transform,background-color] duration-200 hover:translate-x-1 hover:bg-[rgba(255,77,79,0.1)]"
+        @click="handleQuit"
+      >
+        <div class="menu-icon flex h-5 w-5 items-center justify-center opacity-80">
           <n-icon :component="ExitOutline" size="18" />
         </div>
-        <span class="menu-label">完全退出</span>
+        <span class="menu-label flex-1 text-[13px]">完全退出</span>
       </div>
     </div>
   </div>
@@ -325,166 +405,3 @@ const hideMenu = async () => {
 };
 </script>
 
-<style scoped lang="scss">
-:global(html),
-:global(body) {
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-}
-
-.tray-menu-container {
-  width: 240px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.15),
-    0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 12px;
-  font-size: 13px;
-  user-select: none;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  z-index: 999999;
-  position: relative;
-  /* 确保菜单显示在任务栏之上 */
-  -webkit-app-region: no-drag;
-  pointer-events: auto;
-
-  &.dark {
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #fff;
-  }
-
-  &.frosted-glass {
-    border: 1px solid rgba(255, 255, 255, 0.2);
-
-    &.dark {
-      border-color: rgba(255, 255, 255, 0.15);
-    }
-  }
-}
-
-.menu-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-
-  .logo {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-  }
-
-  .app-name {
-    font-weight: 600;
-    font-size: 14px;
-    color: #333;
-
-    .dark & {
-      color: #fff;
-    }
-  }
-}
-
-.menu-divider {
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(0, 0, 0, 0.1),
-    transparent
-  );
-  margin: 8px 0;
-
-  .dark & {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.1),
-      transparent
-    );
-  }
-}
-
-.menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #333;
-
-  .dark & {
-    color: #e0e0e0;
-  }
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.05);
-
-    .dark & {
-      background: rgba(255, 255, 255, 0.1);
-    }
-  }
-
-  &:active {
-    transform: scale(0.98);
-  }
-
-  &.warning {
-    color: #faad14;
-
-    &:hover {
-      background: rgba(250, 173, 20, 0.1);
-    }
-  }
-
-  &.danger {
-    color: #ff4d4f;
-
-    &:hover {
-      background: rgba(255, 77, 79, 0.1);
-    }
-  }
-}
-
-.menu-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  opacity: 0.8;
-}
-
-.menu-label {
-  flex: 1;
-  font-size: 13px;
-}
-
-.status-badge {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.06);
-  color: #999;
-  transition: all 0.2s;
-
-  .dark & {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  &.active {
-    background: rgba(82, 196, 26, 0.15);
-    color: #52c41a;
-  }
-}
-</style>

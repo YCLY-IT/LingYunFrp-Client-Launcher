@@ -1,23 +1,45 @@
 <template>
   <div>
-    <div class="user-info-scroll-wrapper">
-      <div class="user-info-grid">
+    <div
+      class="user-info-scroll-wrapper max-[600px]:overflow-x-auto max-[600px]:[-webkit-overflow-scrolling:touch]"
+    >
+      <motion.div
+        :key="loading ? 'loading' : 'loaded'"
+        class="user-info-grid grid grid-cols-2 gap-5 max-[600px]:w-max"
+        :initial="'hidden'"
+        :animate="'visible'"
+        :variants="gridVariants"
+      >
         <template v-if="loading">
-          <div v-for="i in 8" :key="i" class="user-info-item">
+          <div v-for="i in 8" :key="i" class="user-info-item flex flex-col gap-2 p-0.5">
             <NSkeleton :sharp="false" size="medium" />
           </div>
         </template>
         <template v-else>
-          <div class="user-info-item">
-            <div class="user-info-label">用户昵称</div>
-            <div class="user-info-value">
+          <motion.div
+            class="user-info-item relative flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div class="user-info-label text-sm text-[var(--n-text-color-2)]">
+              用户昵称
+            </div>
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
               {{ userInfo.nickname }}
             </div>
-          </div>
+          </motion.div>
 
-          <div class="user-info-item-right">
-            <div class="user-info-label">实名认证</div>
-            <div class="user-info-value">
+          <motion.div
+            class="user-info-item-right relative ml-5 flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div class="user-info-label text-sm text-[var(--n-text-color-2)]">
+              实名认证
+            </div>
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
               <NTag
                 :type="userInfo.isRealname ? 'success' : 'default'"
                 size="small"
@@ -25,102 +47,181 @@
                 {{ userInfo.isRealname ? "已实名" : "未实名" }}
               </NTag>
             </div>
-          </div>
+          </motion.div>
 
-          <div class="user-info-item">
-            <div class="user-info-label">用户组</div>
-            <div class="user-info-value">
+          <motion.div
+            class="user-info-item relative flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div class="user-info-label text-sm text-[var(--n-text-color-2)]">
+              用户组
+            </div>
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
               <NTag type="info" size="small">
                 {{ userInfo.friendlyGroup }}
               </NTag>
             </div>
-          </div>
+          </motion.div>
 
-          <div class="user-info-item-right">
-            <div class="user-info-label">注册时间</div>
-            <div class="user-info-value">{{ formattedRegTime }}</div>
-          </div>
+          <motion.div
+            class="user-info-item-right relative ml-5 flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div class="user-info-label text-sm text-[var(--n-text-color-2)]">
+              注册时间
+            </div>
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
+              {{ formattedRegTime }}
+            </div>
+          </motion.div>
 
-          <div class="user-info-item">
-            <div class="user-info-label">注册邮箱</div>
-            <div class="user-info-value">{{ userInfo.email }}</div>
-          </div>
+          <motion.div
+            class="user-info-item relative flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div class="user-info-label text-sm text-[var(--n-text-color-2)]">
+              注册邮箱
+            </div>
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
+              {{ userInfo.email }}
+            </div>
+          </motion.div>
 
-          <div class="user-info-item-right">
-            <div class="user-info-label">隧道数量</div>
-            <div class="user-info-value">
+          <motion.div
+            class="user-info-item-right relative ml-5 flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div class="user-info-label text-sm text-[var(--n-text-color-2)]">
+              隧道数量
+            </div>
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
               {{ userInfo.usedProxies }} / {{ userInfo.maxProxies }}
             </div>
-          </div>
-          <div class="user-info-item">
-            <div class="user-info-label">剩余流量</div>
-            <div class="user-info-value">
+          </motion.div>
+          <motion.div
+            class="user-info-item relative flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div class="user-info-label text-sm text-[var(--n-text-color-2)]">
+              剩余流量
+            </div>
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
               {{ formattedTraffic }}
             </div>
-          </div>
-          <div class="user-info-item-right">
-            <div class="user-info-label">剩余积分</div>
-            <div class="user-info-value">{{ userInfo.point }} 分</div>
-          </div>
-          <div class="user-info-item">
-            <div class="user-info-label">入站带宽</div>
-            <div class="user-info-value">{{ userInfo.inlimit / 128 }} Mbps</div>
-          </div>
+          </motion.div>
+          <motion.div
+            class="user-info-item-right relative ml-5 flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div class="user-info-label text-sm text-[var(--n-text-color-2)]">
+              剩余积分
+            </div>
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
+              {{ userInfo.point }} 分
+            </div>
+          </motion.div>
+          <motion.div
+            class="user-info-item relative flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div class="user-info-label text-sm text-[var(--n-text-color-2)]">
+              入站带宽
+            </div>
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
+              {{ userInfo.inlimit / 128 }} Mbps
+            </div>
+          </motion.div>
 
-          <div class="user-info-item-right">
-            <div class="user-info-label">出站带宽</div>
-            <div class="user-info-value">
+          <motion.div
+            class="user-info-item-right relative ml-5 flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div class="user-info-label text-sm text-[var(--n-text-color-2)]">
+              出站带宽
+            </div>
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
               {{ userInfo.outlimit / 128 }} Mbps
             </div>
-          </div>
-          <div class="user-info-item">
-            <div class="user-info-value">
-              <NSpace class="token-section">
+          </motion.div>
+          <motion.div
+            class="user-info-item relative flex flex-col gap-2 p-0.5"
+            :variants="itemVariants"
+          >
+            <div
+              class="user-info-value whitespace-nowrap text-sm text-[var(--n-text-color)]"
+            >
+              <NSpace class="token-section relative mt-[3px] flex justify-self-start">
                 <NButton
                   text
                   type="primary"
                   size="small"
+                  class="transition-transform duration-200 hover:scale-105"
                   @click="handleCopyToken"
                 >
                   <template #icon>
                     <CopyPlusIcon />
                   </template>
-                  <div style="font-size: 14px">复制令牌</div>
+                  <div class="text-sm">复制令牌</div>
                 </NButton>
               </NSpace>
             </div>
-          </div>
+          </motion.div>
         </template>
-        <NSpace class="user-info-item-right" vertical :size="4">
-          <NButton
-            text
-            type="primary"
-            :loading="signLoading"
-            :disabled="!isSignAvailable"
-            @click="handleSign"
-          >
-            <template #icon>
-              <NIcon>
-                <CalendarOutline />
-              </NIcon>
-            </template>
-            {{ signButtonText }}
-          </NButton>
-        </NSpace>
-      </div>
+        <motion.div :variants="itemVariants">
+          <NSpace vertical :size="4">
+            <NButton
+              text
+              type="primary"
+              :loading="signLoading"
+              :disabled="!isSignAvailable"
+              @click="handleSign"
+            >
+              <template #icon>
+                <NIcon>
+                  <CalendarOutline />
+                </NIcon>
+              </template>
+              {{ signButtonText }}
+            </NButton>
+          </NSpace>
+        </motion.div>
+      </motion.div>
     </div>
     <br />
-    <NAlert class="user-info-item" type="info" show-icon>
-      <NText depth="3" style="font-size: 13px"
-        >签到可以获得<NText type="primary"> 积分</NText> 和
+    <motion.div
+      :initial="{ opacity: 0, y: 12 }"
+      :animate="{ opacity: 1, y: 0 }"
+      :transition="{ delay: 0.35, duration: 0.4, ease: [0.4, 0, 0.2, 1] }"
+    >
+      <NAlert class="user-info-item relative flex flex-col gap-2 p-0.5" type="info" show-icon>
+        <NText depth="3" class="text-[13px]"
+          >签到可以获得<NText type="primary"> 积分</NText> 和
         <NText type="primary">流量 </NText> 噢!(๑´ڡ`๑)
-      </NText>
-    </NAlert>
+        </NText>
+      </NAlert>
+    </motion.div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
+import { motion } from "motion-v";
 import {
   NTag,
   NSkeleton,
@@ -140,6 +241,23 @@ import { invoke } from "@tauri-apps/api/core";
 const emit = defineEmits<{
   (e: "update"): void;
 }>();
+
+const gridVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.045, delayChildren: 0.05 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 260, damping: 24 },
+  },
+};
+
 const message = useMessage();
 const dialog = useDialog();
 const loading = ref(true);
@@ -264,7 +382,3 @@ defineExpose({
   userInfo,
 });
 </script>
-
-<style lang="scss" scoped>
-@use "../assets/styles/components/userInfo.scss";
-</style>

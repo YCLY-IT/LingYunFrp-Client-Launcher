@@ -1,39 +1,59 @@
 <template>
   <div class="statistic">
     <n-grid
-      style="margin-top: 15px"
+      class="mt-[15px]"
       cols="1 s:2 m:4"
       responsive="screen"
       :x-gap="15"
       :y-gap="20"
     >
       <n-gi v-for="(card, index) in cards" :key="index">
-        <n-card :title="card.title" size="small">
-          <n-flex justify="space-between">
-            <n-icon style="margin-top: 5px" size="32">
-              <component :is="card.icon" />
-            </n-icon>
-            <n-statistic tabular-nums>
-              <template #default>
-                <n-number-animation
-                  :from="0"
-                  :to="card.value"
-                  :precision="card.precision"
-                  show-separator
-                />
-              </template>
-              <template v-if="card.unit" #suffix>
-                {{ card.unit }}
-              </template>
-            </n-statistic>
-          </n-flex>
-        </n-card>
+        <motion.div
+          class="h-full"
+          :initial="{ opacity: 0, y: 28, scale: 0.96 }"
+          :animate="{ opacity: 1, y: 0, scale: 1 }"
+          :transition="{
+            delay: index * 0.09,
+            type: 'spring',
+            stiffness: 220,
+            damping: 22,
+          }"
+          :while-hover="{ y: -6, scale: 1.02 }"
+        >
+          <n-card
+            :title="card.title"
+            size="small"
+            class="h-full transition-shadow duration-300 hover:shadow-lg"
+          >
+            <n-flex justify="space-between">
+              <span class="inline-flex text-primary">
+                <n-icon class="mt-[5px]" size="32">
+                  <component :is="card.icon" />
+                </n-icon>
+              </span>
+              <n-statistic tabular-nums>
+                <template #default>
+                  <n-number-animation
+                    :from="0"
+                    :to="card.value"
+                    :precision="card.precision"
+                    show-separator
+                  />
+                </template>
+                <template v-if="card.unit" #suffix>
+                  {{ card.unit }}
+                </template>
+              </n-statistic>
+            </n-flex>
+          </n-card>
+        </motion.div>
       </n-gi>
     </n-grid>
   </div>
 </template>
 
 <script setup lang="ts">
+import { motion } from "motion-v";
 import { userApi } from "../net";
 import { accessHandle } from "../net/base";
 import { TrafficType } from "../types";
@@ -115,5 +135,3 @@ onMounted(() => {
   getUserTraffic();
 });
 </script>
-
-<style lang="scss" scoped></style>
