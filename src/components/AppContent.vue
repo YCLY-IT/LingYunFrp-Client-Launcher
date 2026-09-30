@@ -1,10 +1,7 @@
 <template>
   <HomeMenu v-if="!isDashboard" />
-  <RouterView v-slot="{ Component }">
-    <transition name="fade" mode="out-in" appear>
-      <component :is="Component" />
-    </transition>
-  </RouterView>
+  <!-- 路由出口不加整页过渡，页面切换的过渡由各页面自己控制（如 Dashboard 只在右侧内容区做过渡） -->
+  <RouterView />
   <NGlobalStyle v-if="!isTrayMenu" />
 </template>
 

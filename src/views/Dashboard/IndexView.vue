@@ -1,57 +1,95 @@
 <template>
   <div class="home">
     <!-- 欢迎横幅 -->
-    <div class="welcome-banner">欢迎回来, {{ nickname }}</div>
+    <motion.div
+      class="welcome-banner mb-2.5 select-none rounded px-0 py-2 text-[1.5em]"
+      :initial="{ opacity: 0, x: -24 }"
+      :animate="{ opacity: 1, x: 0 }"
+      :transition="{ type: 'spring', stiffness: 200, damping: 22 }"
+    >
+      欢迎回来, {{ nickname }}
+    </motion.div>
 
     <!-- 用户卡片 -->
-    <div class="content-info">
-      <n-card :loading="loading" class="user-card">
+    <motion.div
+      class="content-info"
+      :initial="{ opacity: 0, y: 24 }"
+      :animate="{ opacity: 1, y: 0 }"
+      :transition="{
+        delay: 0.08,
+        type: 'spring',
+        stiffness: 220,
+        damping: 24,
+      }"
+    >
+      <n-card :loading="loading" class="user-card w-full">
         <n-space>
-          <div
-            class="user-card-avatar"
+          <motion.div
+            class="user-card-avatar h-[60px] w-[60px] rounded-[25%]"
             :style="{
               backgroundImage: `url(${avatar})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              width: '60px',
-              height: '60px',
-              borderRadius: '25%',
               marginTop: '1px',
-              transform: 'scale(1.2)',
             }"
-          ></div>
-          <div style="margin-left: 16px; text-align: left; margin-top: 5px">
-            <h3 style="margin: 0px">
+            :initial="{ scale: 1.2, opacity: 0 }"
+            :animate="{ scale: 1.2, opacity: 1 }"
+            :transition="{ duration: 0.4, delay: 0.2, ease: 'easeOut' }"
+            :while-hover="{ scale: 1.3, rotate: 3 }"
+          ></motion.div>
+          <div class="ml-4 mt-[5px] text-left">
+            <h3 class="m-0">
               {{ forTime }}，{{ nickname }}，{{ currentDate }} 😊
             </h3>
             <n-skeleton
-              style="margin: 8px 0px 0px; width: 500px"
+              class="mt-2 w-[500px]"
+              :style="{ marginBottom: '0px' }"
               v-if="loading"
             />
-            <p style="margin: 5px 0px 0px">{{ textHitokoto }}</p>
+            <p class="mt-[5px]">{{ textHitokoto }}</p>
           </div>
         </n-space>
       </n-card>
-    </div>
+    </motion.div>
 
     <!-- 统计卡片 -->
-    <div class="statistic-container">
+    <motion.div
+      class="statistic-container"
+      :initial="{ opacity: 0, y: 24 }"
+      :animate="{ opacity: 1, y: 0 }"
+      :transition="{
+        delay: 0.16,
+        type: 'spring',
+        stiffness: 220,
+        damping: 24,
+      }"
+    >
       <Statistic
         :signRemainder="userInfoRef?.userInfo.signRemainder"
         ref="statisticRef"
       />
-    </div>
+    </motion.div>
 
     <!-- 内容面板 -->
-    <div style="margin-top: 20px" class="content-grid">
-      <div class="left-column">
+    <motion.div
+      class="content-grid mt-5 grid grid-cols-1 items-stretch gap-5 md:grid-cols-2"
+      :initial="{ opacity: 0, y: 28 }"
+      :animate="{ opacity: 1, y: 0 }"
+      :transition="{
+        delay: 0.24,
+        type: 'spring',
+        stiffness: 200,
+        damping: 24,
+      }"
+    >
+      <div class="left-column flex flex-col gap-4">
         <!-- 用户信息卡片 -->
-        <NCard title="用户信息" class="info-card">
+        <NCard title="用户信息" class="info-card w-full">
           <NAlert
             v-if="!IsRealname"
             type="warning"
             title="未实名认证"
-            style="margin-bottom: 16px"
+            class="mb-4"
           >
             您的账户尚未完成实名认证, 请尽快完成实名认证。
             <br />
@@ -63,28 +101,33 @@
         </NCard>
       </div>
 
-      <div class="right-column">
-        <div class="notice-and-welcome">
-          <div class="welcome-card-container">
+      <div class="right-column relative min-h-0">
+        <div class="notice-and-welcome flex flex-col md:absolute md:inset-0">
+          <div class="welcome-card-container w-full shrink-0">
             <WelcomeCard />
           </div>
-          <NCard title="通知内容" class="notice-card">
+          <NCard
+            title="通知内容"
+            class="notice-card mt-3 flex min-h-0 flex-1 flex-col max-md:max-h-[360px] max-md:min-h-[200px] [&_.n-card-content]:flex [&_.n-card-content]:min-h-0 [&_.n-card-content]:flex-1 [&_.n-card-content]:flex-col [&_.n-card-content]:overflow-hidden"
+          >
             <template #default>
-              <div class="notice-scroll">
+              <div
+                class="notice-scroll -m-1 mt-2.5 flex max-h-full min-h-0 flex-1 flex-col p-1 [&_.n-scrollbar]:overflow-visible"
+              >
                 <NScrollbar :vertical-rail-style="{ right: '-15px' }">
-                  <div v-if="notices.length > 0" class="notice-list">
+                  <div v-if="notices.length > 0" class="notice-list flex flex-col gap-1">
                     <div
                       v-for="(notice, _index) in notices"
                       :key="notice.id"
-                      class="notice-item"
+                      class="notice-item flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--n-color-hover)]"
                       @click="openNoticeModal(notice)"
                     >
                       <div class="notice-item-content">
-                        <span class="notice-item-title">{{
+                        <span class="notice-item-title font-medium">{{
                           notice.title
                         }}</span>
                       </div>
-                      <div class="notice-item-meta">
+                      <div class="notice-item-meta flex shrink-0 items-center gap-2">
                         <n-tag
                           v-if="notice.type === 'danger'"
                           type="error"
@@ -104,14 +147,16 @@
                           >通知</n-tag
                         >
                         <span
-                          class="notice-time"
+                          class="notice-time text-xs opacity-80"
                           :style="{ color: themeStore.$state.primaryColor }"
                           >{{ formatTime(notice.created_at) }}</span
                         >
                       </div>
                     </div>
                   </div>
-                  <div v-else class="no-notice">暂无通知</div>
+                  <div v-else class="no-notice py-8 text-center opacity-60">
+                    暂无通知
+                  </div>
                 </NScrollbar>
               </div>
             </template>
@@ -122,14 +167,14 @@
             v-model:show="noticeModalVisible"
             preset="card"
             :title="selectedNotice?.title"
-            style="width: 800px; max-width: 100vw; height: 90vh"
+            class="h-[80vh] max-w-[70vw]"
           >
             <n-scrollbar
               v-if="selectedNotice"
-              style="height: calc(80vh - 120px)"
+              class="h-[calc(80vh-120px)]"
             >
               <div class="notice-modal-content">
-                <div class="notice-modal-meta">
+                <div class="notice-modal-meta flex items-center gap-2">
                   <n-tag
                     v-if="selectedNotice.type === 'danger'"
                     type="error"
@@ -149,14 +194,14 @@
                     >通知</n-tag
                   >
                   <span
-                    class="notice-time"
+                    class="notice-time text-xs opacity-80"
                     :style="{ color: themeStore.$state.primaryColor }"
                     >{{ formatTime(selectedNotice.created_at) }}</span
                   >
                 </div>
                 <n-divider />
                 <div
-                  class="notice-content"
+                  class="notice-content leading-relaxed [&_a]:text-primary [&_a]:no-underline [&_a:hover]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-[var(--n-border-color)] [&_blockquote]:pl-3 [&_code]:rounded [&_code]:bg-black/5 [&_code]:px-1 [&_code]:py-0.5 [&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-black/5 [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-6"
                   v-html="renderNoticeContent(selectedNotice.message)"
                 />
               </div>
@@ -164,7 +209,7 @@
           </n-modal>
         </div>
       </div>
-    </div>
+    </motion.div>
   </div>
 </template>
 
@@ -179,6 +224,7 @@ import {
   NDivider,
 } from "naive-ui";
 import { ref, onMounted, computed } from "vue";
+import { motion } from "motion-v";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { useRouter } from "vue-router";
@@ -186,6 +232,7 @@ import { userApi } from "../../net";
 import { accessHandle } from "../../net/base";
 import UserInfo from "../../components/UserInfo.vue";
 import WelcomeCard from "../../components/WelcomeCard.vue";
+import Statistic from "../../components/Statistic.vue";
 import { Broadcast, Traffic } from "../../types/User";
 import { useThemeStore } from "../../stores/theme";
 
@@ -325,176 +372,3 @@ onMounted(() => {
   getUserTraffic();
 });
 </script>
-
-<style lang="scss" scoped>
-@use "../../assets/styles/home.scss";
-.left-column,
-.right-column {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.right-column {
-  height: 100%;
-}
-
-@media (max-width: 768px) {
-  .right-column {
-    height: auto;
-    min-height: 568px;
-  }
-
-  .notice-and-welcome {
-    height: auto;
-    min-height: 400px;
-  }
-
-  .notice-card {
-    max-height: 360px;
-  }
-
-  .notice-scroll {
-    max-height: 400px;
-  }
-}
-
-.notice-and-welcome {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  flex: 1 1 0;
-  min-height: 0;
-}
-
-.notice-card {
-  flex: 1 1 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  margin-top: 12px;
-}
-
-.notice-card :deep(.n-card__content) {
-  flex: 1 1 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.notice-scroll {
-  padding: 4px;
-  margin: -4px;
-}
-
-.notice-list {
-  padding: 4px;
-}
-
-.notice-scroll {
-  flex: 1 1 0;
-  min-height: 0;
-  max-height: 100%;
-  margin-top: 10px;
-}
-
-.notice-scroll :deep(.n-scrollbar) {
-  overflow: visible;
-}
-
-.notice-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.notice-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--n-card-color);
-  border: 1px solid var(--n-border-color);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.notice-item:hover {
-  background-color: var(--n-color-hover);
-  box-shadow: 0 4px 16px var(--n-color-hover-shadow);
-  transform: scale(1.02);
-}
-
-.notice-item-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-}
-
-.notice-item-title {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--n-text-color);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.notice-item-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  margin-left: 12px;
-}
-
-.notice-time {
-  font-size: 12px;
-  font-weight: normal;
-}
-
-.notice-modal-content {
-  padding: 8px 0;
-}
-
-.notice-modal-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.notice-content {
-  line-height: 1.8;
-  color: var(--n-text-color);
-  font-size: 14px;
-  word-break: break-word;
-}
-
-.notice-content :deep(p) {
-  margin: 8px 0;
-}
-
-.no-notice {
-  text-align: center;
-  color: var(--n-text-color-3);
-  padding: 40px 0;
-  font-size: 14px;
-}
-
-.welcome-card-container {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-.card-container {
-  width: 100% !important;
-  max-width: none !important;
-  min-width: 0 !important;
-}
-</style>

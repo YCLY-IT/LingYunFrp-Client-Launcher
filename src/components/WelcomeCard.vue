@@ -1,29 +1,71 @@
 <template>
-  <div class="welcome-card">
-    <div class="card-container" ref="cardRef">
+  <motion.div
+    class="welcome-card flex w-full items-center p-0"
+    :initial="{ opacity: 0, y: 28, scale: 0.97 }"
+    :animate="{ opacity: 1, y: 0, scale: 1 }"
+    :transition="{ type: 'spring', stiffness: 200, damping: 24 }"
+  >
+    <div
+      class="card-container relative m-0 min-h-[250px] w-full min-w-0 max-w-full overflow-hidden rounded-2xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-shadow duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.16)] max-[600px]:min-h-[180px] max-[600px]:rounded-[10px]"
+      ref="cardRef"
+    >
       <!-- 背景图片 -->
-      <img class="bg-img" src="/images/bg.png" alt="背景" />
+      <motion.img
+        class="bg-img absolute inset-0 z-1 h-full w-full object-cover"
+        src="/images/bg.png"
+        alt="背景"
+        :initial="{ scale: 1.12 }"
+        :animate="{ scale: 1 }"
+        :transition="{ duration: 1.2, ease: 'easeOut' }"
+      />
 
       <!-- 内容层 -->
-      <div class="content-layer">
+      <div
+        class="content-layer relative z-2 flex h-full w-full flex-col justify-between p-[18px] pt-6 max-[600px]:gap-2 max-[600px]:px-3 max-[600px]:pb-2 max-[600px]:pt-2.5"
+      >
         <!-- 顶部：欢迎语和天气 -->
-        <div class="row top-row">
-          <div class="welcome-title">
-            欢迎来到 <span class="brand">LingYunFrp</span>
-          </div>
-          <div class="weather-box">
-            <img
+        <div
+          class="row top-row flex w-full items-start justify-between max-[350px]:flex-col max-[350px]:items-start max-[350px]:justify-start max-[350px]:gap-1 max-[600px]:gap-2"
+        >
+          <motion.div
+            class="welcome-title text-xl font-bold tracking-[1px] text-[#00334e] [font-family:msyh,sans-serif] max-[600px]:mb-0.5 max-[600px]:text-[15px]"
+            :initial="{ opacity: 0, x: -20 }"
+            :animate="{ opacity: 1, x: 0 }"
+            :transition="{ delay: 0.25, duration: 0.5, ease: [0.4, 0, 0.2, 1] }"
+          >
+            欢迎来到
+            <span
+              class="brand font-bold text-[#1976d2] max-[600px]:text-[15px]"
+              >LingYunFrp</span
+            >
+          </motion.div>
+          <div
+            class="weather-box flex items-start gap-2.5 max-[600px]:mt-1 max-[600px]:gap-1.5"
+          >
+            <motion.img
               :src="weatherIconSrc"
               :alt="weatherInfo.weather"
-              class="weather-icon"
+              class="weather-icon mt-0.5 h-[38px] w-[38px] max-[600px]:mt-0 max-[600px]:h-7 max-[600px]:w-7"
+              :animate="{ y: [0, -5, 0], rotate: [0, 6, 0] }"
+              :transition="{
+                duration: 4,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }"
             />
-            <div class="weather-info">
+            <div
+              class="weather-info flex flex-col gap-0.5 text-[13px] text-[#00334e] max-[600px]:text-[11px]"
+            >
               <div>{{ weatherInfo.weather }}</div>
-              <div class="weather-detail">
+              <div
+                class="weather-detail flex gap-2.5 text-[11px] text-[#00334e] max-[600px]:gap-1.5 max-[600px]:text-[10px]"
+              >
                 <span>温度: {{ weatherInfo.temp }}℃</span>
                 <span>湿度: {{ weatherInfo.humidity }}%RH</span>
               </div>
-              <div class="weather-detail">
+              <div
+                class="weather-detail flex gap-2.5 text-[11px] text-[#00334e] max-[600px]:gap-1.5 max-[600px]:text-[10px]"
+              >
                 <span>风向: {{ weatherInfo.winddirection }}方</span>
                 <span>风力: {{ weatherInfo.windpower }}级</span>
               </div>
@@ -32,47 +74,72 @@
         </div>
 
         <!-- 中部：自定义文字 -->
-        <div class="row custom-row" v-if="customText">
-          <span class="custom-text">{{ customText }}</span>
+        <div
+          class="row custom-row mt-2.5 flex w-full justify-center max-[600px]:mt-1"
+          v-if="customText"
+        >
+          <span
+            class="custom-text text-lg font-bold tracking-[1px] text-[#1976d2] [font-family:msyh,sans-serif] max-[600px]:text-[13px]"
+            >{{ customText }}</span
+          >
         </div>
 
         <!-- 底部：访问信息 -->
-        <div class="row bottom-row">
-          <div class="info-list">
-            <div class="info-item">
-              <img src="/icon/ico/IP.png" class="info-icon" />
+        <div
+          class="row bottom-row mt-[18px] flex w-full items-end justify-between max-[350px]:flex-col max-[350px]:items-start max-[350px]:justify-start max-[350px]:gap-1 max-[600px]:items-start max-[600px]:gap-2"
+        >
+          <div
+            class="info-list flex flex-col gap-1.5 max-[600px]:gap-[3px]"
+          >
+            <div
+              class="info-item flex animate-rise-in items-center gap-1.5 text-xs text-[#00334e] [animation-delay:300ms] [font-family:msyh,sans-serif] max-[600px]:gap-1 max-[600px]:text-[10px]"
+            >
+              <img src="/icon/ico/IP.png" class="info-icon inline-block h-4 w-4 align-middle max-[600px]:h-[13px] max-[600px]:w-[13px]" />
               <span>{{ visitorInfo.ip }}</span>
             </div>
-            <div class="info-item">
-              <img src="/icon/ico/system.png" class="info-icon" />
+            <div
+              class="info-item flex animate-rise-in items-center gap-1.5 text-xs text-[#00334e] [animation-delay:360ms] [font-family:msyh,sans-serif] max-[600px]:gap-1 max-[600px]:text-[10px]"
+            >
+              <img src="/icon/ico/system.png" class="info-icon inline-block h-4 w-4 align-middle max-[600px]:h-[13px] max-[600px]:w-[13px]" />
               <span>{{ visitorInfo.os }}</span>
             </div>
-            <div class="info-item">
-              <img src="/icon/ico/bro.png" class="info-icon" />
+            <div
+              class="info-item flex animate-rise-in items-center gap-1.5 text-xs text-[#00334e] [animation-delay:420ms] [font-family:msyh,sans-serif] max-[600px]:gap-1 max-[600px]:text-[10px]"
+            >
+              <img src="/icon/ico/bro.png" class="info-icon inline-block h-4 w-4 align-middle max-[600px]:h-[13px] max-[600px]:w-[13px]" />
               <span>{{ visitorInfo.browser }}</span>
             </div>
-            <div class="info-item">
-              <img src="/icon/ico/local.png" class="info-icon" />
+            <div
+              class="info-item flex animate-rise-in items-center gap-1.5 text-xs text-[#00334e] [animation-delay:480ms] [font-family:msyh,sans-serif] max-[600px]:gap-1 max-[600px]:text-[10px]"
+            >
+              <img src="/icon/ico/local.png" class="info-icon inline-block h-4 w-4 align-middle max-[600px]:h-[13px] max-[600px]:w-[13px]" />
               <span>{{ location }}</span>
             </div>
           </div>
-          <div class="date-list">
-            <div class="info-item">
-              <img src="/icon/ico/time.png" class="info-icon" />
+          <div
+            class="date-list flex flex-col gap-1.5 max-[600px]:gap-[3px]"
+          >
+            <div
+              class="info-item flex animate-rise-in items-center gap-1.5 text-xs text-[#00334e] [animation-delay:540ms] [font-family:msyh,sans-serif] max-[600px]:gap-1 max-[600px]:text-[10px]"
+            >
+              <img src="/icon/ico/time.png" class="info-icon inline-block h-4 w-4 align-middle max-[600px]:h-[13px] max-[600px]:w-[13px]" />
               <span>{{ currentDate }}</span>
             </div>
-            <div class="info-item">
+            <div
+              class="info-item flex animate-rise-in items-center gap-1.5 text-xs text-[#00334e] [animation-delay:600ms] [font-family:msyh,sans-serif] max-[600px]:gap-1 max-[600px]:text-[10px]"
+            >
               <span>更新时间: {{ weatherInfo.reporttime }}</span>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </motion.div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
+import { motion } from "motion-v";
 import { useMessage } from "naive-ui";
 import { weatherService } from "../net/user/weatherService";
 
@@ -277,216 +344,3 @@ onMounted(() => {
   getVisitorInfo();
 });
 </script>
-
-<style lang="scss" scoped>
-.welcome-card {
-  display: flex;
-  align-items: center;
-  padding: 0;
-  width: 100%;
-}
-
-.card-container {
-  position: relative;
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  min-height: 250px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  background: #fff;
-  margin: 0;
-}
-
-.bg-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-.content-layer {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  height: 100%;
-  padding: 24px 18px 18px 18px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-sizing: border-box;
-}
-
-.row {
-  display: flex;
-  width: 100%;
-}
-
-.top-row {
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.welcome-title {
-  font-size: 20px;
-  font-weight: bold;
-  color: #00334e;
-  letter-spacing: 1px;
-  font-family: "msyh", sans-serif;
-}
-
-.brand {
-  color: #1976d2;
-  font-weight: bold;
-}
-
-.weather-box {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.weather-icon {
-  width: 38px;
-  height: 38px;
-  margin-top: 2px;
-}
-
-.weather-info {
-  display: flex;
-  flex-direction: column;
-  font-size: 13px;
-  color: #00334e;
-  gap: 2px;
-}
-
-.weather-detail {
-  font-size: 11px;
-  color: #00334e;
-  display: flex;
-  gap: 10px;
-}
-
-.custom-row {
-  justify-content: center;
-  margin: 10px 0 0 0;
-}
-
-.custom-text {
-  font-size: 18px;
-  color: #1976d2;
-  font-family: "msyh", sans-serif;
-  font-weight: bold;
-  letter-spacing: 1px;
-}
-
-.bottom-row {
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-top: 18px;
-}
-
-.info-list,
-.date-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #00334e;
-  font-family: "msyh", sans-serif;
-}
-
-.info-icon {
-  width: 16px;
-  height: 16px;
-  vertical-align: middle;
-}
-
-/* ----------- 移动端样式 ----------- */
-@media (max-width: 600px) {
-  .card-container {
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: 180px;
-    padding: 0;
-    border-radius: 10px;
-  }
-  .content-layer {
-    padding: 10px 12px 8px 12px; // 增加左右内边距
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .row {
-    width: 100%;
-  }
-  .top-row,
-  .bottom-row {
-    flex-direction: row !important; // 保持左右分布
-    align-items: flex-start !important;
-    justify-content: space-between !important;
-    gap: 8px;
-    width: 100%;
-  }
-  .welcome-title {
-    font-size: 15px;
-    margin-bottom: 2px;
-  }
-  .brand {
-    font-size: 15px;
-  }
-  .weather-box {
-    margin-top: 4px;
-    gap: 6px;
-  }
-  .weather-icon {
-    width: 28px;
-    height: 28px;
-    margin-top: 0;
-  }
-  .weather-info {
-    font-size: 11px;
-  }
-  .weather-detail {
-    font-size: 10px;
-    gap: 6px;
-  }
-  .custom-row {
-    margin: 4px 0 0 0;
-  }
-  .custom-text {
-    font-size: 13px;
-  }
-  .info-list,
-  .date-list {
-    gap: 3px;
-  }
-  .info-item {
-    font-size: 10px;
-    gap: 4px;
-  }
-  .info-icon {
-    width: 13px;
-    height: 13px;
-  }
-}
-
-@media (max-width: 350px) {
-  .top-row,
-  .bottom-row {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
-    gap: 4px;
-  }
-}
-</style>

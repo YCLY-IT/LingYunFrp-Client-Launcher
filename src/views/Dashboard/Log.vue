@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, nextTick, watch } from "vue";
+import { motion } from "motion-v";
 import {
   NLog,
   NCard,
@@ -212,7 +213,12 @@ watch(logs, () => autoScroll.value && scrollBottom(), { flush: "post" });
 </script>
 
 <template>
-  <n-space vertical>
+  <motion.div
+    :initial="{ opacity: 0, y: 20 }"
+    :animate="{ opacity: 1, y: 0 }"
+    :transition="{ type: 'spring', stiffness: 220, damping: 24 }"
+  >
+    <n-space vertical>
     <n-card title="运行日志">
       <template #header-extra>
         <n-space>
@@ -221,16 +227,16 @@ watch(logs, () => autoScroll.value && scrollBottom(), { flush: "post" });
             v-model:value="selectedTunnel"
             :options="tunnelOptions"
             placeholder="选择隧道"
-            style="width: 180px"
+            class="w-[180px]"
           />
           <n-select
             v-model:value="selectedCategory"
             :options="categoryOptions"
             placeholder="选择日志类型"
-            style="width: 150px"
+            class="w-[150px]"
           />
           <n-switch
-            style="margin-top: 2px"
+            class="mt-0.5"
             size="large"
             v-model:value="autoScroll"
           >
@@ -239,7 +245,7 @@ watch(logs, () => autoScroll.value && scrollBottom(), { flush: "post" });
           </n-switch>
           <n-button
             size="large"
-            style="margin-top: 7px"
+            class="mt-[7px]"
             text
             type="info"
             @click="exportLogs"
@@ -247,7 +253,7 @@ watch(logs, () => autoScroll.value && scrollBottom(), { flush: "post" });
           >
           <n-button
             size="large"
-            style="margin-top: 7px"
+            class="mt-[7px]"
             text
             type="primary"
             @click="handleClearLogs"
@@ -264,5 +270,6 @@ watch(logs, () => autoScroll.value && scrollBottom(), { flush: "post" });
         @scroll="handleScroll"
       />
     </n-card>
-  </n-space>
+    </n-space>
+  </motion.div>
 </template>

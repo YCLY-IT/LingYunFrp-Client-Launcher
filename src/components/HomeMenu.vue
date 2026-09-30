@@ -1,62 +1,81 @@
 <template>
   <!-- PC端导航栏 -->
-  <NLayoutHeader
-    bordered
-    class="navbar pc-navbar drag-bar"
-    style="user-select: none"
+  <motion.div
+    :initial="{ y: -64, opacity: 0 }"
+    :animate="{ y: 0, opacity: 1 }"
+    :transition="{ type: 'spring', stiffness: 170, damping: 22 }"
+    class="sticky top-0 z-100"
   >
-    <div class="navbar-content">
-      <div class="logo">
-        <RouterLink to="/" class="logo-link">
-          <h2 :style="{ color: themeStore.primaryColor }">
-            {{ packageData.title }}
-          </h2>
-        </RouterLink>
-      </div>
+    <NLayoutHeader
+      bordered
+      class="bg-[var(--n-color)]! backdrop-blur-[8px] select-none max-md:hidden [-webkit-app-region:drag] [&_.n-button]:[-webkit-app-region:no-drag]"
+      style="user-select: none"
+    >
+      <div
+        class="mx-auto flex max-w-[1200px] items-center justify-between gap-8 px-6 py-3 max-md:gap-2 max-md:px-4"
+      >
+        <div class="logo flex-1 max-md:flex-none">
+          <RouterLink to="/" class="logo-link block text-inherit no-underline">
+            <h2
+              class="m-0 bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-[1.1rem] font-semibold text-transparent max-md:bg-none max-md:text-[var(--n-text-color)]"
+            >
+              {{ packageData.title }}
+            </h2>
+          </RouterLink>
+        </div>
 
-      <!-- 桌面端菜单 -->
-      <div class="window-controls">
-        <NSpace>
-          <NButton
-            quaternary
-            circle
-            size="small"
-            @click="handleThemeToggle"
-            class="theme-toggle-btn no-drag"
-          >
-            <NIcon size="19" :component="isDarkMode ? Sunny : Moon" />
-          </NButton>
-          <NButton
-            quaternary
-            circle
-            size="small"
-            class="no-drag"
-            @click="handleToMinimize"
-          >
-            <NIcon size="23"><RemoveOutline /></NIcon>
-          </NButton>
-          <NButton
-            quaternary
-            circle
-            size="small"
-            class="no-drag"
-            @click="handleToMaximize"
-          >
-            <NIcon size="20"><ScanOutline /></NIcon>
-          </NButton>
-          <NButton
-            quaternary
-            circle
-            size="small"
-            class="no-drag"
-            @click="ToShow = true"
-          >
-            <NIcon size="23"><CloseOutline /></NIcon>
-          </NButton>
-        </NSpace>
+        <!-- 桌面端菜单 -->
+        <div class="window-controls flex translate-y-[2px] scale-[1.15]">
+          <NSpace>
+            <NButton
+              quaternary
+              circle
+              size="small"
+              class="theme-toggle-btn overflow-hidden transition-all duration-300 hover:rotate-[30deg] hover:bg-[var(--n-color-hover)] [&_.n-icon]:transition-all [&_.n-icon]:duration-300"
+              @click="handleThemeToggle"
+            >
+              <motion.span
+                :key="isDarkMode ? 'sun' : 'moon'"
+                class="inline-flex"
+                :initial="{ rotate: -90, opacity: 0, scale: 0.6 }"
+                :animate="{ rotate: 0, opacity: 1, scale: 1 }"
+                :transition="{ type: 'spring', stiffness: 320, damping: 20 }"
+              >
+                <NIcon size="19" :component="isDarkMode ? Sunny : Moon" />
+              </motion.span>
+            </NButton>
+            <NButton
+              quaternary
+              circle
+              size="small"
+              class="transition-colors duration-200 hover:bg-[rgba(128,128,128,0.15)]!"
+              @click="handleToMinimize"
+            >
+              <NIcon size="23"><RemoveOutline /></NIcon>
+            </NButton>
+            <NButton
+              quaternary
+              circle
+              size="small"
+              class="transition-transform duration-200 hover:scale-110 hover:bg-[rgba(128,128,128,0.15)]!"
+              @click="handleToMaximize"
+            >
+              <NIcon size="20"><ScanOutline /></NIcon>
+            </NButton>
+            <NButton
+              quaternary
+              circle
+              size="small"
+              class="transition-colors duration-200 hover:bg-[#e81123]! hover:text-white!"
+              @click="ToShow = true"
+            >
+              <NIcon size="23"><CloseOutline /></NIcon>
+            </NButton>
+          </NSpace>
+        </div>
       </div>
-    </div>
-  </NLayoutHeader>
+    </NLayoutHeader>
+  </motion.div>
 
   <!-- 弹窗：是否关闭到托盘 -->
   <NModal v-model:show="ToShow" preset="dialog" style="width: 400px">
@@ -82,6 +101,7 @@ import packageData from "../../package.json";
 import { inject, Ref, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { NLayoutHeader, NButton, NSpace, NIcon } from "naive-ui";
+import { motion } from "motion-v";
 import {
   Moon,
   Sunny,
@@ -90,12 +110,10 @@ import {
   CloseOutline,
 } from "@vicons/ionicons5";
 import { invoke } from "@tauri-apps/api/core";
-import { useThemeStore } from "../stores/theme";
 import { useThemeTransition } from "../composables/useThemeTransition.ts";
 
 const { toggleThemeWithDualCircle } = useThemeTransition();
 const ToShow = ref(false);
-const themeStore = useThemeStore();
 const { isDarkMode } = inject("theme", {
   isDarkMode: ref(false),
   toggleTheme: () => {},
@@ -128,36 +146,3 @@ const handleThemeToggle = async (event: MouseEvent) => {
   });
 };
 </script>
-
-<style lang="scss" scoped>
-@use "../assets/styles/components/homeMenu.scss" as *;
-
-.theme-toggle-btn {
-  transition: all 0.3s ease;
-  &:hover {
-    transform: rotate(30deg);
-    background-color: var(--n-color-hover);
-  }
-  .n-icon {
-    transition: all 0.3s ease;
-  }
-}
-
-.drag-bar {
-  -webkit-app-region: drag;
-}
-.no-drag {
-  -webkit-app-region: no-drag;
-}
-
-.navbar-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.window-controls {
-  display: flex;
-  transform: translateY(2px) scale(1.15);
-}
-</style>

@@ -1,8 +1,10 @@
 <template>
-  <div class="left-menu-wrapper">
-    <div class="left-menu-container" :class="{ 'compact-mode': !showUserInfo }">
+  <div class="left-menu-wrapper h-full overflow-hidden">
+    <div class="left-menu-container flex h-full flex-col overflow-hidden">
       <!-- 主菜单区域 -->
-      <div class="menu-main-area">
+      <div
+        class="menu-main-area flex-1 overflow-x-hidden overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&_.n-menu-item]:transition-colors [&_.n-menu-item]:duration-200"
+      >
         <NMenu
           :collapsed-width="64"
           :collapsed-icon-size="24"
@@ -10,66 +12,132 @@
           :value="selectedKey"
           :icon-size="22"
           @update:value="handleMenuSelect"
-          style="user-select: none"
+          class="select-none"
           :default-expanded-keys="defaultExpandedKeys"
         />
       </div>
 
       <!-- 用户信息区域（仅在 showUserInfo 模式下显示） -->
-      <div v-if="showUserInfo" class="user-info-section">
-        <div class="divider"></div>
-        <div class="user-info-content">
-          <div class="user-avatar">
+      <motion.div
+        v-if="showUserInfo"
+        class="user-info-section shrink-0 bg-[var(--n-color,#fff)] px-4 py-3"
+        :initial="{ opacity: 0, y: 24 }"
+        :animate="{ opacity: 1, y: 0 }"
+        :transition="{ type: 'spring', stiffness: 220, damping: 24 }"
+      >
+        <div
+          v-if="!collapsed"
+          class="divider mb-4 mt-2 h-px bg-[linear-gradient(90deg,transparent,var(--n-border-color,#e0e0e0),transparent)]"
+        />
+        <div
+          class="user-info-content flex items-center gap-3"
+          :class="collapsed ? 'justify-center py-2' : ''"
+        >
+          <motion.div
+            class="user-avatar shrink-0"
+            :while-hover="{ scale: 1.1, rotate: 4 }"
+            :transition="{ type: 'spring', stiffness: 300, damping: 18 }"
+          >
             <img
               v-if="userAvatar"
               :src="userAvatar"
               alt="用户头像"
-              class="avatar-img"
+              class="avatar-img rounded-full border-2 border-[var(--n-border-color,#e0e0e0)] object-cover"
+              :class="collapsed ? 'h-9 w-9' : 'h-10 w-10'"
             />
-            <div v-else class="avatar-placeholder">
+            <div
+              v-else
+              class="avatar-placeholder flex items-center justify-center rounded-full bg-[var(--n-tag-color,#f5f5f5)] text-[var(--n-text-color-3,#999)]"
+              :class="collapsed ? 'h-9 w-9' : 'h-10 w-10'"
+            >
               <n-icon :component="PersonOutline" size="24" />
             </div>
-          </div>
-          <div class="user-details">
-            <div class="user-name">{{ userNickname }}</div>
-            <div class="user-email">{{ userEmail }}</div>
+          </motion.div>
+          <div
+            v-if="!collapsed"
+            class="user-details min-w-0 flex-1 overflow-hidden"
+          >
+            <div
+              class="user-name truncate text-sm font-semibold text-[var(--n-text-color,#333)]"
+            >
+              {{ userNickname }}
+            </div>
+            <div
+              class="user-email mt-0.5 truncate text-xs text-[var(--n-text-color-3,#999)]"
+            >
+              {{ userEmail }}
+            </div>
           </div>
           <n-button
+            v-if="!collapsed"
             quaternary
             circle
             size="small"
-            class="settings-btn"
-            @click="goToSettings"
+            class="logout-btn shrink-0 opacity-70 transition-opacity duration-200 hover:text-[var(--n-error-color,#d03050)]! hover:opacity-100"
+            @click="handleLogout"
           >
             <template #icon>
-              <n-icon :component="SettingsOutline" size="16" />
+              <n-icon :component="LogOutOutline" size="16" />
             </template>
           </n-button>
         </div>
-      </div>
+      </motion.div>
+
+      <!-- 简洁模式退出登录 -->
+      <motion.div
+        v-else
+        class="logout-section shrink-0 px-4 py-3"
+        :initial="{ opacity: 0, y: 24 }"
+        :animate="{ opacity: 1, y: 0 }"
+        :transition="{ type: 'spring', stiffness: 220, damping: 24 }"
+      >
+        <div
+          v-if="!collapsed"
+          class="divider mb-3 h-px bg-[linear-gradient(90deg,transparent,var(--n-border-color,#e0e0e0),transparent)]"
+        />
+        <n-button
+          quaternary
+          block
+          size="medium"
+          class="logout-btn opacity-80 transition-opacity duration-200 hover:opacity-100"
+          @click="handleLogout"
+        >
+          <template #icon>
+            <n-icon :component="LogOutOutline" size="18" />
+          </template>
+          <span v-if="!collapsed">退出登录</span>
+        </n-button>
+      </motion.div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { NMenu, NButton, NIcon } from "naive-ui";
+import { NMenu, NButton, NIcon, useDialog, useMessage } from "naive-ui";
+import { motion } from "motion-v";
 import { useRouter, useRoute } from "vue-router";
 import { getMenuOptions, defaultExpandedKeys } from "../shared/menuOptions.ts";
 import type { MenuOption } from "../types/menu";
-import { PersonOutline, SettingsOutline } from "@vicons/ionicons5";
+import { PersonOutline, LogOutOutline } from "@vicons/ionicons5";
+import { userApi } from "../net";
+import { accessHandle, removeToken } from "../net/base.ts";
 
 // 定义 props
 interface Props {
   showUserInfo?: boolean;
+  collapsed?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
   showUserInfo: false,
+  collapsed: false,
 });
 
 const emit = defineEmits(["select"]);
 const router = useRouter();
+const dialog = useDialog();
+const message = useMessage();
 const menuOptions: MenuOption[] = getMenuOptions();
 
 // 从 localStorage 获取用户信息
@@ -100,9 +168,22 @@ const handleMenuSelect = async (key: string, _option: MenuOption) => {
   emit("select");
 };
 
-const goToSettings = () => {
-  router.push("/dashboard/settings");
-  emit("select");
+const handleLogout = () => {
+  dialog.warning({
+    title: "提示",
+    content: "确定要退出登录吗？",
+    positiveText: "确定",
+    negativeText: "取消",
+    onPositiveClick: () => {
+      if (localStorage.getItem("isDeepLinkLogin") !== "true") {
+        userApi.post("/auth/logout", {}, accessHandle(), () => {});
+      }
+      removeToken();
+      message.success("已退出登录");
+      emit("select");
+      router.push({ name: "login" });
+    },
+  });
 };
 
 const selectedKey = ref("dashboardIndex");
@@ -134,135 +215,3 @@ watch(
   { immediate: true },
 );
 </script>
-
-<style scoped lang="scss">
-.left-menu-wrapper {
-  height: 100%;
-  overflow: hidden;
-}
-
-.left-menu-container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.menu-main-area {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-.user-info-section {
-  flex-shrink: 0;
-  padding: 12px 16px;
-  background: var(--n-color, #fff);
-
-  .divider {
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--n-border-color, #e0e0e0),
-      transparent
-    );
-    margin-bottom: 16px;
-    margin-top: 8px;
-  }
-
-  .user-info-content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    .user-avatar {
-      flex-shrink: 0;
-
-      .avatar-img {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 2px solid var(--n-border-color, #e0e0e0);
-      }
-
-      .avatar-placeholder {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: var(--n-tag-color, #f5f5f5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--n-text-color-3, #999);
-      }
-    }
-
-    .user-details {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-
-      .user-name {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--n-text-color, #333);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .user-email {
-        font-size: 12px;
-        color: var(--n-text-color-3, #999);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-top: 2px;
-      }
-    }
-
-    .settings-btn {
-      flex-shrink: 0;
-      opacity: 0.7;
-      transition: opacity 0.2s;
-
-      &:hover {
-        opacity: 1;
-      }
-    }
-  }
-}
-
-// 折叠状态下的样式调整
-.menu-main-area:has(.n-menu--collapsed) + .user-info-section {
-  .divider {
-    display: none;
-  }
-
-  .user-info-content {
-    justify-content: center;
-    padding: 8px 0;
-
-    .user-details,
-    .settings-btn {
-      display: none;
-    }
-
-    .user-avatar {
-      .avatar-img,
-      .avatar-placeholder {
-        width: 36px;
-        height: 36px;
-      }
-    }
-  }
-}
-</style>

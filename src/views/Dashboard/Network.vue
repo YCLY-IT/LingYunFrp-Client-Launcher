@@ -1,25 +1,25 @@
 <template>
-  <div class="network-container">
-    <div class="main-content" style="margin-top: 15px">
+  <div class="network-container mx-auto max-w-[1200px] p-2.5">
+    <div class="main-content mb-5 mt-[15px]">
       <n-tabs
         v-model:value="activeTab"
         type="line"
         animated
-        class="network-tabs"
+        class="network-tabs [&_.tab-content]:py-5"
       >
         <!-- 当前连接 -->
         <n-tab-pane name="status" tab="当前通道">
-          <div class="tab-content">
+          <div class="tab-content py-5">
             <!-- 有活动网络时显示详细信息 -->
             <div v-if="currentNetwork">
-              <n-card class="status-card">
+              <n-card class="status-card mx-auto">
                 <template #header>
-                  <div class="status-header">
-                    <div class="status-title">
+                  <div class="status-header flex w-full items-center justify-between max-md:flex-col max-md:items-start max-md:gap-3">
+                    <div class="status-title flex items-center gap-3 max-md:flex-col max-md:items-start max-md:gap-2 [&_h3]:m-0 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-[var(--text-color-1)]">
                       <h3>{{ currentNetwork.config.name }}</h3>
                       <n-tag type="success" size="small">运行中</n-tag>
                     </div>
-                    <div class="status-actions">
+                    <div class="status-actions flex gap-2">
                       <n-button
                         type="error"
                         size="small"
@@ -32,34 +32,34 @@
                   </div>
                 </template>
 
-                <div class="status-content">
+                <div class="status-content flex flex-col gap-4">
                   <!-- 虚拟网络信息卡片 -->
                   <n-card title="虚拟网络信息" class="info-card">
-                    <div class="connection-info-grid">
+                    <div class="connection-info-grid grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4 max-md:grid-cols-1 max-md:gap-3">
                       <div class="info-item">
-                        <div class="info-label">网络名称</div>
-                        <div class="info-value">
-                          <span class="address-text">{{
+                        <div class="info-label mb-1 text-[13px] font-medium text-[var(--text-color-3)]">网络名称</div>
+                        <div class="info-value flex items-center gap-2">
+                          <span class="address-text flex-1 rounded bg-[var(--info-color-suppl)] px-2 py-1 font-mono text-sm text-[var(--text-color-1)]">{{
                             currentNetwork.config.name
                           }}</span>
                         </div>
                       </div>
                       <div class="info-item">
-                        <div class="info-label">本地IP</div>
-                        <div class="info-value">
-                          <span class="address-text">{{
+                        <div class="info-label mb-1 text-[13px] font-medium text-[var(--text-color-3)]">本地IP</div>
+                        <div class="info-value flex items-center gap-2">
+                          <span class="address-text flex-1 rounded bg-[var(--info-color-suppl)] px-2 py-1 font-mono text-sm text-[var(--text-color-1)]">{{
                             currentNetwork.config.localIp
                           }}</span>
                         </div>
                       </div>
                       <div class="info-item">
-                        <div class="info-label">连接状态</div>
-                        <div class="info-value">
+                        <div class="info-label mb-1 text-[13px] font-medium text-[var(--text-color-3)]">连接状态</div>
+                        <div class="info-value flex items-center gap-2">
                           <n-tag type="success" size="small">已连接</n-tag>
                         </div>
                       </div>
                     </div>
-                    <div class="connection-tip">
+                    <div class="connection-tip mt-4">
                       <n-alert type="info" size="small">
                         <template #icon>
                           <n-icon><InformationCircleOutline /></n-icon>
@@ -71,11 +71,11 @@
 
                   <!-- 通道信息卡片 -->
                   <n-card title="通道信息" class="channel-card">
-                    <div class="channel-info">
+                    <div class="channel-info flex flex-col gap-4">
                       <div class="channel-item">
-                        <div class="channel-label">创建时间</div>
-                        <div class="channel-value">
-                          <span class="channel-time">{{
+                        <div class="channel-label mb-1 text-[13px] font-medium text-[var(--text-color-3)]">创建时间</div>
+                        <div class="channel-value flex items-center gap-2">
+                          <span class="channel-time text-sm text-[var(--text-color-2)]">{{
                             currentNetwork.config.create_time || "刚刚"
                           }}</span>
                         </div>
@@ -88,8 +88,8 @@
 
             <!-- 没有活动网络时显示空状态 -->
             <div v-else>
-              <n-card title="当前虚拟网络状态" class="status-card">
-                <div class="empty-state">
+              <n-card title="当前虚拟网络状态" class="status-card mx-auto">
+                <div class="empty-state px-5 py-10 text-center [.networks-card_&]:mx-auto [.networks-card_&]:flex [.networks-card_&]:h-[150px] [.networks-card_&]:max-w-[300px] [.networks-card_&]:items-center [.networks-card_&]:justify-center">
                   <n-empty description="暂无活动的虚拟网络">
                     <template #icon>
                       <n-icon size="48" color="#d9d9d9">
@@ -104,8 +104,8 @@
         </n-tab-pane>
         <!-- 加入网络 -->
         <n-tab-pane name="join" tab="加入网络">
-          <div class="tab-content">
-            <n-card title="加入现有网络" class="join-network-card">
+          <div class="tab-content py-5">
+            <n-card title="加入现有网络" class="join-network-card mx-auto">
               <n-space vertical size="large">
                 <n-form-item label="网络名称">
                   <n-input
@@ -157,8 +157,8 @@
         </n-tab-pane>
         <!-- 创建网络 -->
         <n-tab-pane name="create" tab="创建网络">
-          <div class="tab-content">
-            <n-card title="创建新网络" class="create-network-card">
+          <div class="tab-content py-5">
+            <n-card title="创建新网络" class="create-network-card mx-auto">
               <n-space vertical size="large">
                 <n-form-item label="网络名称">
                   <n-input
@@ -219,11 +219,11 @@
         </n-tab-pane>
         <!-- 我的网络列表 -->
         <n-tab-pane name="my-networks" tab="我的通道">
-          <div class="tab-content">
-            <n-card class="networks-card">
+          <div class="tab-content py-5">
+            <n-card class="networks-card mx-auto">
               <template #header>
-                <div class="card-header">
-                  <span class="card-title">我的虚拟网络</span>
+                <div class="card-header flex w-full items-center justify-between max-md:flex-col max-md:items-start max-md:gap-2">
+                  <span class="card-title text-base font-semibold text-[var(--text-color-1)]">我的虚拟网络</span>
                   <n-button
                     type="primary"
                     size="small"
@@ -234,23 +234,23 @@
                   </n-button>
                 </div>
               </template>
-              <div v-if="myNetworks.length === 0" class="empty-state">
+              <div v-if="myNetworks.length === 0" class="empty-state px-5 py-10 text-center [.networks-card_&]:mx-auto [.networks-card_&]:flex [.networks-card_&]:h-[150px] [.networks-card_&]:max-w-[300px] [.networks-card_&]:items-center [.networks-card_&]:justify-center">
                 <n-empty description="暂无创建的虚拟网络" size="small" />
               </div>
               <div v-else class="networks-container">
-                <div class="network-list">
+                <div class="network-list grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 max-md:grid-cols-1 max-md:gap-3 [&>*:nth-child(1)]:[animation-delay:0ms] [&>*:nth-child(2)]:[animation-delay:60ms] [&>*:nth-child(3)]:[animation-delay:120ms] [&>*:nth-child(4)]:[animation-delay:180ms] [&>*:nth-child(5)]:[animation-delay:240ms] [&>*:nth-child(6)]:[animation-delay:300ms]">
                   <n-card
                     v-for="network in myNetworks"
                     :key="network.id"
-                    class="network-item-card"
+                    class="network-item-card animate-rise-in cursor-pointer overflow-hidden bg-[linear-gradient(135deg,var(--card-color)_0%,var(--hover-color)_100%)] transition-all duration-300 hover:-translate-y-[3px] hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] [&.disabled]:cursor-not-allowed [&.disabled]:opacity-60 [&.disabled:hover]:translate-y-0 [&.disabled:hover]:shadow-none"
                     :class="{
                       disabled: !!currentNetwork,
                     }"
                     @click="!currentNetwork && joinMyNetwork(network)"
                   >
-                    <div class="network-header">
-                      <span class="network-name">{{ network.name }}</span>
-                      <div class="network-actions">
+                    <div class="network-header mb-3 flex items-start justify-between px-4 pt-4">
+                      <span class="network-name flex-1 text-lg font-bold leading-[1.4] text-[var(--text-color-1)] [text-shadow:0_1px_2px_rgba(0,0,0,0.1)]">{{ network.name }}</span>
+                      <div class="network-actions flex gap-1 opacity-70 transition-opacity duration-200 hover:opacity-100">
                         <n-button
                           text
                           size="tiny"
@@ -271,17 +271,17 @@
                         </n-button>
                       </div>
                     </div>
-                    <div class="network-meta">
-                      <div class="meta-row">
-                        <n-tag type="info" size="small" class="address-tag">
+                    <div class="network-meta flex flex-col gap-3 px-4 pb-4">
+                      <div class="meta-row flex flex-wrap items-center gap-2">
+                        <n-tag type="info" size="small" class="address-tag font-mono font-medium">
                           <template #icon>
                             <n-icon><WifiOutline /></n-icon>
                           </template>
                           {{ network.localIp }}
                         </n-tag>
                       </div>
-                      <div class="meta-row">
-                        <n-tag type="default" size="small" class="time-tag">
+                      <div class="meta-row flex flex-wrap items-center gap-2">
+                        <n-tag type="default" size="small" class="time-tag text-[11px]">
                           <template #icon>
                             <n-icon><InformationCircleOutline /></n-icon>
                           </template>
@@ -289,8 +289,8 @@
                         </n-tag>
                       </div>
                     </div>
-                    <div v-if="network.remark" class="network-remark">
-                      <n-tag type="warning" size="small" class="remark-tag">
+                    <div v-if="network.remark" class="network-remark mx-4 mb-4">
+                      <n-tag type="warning" size="small" class="remark-tag max-w-full whitespace-pre-wrap text-xs leading-[1.4] [word-break:break-word]">
                         <template #icon>
                           <n-icon><InformationCircleOutline /></n-icon>
                         </template>
@@ -307,9 +307,9 @@
     </div>
 
     <!-- 帮助信息 -->
-    <n-card title="使用说明" class="help-card" style="margin-top: 20px">
-      <div class="help-content">
-        <div class="help-item">
+    <n-card title="使用说明" class="help-card mt-5">
+      <div class="help-content grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-5 max-md:grid-cols-1!">
+        <div class="help-item [&_h4]:m-0 [&_h4]:mb-3 [&_h4]:text-base [&_h4]:font-medium [&_h4]:text-[var(--text-color-1)] [&_p]:m-0 [&_p]:mb-2 [&_p]:leading-[1.6] [&_p]:text-[var(--text-color-3)] [&_p:last-child]:mb-0">
           <h4>🔗 加入虚拟网络</h4>
           <p>1. 切换到"加入网络"标签页</p>
           <p>2. 输入要加入的网络名称（从网络创建者处获取）</p>
@@ -317,7 +317,7 @@
           <p>4. 设置本地IP地址（默认 10.114.114.2）</p>
           <p>5. 点击"加入网络"按钮连接到该网络</p>
         </div>
-        <div class="help-item">
+        <div class="help-item [&_h4]:m-0 [&_h4]:mb-3 [&_h4]:text-base [&_h4]:font-medium [&_h4]:text-[var(--text-color-1)] [&_p]:m-0 [&_p]:mb-2 [&_p]:leading-[1.6] [&_p]:text-[var(--text-color-3)] [&_p:last-child]:mb-0">
           <h4>🌐 创建虚拟网络</h4>
           <p>1. 切换到"创建网络"标签页</p>
           <p>2. 输入网络名称（必填）</p>
@@ -326,7 +326,7 @@
           <p>5. 可选择添加备注信息（可选）</p>
           <p>6. 点击"创建网络"按钮完成创建</p>
         </div>
-        <div class="help-item">
+        <div class="help-item [&_h4]:m-0 [&_h4]:mb-3 [&_h4]:text-base [&_h4]:font-medium [&_h4]:text-[var(--text-color-1)] [&_p]:m-0 [&_p]:mb-2 [&_p]:leading-[1.6] [&_p]:text-[var(--text-color-3)] [&_p:last-child]:mb-0">
           <h4>▶️ 启动虚拟网络</h4>
           <p>1. 切换到"我的通道"标签页</p>
           <p>2. 找到要启动的网络卡片</p>
@@ -334,20 +334,20 @@
           <p>4. 点击"启动网络"按钮开始启动</p>
           <p>5. 启动成功后，切换到"当前通道"标签页查看状态</p>
         </div>
-        <div class="help-item">
+        <div class="help-item [&_h4]:m-0 [&_h4]:mb-3 [&_h4]:text-base [&_h4]:font-medium [&_h4]:text-[var(--text-color-1)] [&_p]:m-0 [&_p]:mb-2 [&_p]:leading-[1.6] [&_p]:text-[var(--text-color-3)] [&_p:last-child]:mb-0">
           <h4>📋 管理虚拟网络</h4>
           <p>在"我的通道"标签页中可以查看和管理所有已创建的虚拟网络。</p>
           <p>• 点击网络卡片可启动该网络</p>
           <p>• 点击复制图标可复制网络 ID</p>
           <p>• 点击删除图标可删除该网络（不可恢复）</p>
         </div>
-        <div class="help-item">
+        <div class="help-item [&_h4]:m-0 [&_h4]:mb-3 [&_h4]:text-base [&_h4]:font-medium [&_h4]:text-[var(--text-color-1)] [&_p]:m-0 [&_p]:mb-2 [&_p]:leading-[1.6] [&_p]:text-[var(--text-color-3)] [&_p:last-child]:mb-0">
           <h4>🔌 断开虚拟网络</h4>
           <p>1. 切换到"当前通道"标签页</p>
           <p>2. 点击"断开连接"按钮</p>
           <p>3. 确认断开后，虚拟网络将停止运行</p>
         </div>
-        <div class="help-item">
+        <div class="help-item [&_h4]:m-0 [&_h4]:mb-3 [&_h4]:text-base [&_h4]:font-medium [&_h4]:text-[var(--text-color-1)] [&_p]:m-0 [&_p]:mb-2 [&_p]:leading-[1.6] [&_p]:text-[var(--text-color-3)] [&_p:last-child]:mb-0">
           <h4>📊 查看运行日志</h4>
           <p>在侧边栏"运行日志"页面中可以查看所有操作记录和运行状态。</p>
           <p>
@@ -363,7 +363,7 @@
       v-model:show="downloading"
       title="下载进度"
       preset="card"
-      style="width: 400px"
+      class="w-[400px]"
       :closable="false"
       :mask-closable="false"
     >
@@ -372,7 +372,7 @@
         :percentage="downloadProgress"
         :show-indicator="true"
       />
-      <div style="margin-top: 10px">
+      <div class="mt-2.5">
         已下载: {{ downloadedBytes }} / {{ totalBytes }} 字节 ({{
           downloadProgress
         }}%)
@@ -1012,366 +1012,3 @@ onUnmounted(() => {
   cleanupFunctions.value = [];
 });
 </script>
-
-<style lang="scss" scoped>
-.network-container {
-  padding: 10px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-header {
-  text-align: center;
-  margin-bottom: 30px;
-
-  h2 {
-    margin: 0 0 8px 0;
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--text-color-1);
-  }
-
-  .subtitle {
-    margin: 0;
-    font-size: 16px;
-    color: var(--text-color-3);
-  }
-}
-
-.main-content {
-  margin-bottom: 20px;
-}
-
-.network-tabs {
-  .tab-content {
-    padding: 20px 0;
-  }
-}
-
-.create-network-card,
-.join-network-card,
-.networks-card,
-.status-card {
-  margin: 0 auto;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 40px 20px;
-
-  // 在网络列表中的空状态样式
-  .networks-card & {
-    padding: 40px 20px;
-    height: 150px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    max-width: 300px;
-    margin: 0 auto;
-  }
-}
-
-.networks-header {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
-}
-
-.status-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-
-  .status-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-color-1);
-    }
-  }
-
-  .status-actions {
-    display: flex;
-    gap: 8px;
-  }
-}
-
-.status-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.info-card {
-  .connection-info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 16px;
-
-    .info-item {
-      .info-label {
-        font-size: 13px;
-        color: var(--text-color-3);
-        margin-bottom: 4px;
-        font-weight: 500;
-      }
-
-      .info-value {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        .address-text,
-        .id-text {
-          font-family: monospace;
-          font-size: 14px;
-          color: var(--text-color-1);
-          background-color: var(--info-color-suppl);
-          padding: 4px 8px;
-          border-radius: 4px;
-          flex: 1;
-        }
-      }
-    }
-  }
-
-  .connection-tip {
-    margin-top: 16px;
-  }
-}
-
-.channel-card {
-  .channel-info {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-
-    .channel-item {
-      .channel-label {
-        font-size: 13px;
-        color: var(--text-color-3);
-        margin-bottom: 4px;
-        font-weight: 500;
-      }
-
-      .channel-value {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        .channel-id {
-          font-family: monospace;
-          font-size: 14px;
-          color: var(--text-color-1);
-          background-color: var(--info-color-suppl);
-          padding: 4px 8px;
-          border-radius: 4px;
-          flex: 1;
-        }
-
-        .channel-time {
-          font-size: 14px;
-          color: var(--text-color-2);
-        }
-      }
-    }
-  }
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-
-  .card-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-color-1);
-  }
-}
-
-.network-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
-
-  .network-item-card {
-    cursor: pointer;
-    transition: all 0.3s ease;
-    overflow: hidden;
-    background: linear-gradient(
-      135deg,
-      var(--card-color) 0%,
-      var(--hover-color) 100%
-    );
-
-    &:hover {
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-      transform: translateY(-3px);
-    }
-
-    &.disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-
-      &:hover {
-        box-shadow: none;
-        transform: none;
-      }
-    }
-
-    .network-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 12px;
-      padding: 16px 16px 0 16px;
-
-      .network-name {
-        font-weight: 700;
-        font-size: 18px;
-        color: var(--text-color-1);
-        flex: 1;
-        line-height: 1.4;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      }
-
-      .network-actions {
-        display: flex;
-        gap: 4px;
-        opacity: 0.7;
-        transition: opacity 0.2s ease;
-
-        &:hover {
-          opacity: 1;
-        }
-      }
-    }
-
-    .network-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 0 16px 16px 16px;
-
-      .meta-row {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-
-        .address-tag {
-          font-family: monospace;
-          font-weight: 500;
-        }
-
-        .time-tag {
-          font-size: 11px;
-        }
-      }
-    }
-
-    .network-remark {
-      margin: 0 16px 16px 16px;
-
-      .remark-tag {
-        font-size: 12px;
-        line-height: 1.4;
-        white-space: pre-wrap;
-        max-width: 100%;
-        word-break: break-word;
-      }
-    }
-  }
-}
-
-.help-card {
-  .help-content {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-
-    .help-item {
-      h4 {
-        margin: 0 0 12px 0;
-        font-size: 16px;
-        font-weight: 500;
-        color: var(--text-color-1);
-      }
-
-      p {
-        margin: 0 0 8px 0;
-        color: var(--text-color-3);
-        line-height: 1.6;
-
-        &:last-child {
-          margin-bottom: 0;
-        }
-      }
-    }
-  }
-}
-
-// 响应式设计
-@media (max-width: 768px) {
-  .help-content {
-    grid-template-columns: 1fr !important;
-  }
-
-  .network-details {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .connection-details .connection-item {
-    flex-direction: column;
-    align-items: flex-start;
-
-    .label {
-      min-width: auto;
-      margin-bottom: 4px;
-    }
-  }
-
-  .connection-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .network-list {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .card-header {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-  }
-
-  .status-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-
-    .status-title {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 8px;
-    }
-  }
-
-  .info-card .connection-info-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-}
-</style>
